@@ -1,0 +1,19 @@
+# Node modules
+node_modules/
+
+# Expo directories
+.expo/
+dist/
+web-build/
+
+# Metro cache
+.metro/
+
+# Local/system files
+.DS_Store
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

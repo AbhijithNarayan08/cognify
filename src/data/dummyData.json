@@ -1,0 +1,452 @@
+[
+  {
+    "dayOffset": 29,
+    "score": 580,
+    "sleep": 6.5,
+    "trained": false,
+    "mood": "neutral",
+    "domains": {
+      "memory": 560,
+      "speed": 590,
+      "attention": 575,
+      "executive": 585,
+      "verbal": 580,
+      "spatial": 555
+    }
+  },
+  {
+    "dayOffset": 28,
+    "score": 590,
+    "sleep": 7.0,
+    "trained": true,
+    "mood": "good",
+    "domains": {
+      "memory": 575,
+      "speed": 600,
+      "attention": 590,
+      "executive": 590,
+      "verbal": 585,
+      "spatial": 560
+    }
+  },
+  {
+    "dayOffset": 27,
+    "score": 585,
+    "sleep": 5.5,
+    "trained": true,
+    "mood": "tired",
+    "domains": {
+      "memory": 580,
+      "speed": 595,
+      "attention": 555,
+      "executive": 590,
+      "verbal": 590,
+      "spatial": 560
+    }
+  },
+  {
+    "dayOffset": 26,
+    "score": 605,
+    "sleep": 8.0,
+    "trained": true,
+    "mood": "great",
+    "domains": {
+      "memory": 600,
+      "speed": 605,
+      "attention": 625,
+      "executive": 600,
+      "verbal": 595,
+      "spatial": 570
+    }
+  },
+  {
+    "dayOffset": 25,
+    "score": 600,
+    "sleep": 7.5,
+    "trained": false,
+    "mood": "good",
+    "domains": {
+      "memory": 595,
+      "speed": 610,
+      "attention": 615,
+      "executive": 595,
+      "verbal": 590,
+      "spatial": 565
+    }
+  },
+  {
+    "dayOffset": 24,
+    "score": 595,
+    "sleep": 5.0,
+    "trained": false,
+    "mood": "tired",
+    "domains": {
+      "memory": 590,
+      "speed": 605,
+      "attention": 560,
+      "executive": 595,
+      "verbal": 590,
+      "spatial": 565
+    }
+  },
+  {
+    "dayOffset": 23,
+    "score": 615,
+    "sleep": 8.0,
+    "trained": true,
+    "mood": "great",
+    "domains": {
+      "memory": 615,
+      "speed": 610,
+      "attention": 640,
+      "executive": 610,
+      "verbal": 605,
+      "spatial": 575
+    }
+  },
+  {
+    "dayOffset": 22,
+    "score": 620,
+    "sleep": 7.5,
+    "trained": true,
+    "mood": "good",
+    "domains": {
+      "memory": 625,
+      "speed": 615,
+      "attention": 640,
+      "executive": 615,
+      "verbal": 610,
+      "spatial": 580
+    }
+  },
+  {
+    "dayOffset": 21,
+    "score": 610,
+    "sleep": 6.0,
+    "trained": false,
+    "mood": "neutral",
+    "domains": {
+      "memory": 615,
+      "speed": 615,
+      "attention": 585,
+      "executive": 610,
+      "verbal": 605,
+      "spatial": 575
+    }
+  },
+  {
+    "dayOffset": 20,
+    "score": 635,
+    "sleep": 8.0,
+    "trained": true,
+    "mood": "great",
+    "domains": {
+      "memory": 645,
+      "speed": 620,
+      "attention": 660,
+      "executive": 625,
+      "verbal": 620,
+      "spatial": 585
+    }
+  },
+  {
+    "dayOffset": 19,
+    "score": 640,
+    "sleep": 7.5,
+    "trained": true,
+    "mood": "good",
+    "domains": {
+      "memory": 650,
+      "speed": 625,
+      "attention": 665,
+      "executive": 630,
+      "verbal": 625,
+      "spatial": 590
+    }
+  },
+  {
+    "dayOffset": 18,
+    "score": 625,
+    "sleep": 5.5,
+    "trained": true,
+    "mood": "tired",
+    "domains": {
+      "memory": 640,
+      "speed": 630,
+      "attention": 590,
+      "executive": 625,
+      "verbal": 620,
+      "spatial": 585
+    }
+  },
+  {
+    "dayOffset": 17,
+    "score": 650,
+    "sleep": 8.0,
+    "trained": true,
+    "mood": "great",
+    "domains": {
+      "memory": 665,
+      "speed": 630,
+      "attention": 680,
+      "executive": 640,
+      "verbal": 635,
+      "spatial": 595
+    }
+  },
+  {
+    "dayOffset": 16,
+    "score": 645,
+    "sleep": 7.5,
+    "trained": false,
+    "mood": "good",
+    "domains": {
+      "memory": 660,
+      "speed": 635,
+      "attention": 670,
+      "executive": 635,
+      "verbal": 630,
+      "spatial": 590
+    }
+  },
+  {
+    "dayOffset": 15,
+    "score": 630,
+    "sleep": 5.0,
+    "trained": false,
+    "mood": "tired",
+    "domains": {
+      "memory": 645,
+      "speed": 635,
+      "attention": 595,
+      "executive": 630,
+      "verbal": 625,
+      "spatial": 585
+    }
+  },
+  {
+    "dayOffset": 14,
+    "score": 660,
+    "sleep": 8.0,
+    "trained": true,
+    "mood": "great",
+    "domains": {
+      "memory": 680,
+      "speed": 640,
+      "attention": 690,
+      "executive": 645,
+      "verbal": 645,
+      "spatial": 600
+    }
+  },
+  {
+    "dayOffset": 13,
+    "score": 640,
+    "sleep": 5.5,
+    "trained": false,
+    "mood": "tired",
+    "domains": {
+      "memory": 660,
+      "speed": 640,
+      "attention": 600,
+      "executive": 635,
+      "verbal": 630,
+      "spatial": 590
+    }
+  },
+  {
+    "dayOffset": 12,
+    "score": 665,
+    "sleep": 7.5,
+    "trained": true,
+    "mood": "good",
+    "domains": {
+      "memory": 685,
+      "speed": 645,
+      "attention": 690,
+      "executive": 650,
+      "verbal": 650,
+      "spatial": 600
+    }
+  },
+  {
+    "dayOffset": 11,
+    "score": 650,
+    "sleep": 5.5,
+    "trained": true,
+    "mood": "neutral",
+    "domains": {
+      "memory": 670,
+      "speed": 645,
+      "attention": 610,
+      "executive": 645,
+      "verbal": 645,
+      "spatial": 595
+    }
+  },
+  {
+    "dayOffset": 10,
+    "score": 680,
+    "sleep": 8.5,
+    "trained": true,
+    "mood": "great",
+    "domains": {
+      "memory": 705,
+      "speed": 650,
+      "attention": 710,
+      "executive": 665,
+      "verbal": 660,
+      "spatial": 605
+    }
+  },
+  {
+    "dayOffset": 9,
+    "score": 675,
+    "sleep": 7.5,
+    "trained": true,
+    "mood": "good",
+    "domains": {
+      "memory": 700,
+      "speed": 650,
+      "attention": 705,
+      "executive": 660,
+      "verbal": 655,
+      "spatial": 605
+    }
+  },
+  {
+    "dayOffset": 8,
+    "score": 655,
+    "sleep": 5.0,
+    "trained": false,
+    "mood": "tired",
+    "domains": {
+      "memory": 680,
+      "speed": 650,
+      "attention": 610,
+      "executive": 650,
+      "verbal": 645,
+      "spatial": 595
+    }
+  },
+  {
+    "dayOffset": 7,
+    "score": 690,
+    "sleep": 8.0,
+    "trained": true,
+    "mood": "great",
+    "domains": {
+      "memory": 720,
+      "speed": 655,
+      "attention": 720,
+      "executive": 675,
+      "verbal": 670,
+      "spatial": 610
+    }
+  },
+  {
+    "dayOffset": 6,
+    "score": 700,
+    "sleep": 8.0,
+    "trained": true,
+    "mood": "great",
+    "domains": {
+      "memory": 730,
+      "speed": 660,
+      "attention": 735,
+      "executive": 685,
+      "verbal": 680,
+      "spatial": 615
+    }
+  },
+  {
+    "dayOffset": 5,
+    "score": 685,
+    "sleep": 6.0,
+    "trained": true,
+    "mood": "neutral",
+    "domains": {
+      "memory": 715,
+      "speed": 660,
+      "attention": 660,
+      "executive": 675,
+      "verbal": 670,
+      "spatial": 610
+    }
+  },
+  {
+    "dayOffset": 4,
+    "score": 710,
+    "sleep": 8.5,
+    "trained": true,
+    "mood": "great",
+    "domains": {
+      "memory": 745,
+      "speed": 665,
+      "attention": 745,
+      "executive": 695,
+      "verbal": 690,
+      "spatial": 620
+    }
+  },
+  {
+    "dayOffset": 3,
+    "score": 705,
+    "sleep": 7.5,
+    "trained": true,
+    "mood": "good",
+    "domains": {
+      "memory": 740,
+      "speed": 665,
+      "attention": 740,
+      "executive": 690,
+      "verbal": 685,
+      "spatial": 615
+    }
+  },
+  {
+    "dayOffset": 2,
+    "score": 680,
+    "sleep": 5.5,
+    "trained": false,
+    "mood": "tired",
+    "domains": {
+      "memory": 710,
+      "speed": 660,
+      "attention": 645,
+      "executive": 675,
+      "verbal": 670,
+      "spatial": 605
+    }
+  },
+  {
+    "dayOffset": 1,
+    "score": 720,
+    "sleep": 8.0,
+    "trained": true,
+    "mood": "great",
+    "domains": {
+      "memory": 755,
+      "speed": 670,
+      "attention": 755,
+      "executive": 705,
+      "verbal": 700,
+      "spatial": 625
+    }
+  },
+  {
+    "dayOffset": 0,
+    "score": 725,
+    "sleep": 8.0,
+    "trained": true,
+    "mood": "great",
+    "domains": {
+      "memory": 760,
+      "speed": 675,
+      "attention": 760,
+      "executive": 710,
+      "verbal": 705,
+      "spatial": 630
+    }
+  }
+]

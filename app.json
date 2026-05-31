@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Cognify",
+    "slug": "cognify",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F7F5F1",
+    "splash": {
+      "backgroundColor": "#1B6CA8",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.cognify.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1B6CA8"
+      },
+      "package": "com.cognify.app"
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}
