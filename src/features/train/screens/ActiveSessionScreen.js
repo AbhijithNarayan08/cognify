@@ -1251,6 +1251,15 @@ export function ActiveSessionScreen({ navigation, route }) {
         pulse={currentEx.id === 'lighthouse-watch'}
       />
 
+      {/* Game Instruction Header */}
+      {phase === 'playing' && (
+        <View style={styles.instructionBanner}>
+          <Text style={[styles.instructionText, { color: Colors.textSecondary }]}>
+            {t(`exercise.${currentEx.id}.instruction`)}
+          </Text>
+        </View>
+      )}
+
       {/* Main Play Area */}
       <Animated.View style={[styles.playArea, { opacity: playAreaFade }]}>
         <GameComponent
@@ -1398,6 +1407,22 @@ export function ActiveSessionScreen({ navigation, route }) {
 
 const getStyles = (Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.appBg },
+
+  instructionBanner: {
+    paddingVertical: Spacing[2],
+    paddingHorizontal: Spacing[6],
+    backgroundColor: Colors.surfaceAlt,
+    borderBottomWidth: 0.5,
+    borderBottomColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  instructionText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.caption,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
   
   // Intro Phase
   exitBtn: {
