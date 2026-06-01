@@ -10,6 +10,7 @@ export default function WordWeave({ level, isActive, onRoundComplete, Colors }) 
 
   // Game state
   const [analogy, setAnalogy] = useState(null);
+  const analogyRef = useRef(null);
   const [shuffledChoices, setShuffledChoices] = useState([]);
   const [roundPhase, setRoundPhase] = useState('think'); // 'think' | 'stimulus' | 'feedback'
   const [selectedWord, setSelectedWord] = useState(null);
@@ -62,6 +63,7 @@ export default function WordWeave({ level, isActive, onRoundComplete, Colors }) 
     const randIdx = Math.floor(Math.random() * analogiesList.length);
     const item = analogiesList[randIdx];
     setAnalogy(item);
+    analogyRef.current = item;
 
     // Shuffle choices
     const choices = [item.bridgeWord, ...item.distractors];
@@ -106,11 +108,13 @@ export default function WordWeave({ level, isActive, onRoundComplete, Colors }) 
   };
 
   const handleAnswer = (word) => {
+    if (!analogyRef.current) return;
     hasAnsweredRef.current = true;
     setSelectedWord(word);
     
+    const currentAnalogy = analogyRef.current;
     const responseTime = Date.now() - choiceTimestampRef.current;
-    const isCorrect = word === analogy.bridgeWord;
+    const isCorrect = word === currentAnalogy.bridgeWord;
 
     setFeedbackStatus(isCorrect ? 'correct' : (word === null ? 'timeout' : 'incorrect'));
     setRoundPhase('feedback');
@@ -136,6 +140,7 @@ export default function WordWeave({ level, isActive, onRoundComplete, Colors }) 
     const feedbackTimeout = setTimeout(() => {
       if (!isComponentActive.current) return;
       setAnalogy(null);
+      analogyRef.current = null;
       generateRound();
     }, WORD_WEAVE.FEEDBACK_DURATION_MS);
 

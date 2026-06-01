@@ -189,6 +189,7 @@ export default function PatternFold({ level, isActive, onRoundComplete, Colors }
   };
 
   const handleAnswer = (selectedIdx) => {
+    if (targetShape === null) return;
     hasAnsweredRef.current = true;
     setSelectedVariantIndex(selectedIdx);
     
