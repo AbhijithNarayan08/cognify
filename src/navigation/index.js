@@ -9,6 +9,7 @@ import { useApp } from '../context/AppContext';
 import { useThemeColors, Typography, Spacing } from '../theme';
 
 // Onboarding screens
+import LoginScreen from '../screens/auth/LoginScreen';
 import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
 import IntentScreen from '../screens/onboarding/IntentScreen';
 import QuickProfileScreen from '../screens/onboarding/QuickProfileScreen';
@@ -19,6 +20,7 @@ import {
   ResultsScreen,
 } from '../screens/onboarding/AssessmentScreens';
 import ProjectionScreen from '../screens/onboarding/ProjectionScreen';
+import NotificationOptInScreen from '../screens/onboarding/NotificationOptInScreen';
 
 // Main screens
 import HomeScreen from '../screens/main/HomeScreen';
@@ -154,6 +156,7 @@ function OnboardingNavigator() {
         }),
       }}
     >
+      <Stack.Screen name="Login"           component={LoginScreen}          />
       <Stack.Screen name="Welcome"         component={WelcomeScreen}        />
       <Stack.Screen name="Intent"          component={IntentScreen}         />
       <Stack.Screen name="QuickProfile"    component={QuickProfileScreen}   />
@@ -162,6 +165,7 @@ function OnboardingNavigator() {
       <Stack.Screen name="Processing"      component={ProcessingScreen}     />
       <Stack.Screen name="Results"         component={ResultsScreen}        />
       <Stack.Screen name="Projection"      component={ProjectionScreen}     />
+      <Stack.Screen name="NotificationOptIn" component={NotificationOptInScreen} />
       <Stack.Screen name="MainApp"         component={AppStackNavigator}    options={{ gestureEnabled: false }} />
     </Stack.Navigator>
   );

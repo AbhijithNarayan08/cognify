@@ -6,19 +6,217 @@ import { Typography, Spacing, Radius, Shadow } from '../../../theme';
 
 const { width } = Dimensions.get('window');
 
-// Base 3x3 shapes
-const BASE_SHAPES = [
-  // T-shape
-  { id: 'T', blocks: [{r:0,c:0},{r:0,c:1},{r:0,c:2},{r:1,c:1},{r:2,c:1}] },
-  // L-shape
-  { id: 'L', blocks: [{r:0,c:0},{r:1,c:0},{r:2,c:0},{r:2,c:1},{r:2,c:2}] },
-  // F-shape
-  { id: 'F', blocks: [{r:0,c:0},{r:1,c:0},{r:2,c:0},{r:0,c:1},{r:1,c:1},{r:0,c:2}] },
-  // Z-shape
-  { id: 'Z', blocks: [{r:0,c:0},{r:0,c:1},{r:1,c:1},{r:1,c:2}] },
-  // Cross
-  { id: 'Cross', blocks: [{r:1,c:0},{r:1,c:1},{r:1,c:2},{r:0,c:1},{r:2,c:1}] },
-];
+// Base 3x3 shapes library at 0° rotation
+const BASE_SHAPES = {
+  T:     [{r:0,c:0},{r:0,c:1},{r:0,c:2},{r:1,c:1},{r:2,c:1}],
+  L:     [{r:0,c:0},{r:1,c:0},{r:2,c:0},{r:2,c:1},{r:2,c:2}],
+  F:     [{r:0,c:0},{r:0,c:1},{r:1,c:0},{r:1,c:1},{r:2,c:0}],
+  Z:     [{r:0,c:0},{r:0,c:1},{r:1,c:1},{r:1,c:2},{r:2,c:2}],
+  Cross: [{r:0,c:1},{r:1,c:0},{r:1,c:1},{r:1,c:2},{r:2,c:1}]
+};
+
+const COLOR_PALETTE = ['pink', 'blue', 'amber'];
+
+// Core Transformation Functions
+function rotateBlocks(blocks, angleDeg) {
+  let result = blocks.map(b => ({ ...b }));
+  const cycles = Math.round(angleDeg / 90) % 4;
+  for (let c = 0; c < cycles; c++) {
+    result = result.map(b => ({ r: b.c, c: 2 - b.r, color: b.color }));
+  }
+  return result;
+}
+
+function mirrorBlocks(blocks) {
+  return blocks.map(b => ({ r: b.r, c: 2 - b.c, color: b.color }));
+}
+
+function colorizeBlocks(blocks, numColors, Colors) {
+  const resolvedPalette = Colors ? [
+    Colors.domain.spatial.main, // pink
+    '#0073E6',                 // blue
+    '#F4A041'                  // amber
+  ] : COLOR_PALETTE;
+
+  return blocks.map((b, i) => ({
+    ...b,
+    color: resolvedPalette[
+      numColors === 1 ? 0 :
+      numColors === 2 ? (i < Math.ceil(blocks.length / 2) ? 0 : 1) :
+      i % numColors
+    ]
+  }));
+}
+
+// Canonical Hash Function
+function canonicalHash(blocks) {
+  return blocks
+    .map(b => `${b.r},${b.c},${b.color}`)
+    .sort()
+    .join('|');
+}
+
+// Degeneracy Check
+function getNonDegenerateAngles(blocks) {
+  const baseHash = canonicalHash(blocks);
+  return [90, 180, 270].filter(angle =>
+    canonicalHash(rotateBlocks(blocks, angle)) !== baseHash
+  );
+}
+
+// Collision Guard
+function tryAddCandidate(blocks, foilType, candidates, usedHashes, angle) {
+  const hash = canonicalHash(blocks);
+  if (usedHashes.has(hash)) {
+    return false; // duplicate — reject silently, try next strategy
+  }
+  usedHashes.add(hash);
+  candidates.push({
+    blocks,
+    foilType,
+    angle,
+    isCorrect: foilType === 'correct',
+    isMirror: foilType === 'mirror'
+  });
+  return true;
+}
+
+// Fisher-Yates Shuffle helper
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Validation Assertions
+function validateRoundData(roundData, Colors) {
+  const { candidates, correctIndex, shapeName, correctAngle, numColors } = roundData;
+  const hashes = candidates.map(c => canonicalHash(c.blocks));
+  
+  if (new Set(hashes).size !== 4) {
+    throw new Error(`Pattern Fold Validation Error: Duplicate candidates detected in round generation! Hashes: ${JSON.stringify(hashes)}`);
+  }
+  if (correctIndex < 0 || correctIndex > 3) {
+    throw new Error(`Pattern Fold Validation Error: Invalid correctIndex: ${correctIndex}`);
+  }
+  const expectedCorrectHash = canonicalHash(
+    rotateBlocks(colorizeBlocks(BASE_SHAPES[shapeName], numColors, Colors), correctAngle)
+  );
+  if (hashes[correctIndex] !== expectedCorrectHash) {
+    throw new Error(`Pattern Fold Validation Error: Correct candidate block structure does not match expected rotation!`);
+  }
+  const baseHash = canonicalHash(colorizeBlocks(BASE_SHAPES[shapeName], numColors, Colors));
+  const isFullyDegenerate = getNonDegenerateAngles(colorizeBlocks(BASE_SHAPES[shapeName], numColors, Colors)).length === 0;
+  if (!isFullyDegenerate && hashes[correctIndex] === baseHash) {
+    throw new Error(`Pattern Fold Validation Error: Correct candidate matches unrotated base shape (fully degenerate rotation selected).`);
+  }
+}
+
+// Full Round Generation Algorithm
+function generateRoundAlgorithm(shapeName, numColors, Colors) {
+  // --- Stage 0: prepare base shape ---
+  const rawBase = BASE_SHAPES[shapeName];
+  const base = colorizeBlocks(rawBase, numColors, Colors);
+
+  // --- Stage 1: pick correct angle ---
+  let validAngles = getNonDegenerateAngles(base);
+  if (validAngles.length === 0) {
+    // If the shape is fully degenerate (e.g. Cross at single-color), fallback to any standard angle.
+    // The collision guard in stages 3-6 will cleanly manage uniqueness by filtering duplicate layouts.
+    validAngles = [90, 180, 270];
+  }
+  const correctAngle = validAngles[Math.floor(Math.random() * validAngles.length)];
+  const correctBlocks = rotateBlocks(base, correctAngle);
+
+  // --- Stage 2: init candidates + hash registry ---
+  const candidates = [];
+  const usedHashes = new Set();
+  tryAddCandidate(correctBlocks, 'correct', candidates, usedHashes, correctAngle);
+
+  // --- Stage 3: angle foil ---
+  const wrongAngles = shuffle([90, 180, 270]).filter(a => {
+    const h = canonicalHash(rotateBlocks(base, a));
+    return !usedHashes.has(h);
+  });
+  if (wrongAngles.length > 0) {
+    const wa = wrongAngles[0];
+    tryAddCandidate(rotateBlocks(base, wa), 'angle', candidates, usedHashes, wa);
+  }
+
+  // --- Stage 4: mirror trap foil ---
+  if (candidates.length < 4) {
+    const mirrorBase = mirrorBlocks(base);
+    const mirrorAngles = shuffle([0, 90, 180, 270]);
+    for (const ma of mirrorAngles) {
+      const placed = tryAddCandidate(
+        rotateBlocks(mirrorBase, ma), 'mirror', candidates, usedHashes, ma
+      );
+      if (placed) break;
+    }
+  }
+
+  // --- Stage 5: chirality foil ---
+  if (candidates.length < 4) {
+    const otherShapes = shuffle(Object.keys(BASE_SHAPES).filter(s => s !== shapeName));
+    let placed = false;
+    for (const s of otherShapes) {
+      const chiralBase = colorizeBlocks(BASE_SHAPES[s], numColors, Colors);
+      for (const ca of shuffle([0, 90, 180, 270])) {
+        if (tryAddCandidate(
+          rotateBlocks(chiralBase, ca), 'chirality', candidates, usedHashes, ca
+        )) {
+          placed = true;
+          break;
+        }
+      }
+      if (placed) break;
+    }
+  }
+
+  // --- Stage 6: fallback exhaustion loop ---
+  while (candidates.length < 4) {
+    let placed = false;
+    for (const s of shuffle(Object.keys(BASE_SHAPES))) {
+      const fb = colorizeBlocks(BASE_SHAPES[s], numColors, Colors);
+      for (const fa of shuffle([0, 90, 180, 270])) {
+        if (tryAddCandidate(
+          rotateBlocks(fb, fa), 'fallback', candidates, usedHashes, fa
+        )) {
+          placed = true;
+          break;
+        }
+      }
+      if (placed) break;
+    }
+    if (!placed) {
+      throw new Error(`Cannot generate 4 unique candidates for ${shapeName} at numColors=${numColors}`);
+    }
+  }
+
+  // --- Stage 7: shuffle and record correct index ---
+  const shuffled = shuffle(candidates);
+  const correctIndex = shuffled.findIndex(c => c.foilType === 'correct');
+
+  // Verify and assert round data validation rules
+  validateRoundData({
+    candidates: shuffled,
+    correctIndex,
+    shapeName,
+    correctAngle,
+    numColors
+  }, Colors);
+
+  return {
+    candidates: shuffled,
+    correctIndex,
+    shapeName,
+    correctAngle,
+    numColors
+  };
+}
 
 export default function PatternFold({ level, isActive, onRoundComplete, Colors }) {
   const config = PATTERN_FOLD.levels[level] || PATTERN_FOLD.levels[1];
@@ -40,6 +238,7 @@ export default function PatternFold({ level, isActive, onRoundComplete, Colors }
   const timeoutsRef = useRef([]);
   const isComponentActive = useRef(isActive);
   const hasAnsweredRef = useRef(false);
+  const targetShapeIdRef = useRef('');
 
   // Sync active ref
   useEffect(() => {
@@ -60,28 +259,6 @@ export default function PatternFold({ level, isActive, onRoundComplete, Colors }
     return () => clearAllTimers();
   }, []);
 
-  // Mathematical transformations for 3x3 grid blocks
-  const rotateBlocks = (blocks, angleDeg) => {
-    let result = [...blocks];
-    const cycles = (angleDeg / 90) % 4;
-    for (let c = 0; c < cycles; c++) {
-      result = result.map((b) => ({
-        r: b.c,
-        c: 2 - b.r,
-        color: b.color,
-      }));
-    }
-    return result;
-  };
-
-  const mirrorBlocks = (blocks) => {
-    return blocks.map((b) => ({
-      r: b.r,
-      c: 2 - b.c,
-      color: b.color,
-    }));
-  };
-
   const generateRound = () => {
     if (!isComponentActive.current) return;
 
@@ -92,82 +269,28 @@ export default function PatternFold({ level, isActive, onRoundComplete, Colors }
     rotateAnim.setValue(0);
     setRoundPhase('stimulus');
 
-    // 1. Select random base shape
-    const base = BASE_SHAPES[Math.floor(Math.random() * BASE_SHAPES.length)];
+    // 1. Select random base shape name
+    const shapeKeys = Object.keys(BASE_SHAPES);
+    const shapeName = shapeKeys[Math.floor(Math.random() * shapeKeys.length)];
+    targetShapeIdRef.current = shapeName;
     
-    // Apply difficulty segment colors
-    let coloredBlocks = base.blocks.map((b, idx) => {
-      let blockColor = Colors.domain.spatial.main; // Default pink
-      if (config.rotationType === '2D_3D' && idx % 2 === 0) {
-        blockColor = '#0073E6'; // 2 colors max at level 3
-      } else if (config.rotationType === '3D' || config.rotationType === '3D_iso') {
-        // 3 colors max at level 4 & 5
-        const colorPalette = [Colors.domain.spatial.main, '#0073E6', '#F4A041'];
-        blockColor = colorPalette[idx % 3];
-      }
-      return { ...b, color: blockColor };
-    });
+    // Resolve color segment count by rotationType difficulty in level config
+    const numColors = config.rotationType === '2D' ? 1 : (config.rotationType === '2D_3D' ? 2 : 3);
 
-    setTargetShape(coloredBlocks);
+    // 2. Generate round candidates using specification-compliant algorithm
+    const roundData = generateRoundAlgorithm(shapeName, numColors, Colors);
 
-    // 2. Determine target correct rotation angle
-    const angles = config.angles === 'any' ? [45, 90, 135, 180, 225, 270] : config.angles;
-    const correctAngle = angles[Math.floor(Math.random() * angles.length)];
+    // 3. Set target shape (unrotated base blocks colorized appropriately)
+    const baseBlocks = colorizeBlocks(BASE_SHAPES[shapeName], numColors, Colors);
+    setTargetShape(baseBlocks);
 
-    // 3. Build variants list
-    const variants = [];
-    const correctVariant = {
-      blocks: rotateBlocks(coloredBlocks, correctAngle),
-      angle: correctAngle,
-      isCorrect: true,
-      isMirror: false,
-    };
-    variants.push(correctVariant);
-
-    // Distractor 1: Mirror image (horizontal flip)
-    if (config.mirrorsIncluded) {
-      const mirrorAngle = angles[Math.floor(Math.random() * angles.length)];
-      const mirrored = rotateBlocks(mirrorBlocks(coloredBlocks), mirrorAngle);
-      variants.push({
-        blocks: mirrored,
-        angle: mirrorAngle,
-        isCorrect: false,
-        isMirror: true,
-      });
-    }
-
-    // Distractor 2: Different rotation angle or different shape
-    const otherAngles = angles.filter((a) => a !== correctAngle);
-    const distractorAngle = otherAngles.length ? otherAngles[Math.floor(Math.random() * otherAngles.length)] : 270;
-    variants.push({
-      blocks: rotateBlocks(coloredBlocks, distractorAngle),
-      angle: distractorAngle,
-      isCorrect: false,
-      isMirror: false,
-    });
-
-    // Distractor 3: Different shape or angle
-    if (variants.length < config.variants) {
-      const remainingAngle = (correctAngle + 180) % 360;
-      variants.push({
-        blocks: rotateBlocks(coloredBlocks, remainingAngle),
-        angle: remainingAngle,
-        isCorrect: false,
-        isMirror: false,
-      });
-    }
-
-    // Shuffle variants
-    const shuffled = variants.sort(() => Math.random() - 0.5);
-    setVariantsList(shuffled);
-
-    // Find correct index
-    const correctIdx = shuffled.findIndex((v) => v.isCorrect);
-    setCorrectVariantIndex(correctIdx);
+    // 4. Update variants list and correct variant index
+    setVariantsList(roundData.candidates);
+    setCorrectVariantIndex(roundData.correctIndex);
 
     roundStartTimeRef.current = Date.now();
 
-    // 4. Response window timeout limit
+    // 5. Response window timeout limit
     const responseTimeout = setTimeout(() => {
       if (!isComponentActive.current || hasAnsweredRef.current) return;
       handleAnswer(-1); // Timeout
@@ -203,7 +326,6 @@ export default function PatternFold({ level, isActive, onRoundComplete, Colors }
     setRoundPhase('feedback');
 
     // Visual rotation animation (300ms easing cubic)
-    // Animates target from 0 to correctAngle to kinetically line up blocks!
     const correctAngleVal = variantsList[correctVariantIndex]?.angle || 90;
     
     Animated.timing(rotateAnim, {
@@ -219,6 +341,23 @@ export default function PatternFold({ level, isActive, onRoundComplete, Colors }
       ? PATTERN_FOLD.SPEED_BONUS_POINTS
       : 0;
 
+    // Resolve color segment count by rotationType difficulty in level config
+    const numColors = config.rotationType === '2D' ? 1 : (config.rotationType === '2D_3D' ? 2 : 3);
+
+    // Detailed round telemetry log
+    const roundLogEntry = {
+      targetShape: targetShapeIdRef.current,
+      targetAngle: variantsList[correctVariantIndex]?.angle || 90,
+      selectedAngle: selectedVariant ? selectedVariant.angle : null,
+      foilTypeSelected: selectedVariant ? (selectedVariant.foilType || null) : null,
+      correct: isCorrect,
+      timedOut: selectedIdx === -1,
+      reactionTimeMs: selectedIdx === -1 ? timingConfig.responseWindow : responseTime,
+      eliteSpeed: isCorrect && responseTime <= timingConfig.responseWindow * PATTERN_FOLD.SPEED_BONUS_THRESHOLD,
+      level: level,
+      colorSegments: numColors
+    };
+
     // Invoke runner callback
     onRoundComplete({
       isCorrect,
@@ -229,6 +368,8 @@ export default function PatternFold({ level, isActive, onRoundComplete, Colors }
       },
       metrics: {
         isMirrorError,
+        reactionTimeMs: responseTime,
+        roundLogEntry,
       },
     });
 

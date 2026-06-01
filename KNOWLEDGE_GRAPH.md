@@ -25,7 +25,7 @@
 | Navigation | React Navigation (Stack + Bottom Tabs) | v6 |
 | State | React Context + useReducer (sliced) | — |
 | Persistence | AsyncStorage | 2.2.0 |
-| Animations | React Native Animated API (native driver) | — |
+| Animations | React Native Animated API + Reanimated | Reanimated ~3.16.1 |
 | UI Icons | lucide-react-native | ^1.16.0 |
 | SVG | react-native-svg | 15.12.1 |
 | Blur | expo-blur (BlurView) | ~15.0.8 |
@@ -112,71 +112,60 @@ cognify/
     │   │   ├── DomainTile.js          # Domain score + trend tile (HomeScreen grid)
     │   │   ├── InsightCard.js         # Insight card (resolves domain colours internally)
     │   │   ├── WorkoutCard.js         # Today's workout summary card
-    │   │   ├── CheckinCard.js         # Sleep/activity/mood check-in card
-    │   │   ├── ExerciseCard.js        # Exercise card (4-row grid: pill+dots, name, desc, duration)
-    │   │   ├── SectionHeader.js       # Row label with optional "see all" action
-    │   │   ├── PillButton.js          # Branded rounded CTA button (primary/secondary/ghost)
-    │   │   ├── ProjectionGraph.js     # 30-day score projection SVG graph
+    │   │   ├── ConfirmModal.js
+    │   │   ├── DomainTile.js
+    │   │   ├── InsightCard.js
+    │   │   ├── WorkoutCard.js
+    │   │   ├── CheckinCard.js
+    │   │   ├── ExerciseCard.js
+    │   │   ├── SectionHeader.js
+    │   │   ├── PillButton.js
+    │   │   ├── ProjectionGraph.js
     │   │   ├── ScoreRing.js
     │   │   ├── DomainRadar.js
     │   │   └── MoodShapes.js
     │   ├── motion/
     │   │   └── Motion.js              # TouchableScale + FadeInUp animation primitives
     │   └── error/
-    │       └── ErrorBoundary.js       # Class-based error boundary with retry UI
+    │       └── ErrorBoundary.js
     ├── features/
     │   ├── home/
     │   │   └── hooks/
-    │   │       ├── useGreeting.js     # Time-of-day greeting string
-    │   │       └── useCheckins.js     # Pending check-ins + 6h persisted dismiss cooldowns
+    │   │       ├── useGreeting.js
+    │   │       └── useCheckins.js
     │   ├── insights/
     │   │   └── hooks/
-    │   │       └── useInsights.js     # Derives insights data from app state
+    │   │       └── useInsights.js
     │   ├── profile/
     │   │   └── hooks/
-    │   │       └── useProfileStats.js # totalSessions, avgScore, streakDays
+    │   │       └── useProfileStats.js
     │   └── train/
     │       ├── components/            # Train-specific shared UI components
     │       │   ├── ScoreDisplay.js    # Running score + float-up +X deltas + "pts" label
-    │       │   ├── SessionTimerBar.js # Draining amber timer bar (full→empty, right→left)
-    │       │   └── StreakBadge.js     # ×N multiplier badge (animated scale-in)
+    │       │   ├── SessionTimerBar.js # Draining amber timer bar
+    │       │   ├── StreakBadge.js     # ×N multiplier badge
+    │       │   ├── SpeedBonusCounter.js # Counts elite speed rounds
+    │       │   ├── SpatialEfficiencyBadge.js # Renders composite spatial efficiency score and trend
+    │       │   ├── AdaptiveBanner.js  # Prompts for adaptive level adjustment suggestions
+    │       │   ├── AngleAccuracyStrip.js # Renders horizontal bars for 90/180/270 angle accuracy
+    │       │   ├── FoilBreakdownCard.js # Displays breakdown of errors (mirror, angle, chirality)
+    │       │   ├── InsightCard.js     # Displays qualitative diagnostic insights for patterns
+    │       │   ├── SpatialSparkline.js # Bezier line chart plotting historical spatial efficiency
+    │       │   ├── AngleRadarChart.js # Concentric circle radar mapping angle accuracies
+    │       │   └── MirrorTrapTrendLine.js # Line graph tracking longitudinal mirror error reduction
     │       ├── engine/                # Stateless/pure game engine hooks
-    │       │   ├── useSessionTimer.js  # Drift-free 60s active-stimulus timer, 2-pause limit
-    │       │   ├── useAdaptiveLadder.js# Difficulty staircase: 3 correct→up, 2 miss→down
-    │       │   ├── useStreakMultiplier.js# Streak multipliers: ×1.1/×1.25/×1.5
-    │       │   └── scoring.js         # calculateRoundScore, calculateSessionScore,
-    │       │                          #   updateDomainScore, normaliseSessionScore,
-    │       │                          #   normaliseFlashSortSessionScore
     │       ├── hooks/
-    │       │   ├── useExerciseFilter.js # Domain filter state + filtered exercise list
-    │       │   └── useSessionEngine.js  # Legacy session engine (unused by new games)
     │       ├── games/
-    │       │   ├── SignalChain.js      # Barrel → ./SignalChain/index.js
-    │       │   ├── FlashSort.js        # Barrel → ./FlashSort/index.js
-    │       │   ├── LighthouseWatch.js  # Monolithic (sustained attention — self-contained)
-    │       │   ├── ContextSwitch.js    # Monolithic (executive function — self-contained)
-    │       │   ├── WordWeave.js        # Monolithic (verbal reasoning — self-contained)
-    │       │   ├── PatternFold.js      # Monolithic (spatial cognition — self-contained)
-    │       │   ├── SignalChain/        # Modular working memory game
-    │       │   │   ├── index.js              # Main orchestrator (watching/recall/feedback phases)
-    │       │   │   ├── useSignalChainEngine.js# Sequence generation, tap tracking, round scoring
-    │       │   │   ├── SignalChainGrid.js     # 3x3/4x4/5x5 node grid renderer
-    │       │   │   ├── SignalChainNode.js     # Tactile node: pulse, glow, score delta float-up
-    │       │   │   ├── SignalChainFeedback.js # End-of-round score +pts float animation
-    │       │   │   ├── RoundIndicator.js      # "round N · N nodes" label
-    │       │   │   └── ResponseWindowBar.js   # Per-round deadline bar (drains right→left)
-    │       │   └── FlashSort/          # Modular processing speed game
-    │       │       ├── index.js              # Main orchestrator: split-screen layout, all phases
-    │       │       ├── useFlashSortEngine.js  # Shape selection, distractor config, round scoring
-    │       │       ├── FlashSortShape.js      # SVG shape: circle/ellipse/square/rect + stripes
-    │       │       ├── FlashSortFixation.js   # 24×24pt crosshair fixation point
-    │       │       ├── FlashSortFeedback.js   # Feedback phase: colored shape + caption labels
-    │       │       └── FlashSortTapZones.js   # Full-screen invisible tap+swipe capture
+    │       │   ├── SignalChain.js
+    │       │   ├── FlashSort.js
+    │       │   ├── LighthouseWatch.js
+    │       │   ├── ContextSwitch.js
+    │       │   ├── WordWeave.js
+    │       │   ├── PatternFold.js
+    │       │   ├── patternFoldAnalytics.js # Spatial efficiency formulas, foil breakdowns, cognitive patterns
+    │       │   ├── SignalChain/
+    │       │   └── FlashSort/
     │       └── screens/
-    │           ├── TrainScreen.js         # Exercise browser: filter pills, workout banner, card grid
-    │           ├── ActiveSessionScreen.js # Session orchestrator: intro/countdown/playing/paused/complete
-    │           ├── SessionResultScreen.js # Post-session results dashboard
-    │           ├── FlashSortGame.js       # LEGACY — unused, superseded by FlashSort/ module
     │           ├── SequenceRecallGame.js  # LEGACY — unused, superseded by SignalChain/ module
     │           └── WordMatchGame.js       # LEGACY — unused
     └── screens/                   # Legacy screen locations
@@ -256,6 +245,7 @@ dispatch(completeWorkout({ domain: 'speed', sessionScore: 740 }));
 ```
 RootNavigator (context-driven)
 ├── OnboardingNavigator (Stack) — shown when onboardingComplete === false
+│   ├── Login           → LoginScreen.js (Smartphone mockup, dynamic scattered mascots)
 │   ├── Welcome         → WelcomeScreen.js
 │   ├── Intent          → IntentScreen.js
 │   ├── QuickProfile    → QuickProfileScreen.js
@@ -264,6 +254,7 @@ RootNavigator (context-driven)
 │   ├── Processing      → ProcessingScreen
 │   ├── Results         → ResultsScreen
 │   ├── Projection      → ProjectionScreen.js
+│   ├── NotificationOptIn → NotificationOptInScreen.js
 │   └── MainApp         → switches to AppStackNavigator
 └── AppStackNavigator (Stack, gestureEnabled: false) — shown when onboarding complete
     ├── MainTabs (Bottom Tab Navigator — iOS glass BlurView)
@@ -620,13 +611,29 @@ When `isComplete` fires: fades play area → navigates to `SessionResult` with:
 ### Game 6 — Pattern Fold (Spatial Cognition, `#FF7DB4`)
 **File:** `src/features/train/games/PatternFold.js` (monolithic)
 
-**Mechanic:** Match a 3×3 block pattern to its correct rotated variant (ignore mirror distractors). Mirror errors tracked separately.
+**Mechanic:** Match a 3×3 block pattern to its correct rotated variant (ignore mirror distractors). Tracks mirror, angle, and chirality errors separately.
 
 **Animation:** 300ms cubic-out rotation alignment animation on response.
 
+### Spatial Cognition Analytics (`src/features/train/games/patternFoldAnalytics.js`)
+* **Composite Spatial Efficiency Index (SE)**: Calculates a robust cognitive performance metric weighting accuracy (70%) and reaction speed (30%):
+  $$SE = (\text{Accuracy} \times 0.7 + \text{SpeedScore} \times 0.3) \times 100$$
+  where $\text{SpeedScore} = 1 - (\text{ReactionTime} / \text{ResponseWindow})$.
+* **Longitudinal Cognitive Pattern Classifiers**:
+  - `MIRROR_TRAP_PRONE`: FOIL error attribution exhibits $>50\%$ mirror outline mismatches (matching contours before checking orientation).
+  - `ANGLE_270_WEAK`: Brain rotates clockwise faster than counter-clockwise (accuracy at 270° is $<65\%$ while 90°/180° accuracy is $>80\%$).
+  - `SPEED_ACCURACY_TRADEOFF`: Fast reaction times with high error rate (elite speed rate $>40\%$, accuracy $<70\%$).
+  - `DELIBERATE_BUT_SLOW`: Cautious, slow, precise strategy (accuracy $>85\%$, elite speed count $<10\%$).
+  - `CHIRALITY_BLIND`: Frequently confused by structural chirality (mismatching internal block orientation, chirality error rate $>30\%$).
+  - `LEVEL_COLOR_STRUGGLE`: Multi-color segments disrupt spatial reasoning (accuracy drops $>20\%$ when color anchors are present).
+  - `SPATIAL_IMPROVEMENT`: Long-term growth (Composite SE index increases by $>15\%$ compared to historical baselines).
+* **Adaptive Difficulty Evaluator**:
+  - **Level Up**: Recommends incrementing level if last 3 sessions show $>80\%$ Spatial Efficiency and $<20\%$ Mirror error rates.
+  - **Level Down**: Recommends decrementing level if last 2 sessions drop to $<45\%$ Spatial Efficiency or exhibit $>60\%$ Mirror error rates.
+
 ---
 
-## 11. Session Result Screen (`SessionResultScreen.js`)
+## 11. Session Result Screen (`SessionResultScreen.js` & `PatternFoldResults.js`)
 
 Post-session results dashboard navigated to from `ActiveSessionScreen` upon completion.
 
@@ -641,7 +648,22 @@ Post-session results dashboard navigated to from `ActiveSessionScreen` upon comp
 | Flash Sort | Mean reaction time, fastest RT, accuracy, rounds, difficulty, benchmark callout |
 | Lighthouse Watch | Hit rate, false alarm rate, misses |
 | Context Switch | Switch cost (ms) |
-| Pattern Fold | Mirror errors |
+| Pattern Fold | Bespoke spatial summary, angle accuracies, error foil breakdown, and cognitive findings dashboard |
+
+### Spatial Cognition Dashboard (`PatternFoldResults.js`)
+Pattern Fold utilizes a bespoke double-tabbed high-fidelity diagnostics dashboard:
+* **Session Summary Tab**:
+  - Dynamic `SpeedBonusCounter` displaying counts of elite speed rounds.
+  - Large color-changing `SpatialEfficiencyBadge` showing current session efficiency and delta changes.
+  - `AngleAccuracyStrip` plotting horizontal progress bars for 90°/180°/270° accuracies.
+  - `FoilBreakdownCard` displaying detailed vertical percentage charts for Mirror, Angle, and Chirality error attribution.
+  - `InsightCard` mapping active longitudinal cognitive patterns to clear, descriptive training advice.
+  - `AdaptiveBanner` allowing the user to dynamically accept or dismiss recommended level changes.
+* **Progress & Trends Tab**:
+  - `SpatialSparkline`: Renders a curved, gradient-shaded Bezier sparkline showing historical SE scores over the last 10 sessions.
+  - `AngleRadarChart`: Plots concentric, three-axis circular radar structures mapping historical spatial rotation profiles.
+  - `MirrorTrapTrendLine`: A line graph charting the reduction rate of mirror outline errors over time.
+  - **Session History List**: An expandable log listing all historical attempts, mapping levels, timestamps, scores, and expandable diagnostics sub-panels showing error-rate breakdowns and detected cognitive patterns.
 
 **Workout flow integration:**
 - Daily workout: primary CTA = "next exercise" (loads next in `remainingExercises` stack)
@@ -720,8 +742,31 @@ Analogy pairs for WordWeave verbal game. Used by `WordWeave.js`.
 
 ## 14. Screen-by-Screen Reference
 
+### LoginScreen
+The primary authentication gateway inspired by the premium Headspace visual language:
+- **Canvas Design**: Wrapped inside a solid yellow canvas (`#FFC500`) with a curved vector bottom divider that merges organically into the onboarding flow.
+- **Smartphone Device Mockup**: Features a centered white smartphone mockup container that acts as the focal viewport.
+- **Dynamic Scattered Mascots**: A winking `DynamicFlame` mascot floats, breathes, and scales inside the mockup screen, while 7 other high-fidelity mascots are scattered in the yellow sky.
+- **Interactive Leaps**: Mascots perform organic choreographed leaps on mount. The cursive Cognify handwriting signature was removed to achieve instant loading.
+- **Skip & Replay Controls**:
+  - An absolute skip button appears in the corner (AsyncStorage-gated, shown on first launch).
+  - A hidden replay/debug button in the layout enables manual re-triggering of the entrance choreography.
+- **Reduced Motion Support**: Checks `AccessibilityInfo` to completely disable transitions and snap all animations instantly to ready.
+
+### LoginForm
+Staggered, highly tactile input workflow positioned inside the smartphone mockup container:
+- **Phase State Machine**: Manages three progressive login phases:
+  1. `'entry'`: Large primary CTAs to "log in with email" or "use single sign-on".
+  2. `'sso'`: Google and Apple authentication buttons.
+  3. `'email'`: Traditional email, password input fields, and submit CTAs.
+- **Premium Micro-interactions**:
+  - Checked checkboxes scale dynamically.
+  - Fully integrated active haptics on selection.
+  - Custom Back buttons that fade and shift views gracefully.
+  - Strict touch isolation: uses `display` gating (`display: formPhase === 'active' ? 'flex' : 'none'`) to prevent hidden forms from intercepting screen gestures.
+
 ### WelcomeScreen
-Mascot splash. Single subtle cloud. Taglines: "stay sharp. think clearly. age well." Dev bypass button (red-accented) to skip onboarding.
+Mascot splash. Single subtle cloud. Taglines: "stay sharp. think clearly. age well." Dev bypass button (red-accented) to skip onboarding. Navigates to Intent screen.
 
 ### IntentScreen
 4-intent 2×2 card grid. Border-only selection. Auto-navigates after 500ms delay (premium pacing). Haptic on select.
@@ -736,7 +781,13 @@ Multi-step: age range → sleep → activity level.
 - `ResultsScreen` — animated baseline score reveal
 
 ### ProjectionScreen
-Post-results projection / brain age screen. Navigates to MainApp on completion.
+Post-results projection / brain age screen. Navigates to NotificationOptInScreen.
+
+### NotificationOptInScreen
+A dark, peaceful Headspace Navy (`#1D2340`) page designed to maximize user prompt conversions:
+- **Top Graphic Zone**: Displays a floating, breathing Crescent Moon mascot (`DynamicMoon`) centered in a dark night-sky gradient.
+- **Value Proposition**: Clear lowercase headline ("protect your training streak") prompting users to allow daily notifications to build robust training habits.
+- **Expo Haptics & Alerts**: Integrates tactile medium impact haptics, triggering an native iOS/Android Alert confirm dialogue, and dispatches `COMPLETE_ONBOARDING` on success.
 
 ### HomeScreen
 - Sticky header: snaps from 60→80px at scroll offset.
@@ -870,6 +921,21 @@ Presents a premium full-width card entry point (`CheckinCard.js`) that slides up
 <FadeInUp delay={200} distance={20} duration={500} style={...}><View /></FadeInUp>
 ```
 
+### `MascotCharacters` (`src/shared/components/MascotCharacters.js`)
+An authoritative, feature-agnostic library containing 9 dynamic, multi-layered SVG mascot characters.
+* **`useMascotLoops` Hook**: Runs a dual-axis breathing scale loop (`1.0` to `1.08` over 1200ms) and out-of-phase organic swaying loops (`-1` to `1` over 1600ms) driven natively. 
+* **Accessibility Integration**: Correctly listens to system-level `AccessibilityInfo` reduced motion flags. Loops are automatically registered, paused, and cleared on motion changes.
+* **The 9 Mascot Components**:
+  1. `DynamicStar` (Energy Star: gold/coral/cream star with happy face, size=112)
+  2. `DynamicMoon` (Sleepy Moon: crescent moon crescent layers with sleeping winks, size=112)
+  3. `DynamicBrain` (Smart Brain: lavender/green layers with a smart wink, size=112)
+  4. `DynamicSun` (Happy Sun: pink/gold layers with an open happy smile, size=112)
+  5. `DynamicChainLink` (Chain Link: blue nodes with cute nerdy glasses, size=112)
+  6. `DynamicFlash` (Speedy Spark: rotated lightning bolt with determined winks, size=112)
+  7. `DynamicLighthouse` (Lighthouse: vertical green tower with light-green searchlight beams, size=112)
+  8. `DynamicWordWeave` (Yarn Sphere: orange verbal sphere with letter glyphs and nerdy glasses, size=112)
+  9. `DynamicFlame` (Dynamic Flame: three-layered flame with gasping mouth, size=112)
+
 ---
 
 ## 17. Architectural Rules (Do Not Break)
@@ -885,6 +951,10 @@ Presents a premium full-width card entry point (`CheckinCard.js`) that slides up
 9. **Bottom tab safe area.** Every main screen: `paddingTop: insets.top` + `height: 100` bottom spacer.
 10. **Game constants live in `gameConfig.js`.** Never hardcode timing, scoring, or level params in game files.
 11. **Legacy files.** `FlashSortGame.js`, `SequenceRecallGame.js`, `WordMatchGame.js` in `features/train/screens/` are unused. The canonical game code is in `features/train/games/`.
+12. **SVG Direct Prop Animating Restriction.** SVG properties (such as `strokeOpacity`, `fillOpacity`, or coordinate strings) cannot be interpolated or driven on the Native Thread. Always use `useNativeDriver: false` inside SVG-heavy custom components (like `CognifyWordmark.js`) to guarantee crash-free updates on the JS thread.
+13. **Native Thread Value Snapping Rule.** Calling `.setValue()` on an `Animated.Value` that is registered or driven on the Native Thread (`useNativeDriver: true`) throws a fatal assertion. To safely snap or reset native-driven values, dispatch a zero-duration timing animation:
+    `Animated.timing(node, { toValue: val, duration: 0, useNativeDriver: true }).start()`
+14. **Stagger Display Gating.** When building multi-phase progressive layouts (such as `LoginForm.js`), ensure all hidden options use `display: formPhase === active ? 'flex' : 'none'` rather than just hiding via opacity or scale. This prevents hidden/staggered elements from intercepting touch gestures on the screen layout stack.
 
 ---
 
@@ -895,6 +965,9 @@ Presents a premium full-width card entry point (`CheckinCard.js`) that slides up
 - **Eager Evaluation & Modals in Stack ("Play Again" Crash)**: When navigating from a result dashboard back to the active session modal, React Navigation pops the stack and re-uses the active session screen. During re-rendering, `ContextSwitch` can render with `stimulus` initially reset to `null`. Simple short-circuiting (`stimulus && (...)`) can cause Babel-transpiled eager-evaluation crashes on `.shape` access. Using an explicit ternary condition `stimulus ? ( ... ) : false` combined with optional-chaining (`stimulus?.shape`) completely shields the logic.
 - **Pearson Zero-Variance Guard**: If user scored logs or habits are completely flat (e.g., repeating the same rating), the standard deviation resolves to zero. During Pearson calculations, this standard deviation product in the denominator produces a division-by-zero (`NaN`) crash. A strict boundary standard deviation fallback of `0.0001` serves as an absolute safeguard.
 - **Rational Inverse CDF Perfect-Score Bounds**: In Signal Detection Theory ($d'$ calculations), standard CDF inverse calculations produce infinite boundaries for perfect boundary cases ($100\%$ hit rate or $0\%$ false alarm rate). Applying continuous corrections ($\pm 0.5 / n$) prevents mathematical breakdown and runtime crashes.
+- **SVG Animation Prop Assertion Crash**: Directly driving `strokeOpacity` or path transitions via `useNativeDriver: true` throws a native bridge error. Resolve this by switching components with coordinate/opacity path animations to `useNativeDriver: false` entirely.
+- **Native `.setValue()` Thread Violation**: Trying to force-reset active native-driven nodes via `.setValue()` from the JS thread triggers a fatal React Native layout assertion. Drive snaps with `duration: 0` timing animations on the native driver to secure thread safety.
+- **Hidden Input Touch Interception**: Floating or absolutely positioned buttons hidden via `opacity: 0` can still block touch events on active elements behind them. Apply `display: 'none'` to guarantee proper touch dispatching on all staggered view states.
 - **`getDomains(Colors)` per-render.** Cheap but could be memoized at module level if needed.
 - **`expo-blur BlurView`** degrades gracefully on Android to solid `backgroundColor`.
 - **AssessmentScreens.js** is ~800 lines — candidate for splitting into feature modules.

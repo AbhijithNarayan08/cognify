@@ -21,8 +21,7 @@ export default function ProjectionScreen({ navigation, route }) {
 
   const handleStart = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    dispatch({ type: 'COMPLETE_ONBOARDING', payload: { cognitiveScore } });
-    navigation.replace('MainApp');
+    navigation.navigate('NotificationOptIn', { cognitiveScore });
   };
 
   // Dimensions of SVG

@@ -24,6 +24,7 @@ import StreakBadge from '../components/StreakBadge';
 import ScoreDisplay from '../components/ScoreDisplay';
 import { exerciseService } from '../../../services/exerciseService';
 import { ConfirmModal } from '../../../shared/components/ConfirmModal';
+import { DynamicChainLink, DynamicStar, DynamicBrain, DynamicSun, DynamicFlash, DynamicLighthouse, DynamicWordWeave } from '../../../shared/components/MascotCharacters';
 
 // Dynamic Games imports
 import SignalChain from '../games/SignalChain';
@@ -32,6 +33,8 @@ import LighthouseWatch from '../games/LighthouseWatch';
 import ContextSwitch from '../games/ContextSwitch';
 import WordWeave from '../games/WordWeave';
 import PatternFold from '../games/PatternFold';
+import { computeSpatialEfficiency, computeAngleAccuracy, computeFoilBreakdown, detectPatterns, evaluateAdaptiveDifficulty } from '../games/patternFoldAnalytics';
+import { PATTERN_FOLD } from '../../../constants/gameConfig';
 
 const GAME_COMPONENTS = {
   'signal-chain': SignalChain,
@@ -119,14 +122,24 @@ export function ActiveSessionScreen({ navigation, route }) {
   const DOMAINS = getDomains(Colors);
   const styles = useMemo(() => getStyles(Colors), [Colors]);
   const { dispatch } = useApp();
-
   const singleExercise = route?.params?.singleExercise;
   const remainingExercises = route?.params?.remainingExercises;
+
+  // Ref to hold the latest parameters synchronously to avoid closure traps in the focus listener
+  const paramsRef = useRef({ singleExercise, remainingExercises });
+  paramsRef.current = { singleExercise, remainingExercises };
   
   // Resolve exercise to play
   const [exercises, setExercises] = useState(
     singleExercise ? [singleExercise] : (remainingExercises || null)
   );
+
+  // Synchronously adjust state during the render pass if parameters change
+  const [prevParams, setPrevParams] = useState({ singleExercise, remainingExercises });
+  if (singleExercise !== prevParams.singleExercise || remainingExercises !== prevParams.remainingExercises) {
+    setPrevParams({ singleExercise, remainingExercises });
+    setExercises(singleExercise ? [singleExercise] : (remainingExercises || null));
+  }
 
   // Shared Engine Hooks
   const {
@@ -175,36 +188,18 @@ export function ActiveSessionScreen({ navigation, route }) {
   const introFade = useRef(new Animated.Value(1)).current;
   const playAreaFade = useRef(new Animated.Value(1)).current;
 
-  // React Navigation Focus Listener to reset all states on Play Again/Re-focus
+  // On mount, if no exercises are passed via params, fetch the daily workout
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      if (singleExercise) {
-        setExercises([singleExercise]);
-      } else if (remainingExercises) {
-        setExercises(remainingExercises);
-      } else {
-        exerciseService.getDailyWorkout().then(workout => {
+    if (!exercises || exercises.length === 0) {
+      let active = true;
+      exerciseService.getDailyWorkout().then(workout => {
+        if (active && workout && workout.length > 0) {
           setExercises(workout);
-        });
-      }
-
-      resetTimer();
-      resetStreak();
-      setPhase('intro');
-      setCountdownVal(3);
-      setRoundScores([]);
-      setRunningScore(0);
-      setVisualScore(0);
-      setRoundsCompleted(0);
-      setCorrectRounds(0);
-      setMaxStreak(0);
-      setGameMetrics({});
-      setShowExitConfirm(false);
-      playAreaFade.setValue(1);
-    });
-
-    return unsubscribe;
-  }, [navigation, singleExercise, remainingExercises]);
+        }
+      });
+      return () => { active = false; };
+    }
+  }, []);
 
   const currentEx = exercises?.[0] || null;
   const domain = DOMAINS.find(d => d.id === currentEx?.domain);
@@ -329,6 +324,78 @@ export function ActiveSessionScreen({ navigation, route }) {
             });
           }
 
+          // Save complete session record for Pattern Fold
+          if (currentEx.id === 'pattern-fold') {
+            const rounds = gameMetrics.rounds || [];
+            const timingConfig = PATTERN_FOLD.timingLevels[currentLevel] || PATTERN_FOLD.timingLevels[1];
+            const responseWindow = timingConfig.responseWindow;
+            const computedEfficiency = computeSpatialEfficiency(rounds, responseWindow) || 0;
+            const angleAccuracy = computeAngleAccuracy(rounds);
+            const foilBreakdown = computeFoilBreakdown(rounds);
+            const eliteSpeedCount = rounds.filter(r => r.eliteSpeed).length;
+            const eliteSpeedRate = rounds.length > 0 ? eliteSpeedCount / rounds.length : 0;
+            const avgReactionTimeMs = rounds.length > 0
+              ? Math.round(rounds.reduce((s, r) => s + r.reactionTimeMs, 0) / rounds.length)
+              : 0;
+
+            const newRecord = {
+              sessionId: Math.random().toString(36).substring(2, 11),
+              timestamp: new Date().toISOString(),
+              level: currentLevel,
+              totalRounds: rounds.length,
+              completedRounds: rounds.length,
+              abandoned: rounds.length < 6,
+              score: finalScore,
+              spatialEfficiency: computedEfficiency,
+              accuracy: accuracyPct,
+              eliteSpeedCount,
+              eliteSpeedRate,
+              avgReactionTimeMs,
+              angleAccuracy,
+              foilBreakdown,
+              rounds,
+              patternIds: []
+            };
+
+            // Augment gameMetrics for immediate navigation use
+            gameMetrics.spatialEfficiency = computedEfficiency;
+            gameMetrics.angleAccuracy = angleAccuracy;
+            gameMetrics.foilBreakdown = foilBreakdown;
+            gameMetrics.eliteSpeedCount = eliteSpeedCount;
+            gameMetrics.eliteSpeedRate = eliteSpeedRate;
+            gameMetrics.avgReactionTimeMs = avgReactionTimeMs;
+            gameMetrics.rounds = rounds;
+
+            if (rounds.length >= 6) {
+              AsyncStorage.getItem('cognify:patternfoldsessions').then((storedStr) => {
+                let sessions = [];
+                if (storedStr) {
+                  try { sessions = JSON.parse(storedStr); } catch (e) { sessions = []; }
+                }
+
+                // Detect patterns
+                const patterns = detectPatterns(newRecord, sessions.slice(0, 5));
+                newRecord.patternIds = patterns;
+                gameMetrics.patternIds = patterns;
+
+                // Evaluate adaptive difficulty
+                const adaptiveSuggestion = evaluateAdaptiveDifficulty([newRecord, ...sessions], currentLevel);
+                if (adaptiveSuggestion) {
+                  AsyncStorage.setItem('cognify:userPrefs:patternfold', JSON.stringify({
+                    lastLevel: currentLevel,
+                    adaptiveSuggestion
+                  }));
+                }
+
+                sessions.unshift(newRecord);
+                if (sessions.length > 100) {
+                  sessions = sessions.slice(0, 100);
+                }
+                AsyncStorage.setItem('cognify:patternfoldsessions', JSON.stringify(sessions));
+              });
+            }
+          }
+
           // Save complete session record for Context Switch
           if (currentEx.id === 'context-switch') {
             const rounds = gameMetrics.rounds || [];
@@ -415,7 +482,7 @@ export function ActiveSessionScreen({ navigation, route }) {
             }));
 
             // Navigate to shared SessionResultScreen
-            navigation.navigate('SessionResult', {
+            navigation.replace('SessionResult', {
               exercise: currentEx,
               score: finalScore,
               prevScore: prevScore,
@@ -465,7 +532,7 @@ export function ActiveSessionScreen({ navigation, route }) {
             sessionScore: domainScoreUpdate,
           }));
 
-          navigation.navigate('SessionResult', {
+          navigation.replace('SessionResult', {
             exercise: currentEx,
             score: finalScore,
             prevScore: prevScore,
@@ -506,7 +573,7 @@ export function ActiveSessionScreen({ navigation, route }) {
             sessionScore: domainScoreUpdate,
           }));
 
-          navigation.navigate('SessionResult', {
+          navigation.replace('SessionResult', {
             exercise: currentEx,
             score: finalScore,
             prevScore: prevScore,
@@ -604,7 +671,7 @@ export function ActiveSessionScreen({ navigation, route }) {
             sessionScore: finalScore,
           }));
 
-          navigation.navigate('SessionResult', {
+          navigation.replace('SessionResult', {
             exercise: currentEx,
             score: finalScore,
             prevScore: prevScore,
@@ -706,7 +773,7 @@ export function ActiveSessionScreen({ navigation, route }) {
             sessionScore: finalScore,
           }));
 
-          navigation.navigate('SessionResult', {
+          navigation.replace('SessionResult', {
             exercise: currentEx,
             score: finalScore,
             prevScore: prevScore,
@@ -800,6 +867,24 @@ export function ActiveSessionScreen({ navigation, route }) {
     setRoundsCompleted((prev) => prev + 1);
 
     let roundScore = 0;
+
+    // Pattern Fold round log accretion
+    if (currentEx?.id === 'pattern-fold') {
+      setGameMetrics((prev) => {
+        const rounds = prev.rounds ? [...prev.rounds] : [];
+        if (metrics.roundLogEntry) {
+          rounds.push({
+            ...metrics.roundLogEntry,
+            roundIndex: roundsCompleted,
+          });
+        }
+        return {
+          ...prev,
+          rounds,
+          mirrorErrors: (prev.mirrorErrors || 0) + (metrics.isMirrorError ? 1 : 0),
+        };
+      });
+    }
 
     if (currentEx?.id === 'lighthouse-watch') {
       // Accumulate Lighthouse Watch metrics
@@ -1120,9 +1205,17 @@ export function ActiveSessionScreen({ navigation, route }) {
         <StatusBar barStyle="dark-content" />
 
         <View style={styles.introContent}>
-          {/* Centered Large Domain Icon */}
+          {/* Centered Large Domain Icon or Animated Mascot */}
           <View style={styles.iconContainer}>
-            {DomainIcon && <DomainIcon size={80} color={domain?.color.main} />}
+            {(() => {
+              if (currentEx.id === 'signal-chain') return <DynamicChainLink size={192} />;
+              if (currentEx.id === 'flash-sort') return <DynamicFlash size={192} />;
+              if (currentEx.id === 'lighthouse-watch') return <DynamicLighthouse size={192} />;
+              if (currentEx.id === 'context-switch') return <DynamicBrain size={192} />;
+              if (currentEx.id === 'pattern-fold') return <DynamicSun size={192} />;
+              if (currentEx.id === 'word-weave') return <DynamicWordWeave size={192} />;
+              return DomainIcon ? <DomainIcon size={80} color={domain?.color.main} /> : null;
+            })()}
           </View>
 
           {/* Zone 2 — Middle Area */}

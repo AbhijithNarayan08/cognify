@@ -1,29 +1,21 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import { BedDouble, Footprints, Smile, ChevronRight } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import { useThemeColors, Typography, Spacing, Radius, Shadow } from '../../theme';
 import { t } from '../../constants/useStrings';
+import { DynamicStar, DynamicMoon, DynamicSun } from './MascotCharacters';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const CHECKIN_CONFIGS = {
   sleep: {
     titleKey: 'home.checkin.sleep.title',
-    icon: BedDouble,
-    tintColor: '#3A6EEA',
-    tintBg: 'rgba(58, 110, 234, 0.08)',
   },
   activity: {
     titleKey: 'home.checkin.activity.title',
-    icon: Footprints,
-    tintColor: '#3DC27A',
-    tintBg: 'rgba(61, 194, 122, 0.08)',
   },
   mood: {
     titleKey: 'home.checkin.mood.title',
-    icon: Smile,
-    tintColor: '#FF7DB4',
-    tintBg: 'rgba(255, 125, 180, 0.08)',
   },
 };
 
@@ -38,8 +30,6 @@ export function CheckinCard({ type, onComplete }) {
   const config = CHECKIN_CONFIGS[type];
   if (!config) return null;
 
-  const Icon = config.icon;
-
   return (
     <TouchableOpacity
       style={[styles.card, Shadow.sm]}
@@ -47,9 +37,11 @@ export function CheckinCard({ type, onComplete }) {
       activeOpacity={0.9}
     >
       <View style={styles.cardContent}>
-        {/* Left Circular Icon Badge */}
-        <View style={[styles.iconBadge, { backgroundColor: config.tintBg }]}>
-          <Icon size={24} color={config.tintColor} strokeWidth={2.2} />
+        {/* Left Dynamic Mascot Character */}
+        <View style={styles.mascotWrapper}>
+          {type === 'sleep' && <DynamicMoon size={96} />}
+          {type === 'activity' && <DynamicStar size={96} />}
+          {type === 'mood' && <DynamicSun size={96} />}
         </View>
 
         {/* Center Informational Zone */}
@@ -79,12 +71,7 @@ const getStyles = (Colors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  iconBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+  mascotWrapper: {
     marginRight: Spacing[4],
   },
   textZone: {

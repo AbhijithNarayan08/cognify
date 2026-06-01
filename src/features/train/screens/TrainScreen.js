@@ -17,6 +17,7 @@ import { t } from '../../../constants/useStrings';
 import { exerciseService } from '../../../services/exerciseService';
 import { analytics } from '../../../services/analyticsService';
 import { GameHaptics } from '../../../utils/haptics';
+import { DynamicStar } from '../../../shared/components/MascotCharacters';
 
 const { width } = Dimensions.get('window');
 
@@ -48,6 +49,37 @@ export function TrainScreen({ navigation, route }) {
       navigation.setParams({ initialFilter: null });
     }
   }, [route?.params?.initialFilter]);
+
+  useEffect(() => {
+    const playAgainEx = route?.params?.playAgainExercise;
+    const nextEx = route?.params?.nextExercise;
+    const remainingEx = route?.params?.remainingExercises;
+
+    if (playAgainEx) {
+      // Clear parameters immediately to prevent loops on hot-reloading or back navigation
+      navigation.setParams({ playAgainExercise: null });
+
+      // Clean transition: navigate after a brief timeout to let the previous modal slide down completely
+      const timer = setTimeout(() => {
+        navigation.navigate('ActiveSession', {
+          singleExercise: playAgainEx,
+        });
+      }, 150);
+      return () => clearTimeout(timer);
+    } else if (nextEx) {
+      // Clear parameters immediately to prevent loops on hot-reloading or back navigation
+      navigation.setParams({ nextExercise: null, remainingExercises: null });
+
+      // Clean transition: navigate after a brief timeout to let the previous modal slide down completely
+      const timer = setTimeout(() => {
+        navigation.navigate('ActiveSession', {
+          singleExercise: nextEx,
+          remainingExercises: remainingEx,
+        });
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [route?.params?.playAgainExercise, route?.params?.nextExercise, route?.params?.remainingExercises]);
 
   useEffect(() => {
     let active = true;
@@ -160,7 +192,7 @@ export function TrainScreen({ navigation, route }) {
                     navigation.navigate('ActiveSession');
                   }}
                 >
-                  <View style={{ flex: 1 }}>
+                  <View style={{ flex: 1, paddingRight: Spacing[3] }}>
                     <Text style={styles.bannerLabel}>{t('train.todayWorkout')}</Text>
                     <Text style={styles.bannerTitle}>
                       {t('train.workoutStats', { count: dailyWorkout.length })}
@@ -179,6 +211,11 @@ export function TrainScreen({ navigation, route }) {
                       <Text style={styles.bannerButtonText}>start session</Text>
                       <ArrowRight size={16} color={Colors.textInverse} style={{ marginLeft: 6 }} />
                     </View>
+                  </View>
+                  
+                  {/* Right Side: Tactile animated Energy Star Mascot */}
+                  <View style={styles.bannerMascotContainer}>
+                    <DynamicStar size={168} />
                   </View>
                 </TouchableScale>
               </FadeInUp>
@@ -273,6 +310,11 @@ const getStyles = (Colors) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  bannerMascotContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: Spacing[2],
   },
   bannerLabel: {
     fontFamily: Typography.fontFamily.regular,

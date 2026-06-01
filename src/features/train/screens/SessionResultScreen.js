@@ -27,6 +27,7 @@ function getZScore(p) {
 
 import { useThemeColors, Typography, Spacing, Radius, Shadow, getDomains } from '../../../theme';
 import { t } from '../../../constants/useStrings';
+import PatternFoldResults from './PatternFoldResults';
 
 export default function SessionResultScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
@@ -201,21 +202,28 @@ export default function SessionResultScreen({ navigation, route }) {
 
   const handlePrimaryCTA = () => {
     if (remainingExercises && remainingExercises.length > 0) {
-      // Continue daily workout
-      navigation.navigate('ActiveSession', {
-        singleExercise: remainingExercises[0],
-        remainingExercises: remainingExercises.slice(1),
+      const nextEx = remainingExercises[0];
+      const nextRemaining = remainingExercises.slice(1);
+      
+      // Safely navigate back to the Train tab root with parameters for the next exercise.
+      // This closes the entire modal stack cleanly first.
+      navigation.navigate('TrainRoot', {
+        nextExercise: nextEx,
+        remainingExercises: nextRemaining,
       });
     } else {
-      // Return to main Train screen
+      // Return to main Train screen by popping the modal stack
       navigation.navigate('TrainRoot');
     }
   };
 
   const handleSecondaryCTA = () => {
-    // Play again restarts the same game
-    navigation.navigate('ActiveSession', {
-      singleExercise: exercise,
+    const exerciseToPlay = exercise;
+    
+    // Safely navigate back to the Train tab root with play again parameters.
+    // This closes the entire modal stack cleanly first.
+    navigation.navigate('TrainRoot', {
+      playAgainExercise: exerciseToPlay,
     });
   };
 
@@ -300,6 +308,23 @@ export default function SessionResultScreen({ navigation, route }) {
     if (meanRt <= 600) return "average response speed";
     return "keep training — speed improves quickly";
   };
+
+  if (exercise?.id === 'pattern-fold') {
+    return (
+      <PatternFoldResults
+        score={score}
+        roundsCompleted={roundsCompleted}
+        accuracy={accuracy}
+        longestStreak={longestStreak}
+        gameSpecificMetrics={gameSpecificMetrics}
+        Colors={Colors}
+        navigation={navigation}
+        remainingExercises={remainingExercises}
+        handlePrimaryCTA={handlePrimaryCTA}
+        handleSecondaryCTA={handleSecondaryCTA}
+      />
+    );
+  }
 
   if (exercise?.id === 'flash-sort') {
     const currentMean = gameSpecificMetrics.meanReactionTime || 0;

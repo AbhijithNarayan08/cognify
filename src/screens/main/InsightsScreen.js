@@ -15,6 +15,7 @@ import { FadeInUp, TouchableScale } from '../../components/Motion';
 import ProjectionGraph from '../../shared/components/ProjectionGraph';
 import DomainRadar from '../../shared/components/DomainRadar';
 import { SectionHeader } from '../../shared/components/SectionHeader';
+import { DynamicBrain } from '../../shared/components/MascotCharacters';
 import { InsightCard } from '../../shared/components/InsightCard';
 import { useInsights } from '../../features/insights/hooks/useInsights';
 import { calculateRegressionSlope, calculatePearson, getLifestyleRating } from '../../shared/utils/analytics';
@@ -1368,10 +1369,15 @@ export default function InsightsScreen({ navigation, route }) {
         {activeTab === 'brief' && (
           // Weekly Brief Redesign
           <View style={styles.briefContainer}>
-            <Text style={styles.briefDate}>
-              {weeklyInsights.dateRangeStr}
-            </Text>
-            <Text style={styles.briefHeadline}>{t('insights.weekInReview')}</Text>
+            <View style={styles.briefHeaderRow}>
+              <View style={styles.briefHeaderLeft}>
+                <Text style={styles.briefDate}>
+                  {weeklyInsights.dateRangeStr}
+                </Text>
+                <Text style={styles.briefHeadline}>{t('insights.weekInReview')}</Text>
+              </View>
+              <DynamicBrain size={160} />
+            </View>
 
             {/* ZONE 1: Summary & Training Consistency Chart */}
             <FadeInUp delay={0} style={[styles.card, Shadow.md]}>
@@ -1631,7 +1637,16 @@ const getStyles = (Colors) => StyleSheet.create({
   // Redesigned Brief Styles
   briefContainer: { paddingBottom: Spacing[6] },
   briefDate: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.body, color: Colors.brandPrimary, textTransform: 'lowercase', marginTop: Spacing[2] },
-  briefHeadline: { fontFamily: Typography.fontFamily.extraBold, fontSize: Typography.size.h1, color: Colors.textPrimary, marginBottom: Spacing[4] },
+  briefHeadline: { fontFamily: Typography.fontFamily.extraBold, fontSize: Typography.size.h1, color: Colors.textPrimary, marginBottom: 0 },
+  briefHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing[4],
+  },
+  briefHeaderLeft: {
+    flex: 1,
+  },
   calloutStack: {
     marginTop: Spacing[4],
     borderTopWidth: 1,

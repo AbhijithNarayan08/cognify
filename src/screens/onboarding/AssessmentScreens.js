@@ -201,12 +201,12 @@ const getIntroStyles = (Colors) => StyleSheet.create({
 // ─────────────────────────────────────────────────────────────
 
 const ASSESSMENT_TASKS = [
-  { domain: 'memory',    instructionKey: 'onboarding.assessment.task.memory',    type: 'sequence' },
-  { domain: 'speed',     instructionKey: 'onboarding.assessment.task.speed',     type: 'sort' },
-  { domain: 'attention', instructionKey: 'onboarding.assessment.task.attention',  type: 'vigilance' },
-  { domain: 'executive', instructionKey: 'onboarding.assessment.task.executive',  type: 'match' },
-  { domain: 'verbal',    instructionKey: 'onboarding.assessment.task.verbal',     type: 'analogy' },
-  { domain: 'spatial',   instructionKey: 'onboarding.assessment.task.spatial',    type: 'rotation' },
+  { domain: 'attention', instructionKey: 'onboarding.assessment.task.attention', type: 'vigilance' },
+  { domain: 'memory', instructionKey: 'onboarding.assessment.task.memory', type: 'working_memory' },
+  { domain: 'speed', instructionKey: 'onboarding.assessment.task.speed', type: 'processing_speed' },
+  { domain: 'executive', instructionKey: 'onboarding.assessment.task.executive', type: 'executive_function' },
+  { domain: 'verbal', instructionKey: 'onboarding.assessment.task.verbal', type: 'verbal_reasoning' },
+  { domain: 'spatial', instructionKey: 'onboarding.assessment.task.spatial', type: 'spatial_cognition' },
 ];
 
 const SORT_STIMULI = ['circle', 'square', 'circle', 'square', 'square', 'circle', 'square', 'circle'];
@@ -289,16 +289,30 @@ function OnboardingBlockGrid({ pattern, size = 60, Colors }) {
   );
 }
 
-export function AssessmentScreen({ navigation }) {
-  const [taskIndex, setTaskIndex] = useState(0);
-  const [scores, setScores] = useState({});
+export function AssessmentScreen({ route, navigation }) {
+  const { taskIndex = 0, scores: initialScores = {} } = route.params || {};
+  const [scores, setScores] = useState(initialScores);
+
+  // Sync scores if incoming route params change
+  useEffect(() => {
+    if (route.params?.scores) {
+      setScores(route.params.scores);
+    }
+  }, [route.params?.scores]);
+
   const [trialIndex, setTrialIndex] = useState(0);
   const progressAnim = useRef(new Animated.Value(0)).current;
+
+  const [timeLeft, setTimeLeft] = useState(30);
+  const timeIsUpRef = useRef(false);
+  const correctCountRef = useRef(0);
+  const totalRoundsRef = useRef(0);
 
   const attentionHitsRef = useRef(0);
 
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const pendingActionRef = useRef(null);
 
   useEffect(() => {
@@ -318,21 +332,42 @@ export function AssessmentScreen({ navigation }) {
   const task = ASSESSMENT_TASKS[taskIndex];
   const domain = DOMAINS.find(d => d.id === task.domain);
 
-  // Task Transitions
+  // Task Transitions & Timer Initialization
   useEffect(() => {
     setTrialIndex(0);
     attentionHitsRef.current = 0;
+    setTimeLeft(30);
+    timeIsUpRef.current = false;
+    correctCountRef.current = 0;
+    totalRoundsRef.current = 0;
+    setIsTransitioning(false);
 
     Animated.timing(progressAnim, {
       toValue: taskIndex / ASSESSMENT_TASKS.length,
       duration: 400,
       useNativeDriver: false,
     }).start();
-  }, [taskIndex]);
+
+    // 30-second countdown interval
+    const interval = setInterval(() => {
+      if (showExitConfirm) return; // Pause timer if exit confirmation is open
+      
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          timeIsUpRef.current = true;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [taskIndex, showExitConfirm]);
 
   const recordScore = (correct, total, reactionMs = 800) => {
     const domainId = task.domain;
-    const accuracy = correct / total;
+    const accuracy = total > 0 ? correct / total : 0.75;
     const speedBonus = Math.max(0, 1 - reactionMs / 2000);
     const raw = Math.round(480 + accuracy * 380 + speedBonus * 80 + Math.random() * 40);
     setScores(prev => ({ ...prev, [domainId]: Math.min(980, raw) }));
@@ -340,7 +375,7 @@ export function AssessmentScreen({ navigation }) {
 
   const nextTask = () => {
     if (taskIndex < ASSESSMENT_TASKS.length - 1) {
-      setTaskIndex(taskIndex + 1);
+      navigation.navigate('Intent', { taskIndex: taskIndex + 1, scores });
     } else {
       setIsFinishing(true);
       setTimeout(() => {
@@ -352,58 +387,32 @@ export function AssessmentScreen({ navigation }) {
   const handleGameRoundComplete = (result) => {
     const domainId = task.domain;
     
-    if (domainId === 'memory') {
-      // Memory (Signal Chain) ends after 1 full sequence round
-      const isCorrect = result.isCorrect;
-      recordScore(isCorrect ? 4 : 3, 4, 380);
-      setTimeout(nextTask, 1200); // Wait for the feedback pulse animation to complete!
-    } else if (domainId === 'speed') {
-      // Speed (Flash Sort) runs for 8 trials
-      const isCorrect = result.isCorrect;
-      const next = trialIndex + 1;
-      setTrialIndex(next);
-      if (next >= 8) {
-        recordScore(isCorrect ? 7 : 5, 8, 450);
-        setTimeout(nextTask, 1000);
-      }
-    } else if (domainId === 'attention') {
-      // Attention (Lighthouse Watch) runs for 10 trials
+    // Tally correct counts
+    if (domainId === 'attention') {
       if (result.metrics?.isHit) {
         attentionHitsRef.current++;
+        correctCountRef.current++;
       }
-      const next = trialIndex + 1;
-      setTrialIndex(next);
-      if (next >= 10) {
-        recordScore(attentionHitsRef.current, 10, 420);
-        setTimeout(nextTask, 1000);
+    } else {
+      if (result.isCorrect) {
+        correctCountRef.current++;
       }
-    } else if (domainId === 'executive') {
-      // Executive (Context Switch) runs for 6 trials
-      const isCorrect = result.isCorrect;
-      const next = trialIndex + 1;
-      setTrialIndex(next);
-      if (next >= 6) {
-        recordScore(isCorrect ? 5 : 4, 6);
-        setTimeout(nextTask, 1000);
-      }
-    } else if (domainId === 'verbal') {
-      // Verbal (Word Weave) runs for 3 questions
-      const isCorrect = result.isCorrect;
-      const next = trialIndex + 1;
-      setTrialIndex(next);
-      if (next >= 3) {
-        recordScore(isCorrect ? 3 : 2, 3);
-        setTimeout(nextTask, 1000);
-      }
-    } else if (domainId === 'spatial') {
-      // Spatial (Pattern Fold) runs for 3 questions
-      const isCorrect = result.isCorrect;
-      const next = trialIndex + 1;
-      setTrialIndex(next);
-      if (next >= 3) {
-        recordScore(isCorrect ? 3 : 2, 3);
-        setTimeout(nextTask, 1000);
-      }
+    }
+
+    totalRoundsRef.current++;
+    setTrialIndex(totalRoundsRef.current);
+
+    // If 30 seconds are up, transition immediately after this finished question/trial!
+    if (timeIsUpRef.current || timeLeft <= 0) {
+      setIsTransitioning(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const correct = correctCountRef.current;
+      const total = totalRoundsRef.current;
+      
+      recordScore(correct, total);
+      
+      // Gentle perceptual delay before sliding to the next task
+      setTimeout(nextTask, 800);
     }
   };
 
@@ -415,7 +424,7 @@ export function AssessmentScreen({ navigation }) {
       return (
         <GameComponent
           level={1}
-          isActive={!showExitConfirm}
+          isActive={!showExitConfirm && !isTransitioning}
           Colors={Colors}
           multiplier={1.0}
           streakCount={trialIndex}
@@ -440,6 +449,10 @@ export function AssessmentScreen({ navigation }) {
         <View style={[aStyles.domainChip, { backgroundColor: domain.color.light }]}>
           <Text style={[aStyles.domainChipText, { color: domain.color.main }]}>{domain.label}</Text>
         </View>
+        
+        {/* Countdown Timer Display */}
+        <Text style={aStyles.timerText}>{timeLeft}s left</Text>
+        
         <Text style={aStyles.taskCount}>{t('onboarding.assessment.taskProgress', { current: taskIndex + 1, total: ASSESSMENT_TASKS.length })}</Text>
       </View>
 
@@ -492,6 +505,11 @@ const getAStyles = (Colors) => StyleSheet.create({
   },
   taskCount: {
     fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.caption, color: Colors.textMuted,
+  },
+  timerText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.size.caption + 1,
+    color: Colors.brandPrimary || '#FFC000',
   },
   progressTrack: { height: 3, backgroundColor: Colors.border, marginHorizontal: Spacing[6] },
   progressFill: { height: 3 },
@@ -840,7 +858,7 @@ export function ResultsScreen({ route, navigation }) {
   }, [domainScores, DOMAINS]);
 
   const handleContinue = () => {
-    dispatch({ type: 'COMPLETE_ONBOARDING' });
+    navigation.navigate('QuickProfile', { cognitiveScore });
   };
 
   return (
