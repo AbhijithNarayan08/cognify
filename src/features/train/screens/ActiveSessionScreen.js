@@ -128,19 +128,6 @@ export function ActiveSessionScreen({ navigation, route }) {
     singleExercise ? [singleExercise] : (remainingExercises || null)
   );
 
-  useEffect(() => {
-    let active = true;
-    if (!singleExercise && !remainingExercises) {
-      exerciseService.getDailyWorkout().then(workout => {
-        if (active) setExercises(workout);
-      });
-    }
-    return () => { active = false; };
-  }, [singleExercise, remainingExercises]);
-
-  const currentEx = exercises?.[0] || null;
-  const domain = DOMAINS.find(d => d.id === currentEx?.domain);
-
   // Shared Engine Hooks
   const {
     activeTimeElapsed,
@@ -149,6 +136,7 @@ export function ActiveSessionScreen({ navigation, route }) {
     pauseCount,
     pause,
     resume,
+    reset: resetTimer,
     setIsActive,
   } = useSessionTimer();
 
@@ -157,7 +145,7 @@ export function ActiveSessionScreen({ navigation, route }) {
     recordCorrect,
     recordMiss,
     saveLevel,
-  } = useAdaptiveLadder(currentEx?.id);
+  } = useAdaptiveLadder(exercises?.[0]?.id);
 
   const {
     streakCount,
@@ -186,6 +174,40 @@ export function ActiveSessionScreen({ navigation, route }) {
   // Animations
   const introFade = useRef(new Animated.Value(1)).current;
   const playAreaFade = useRef(new Animated.Value(1)).current;
+
+  // React Navigation Focus Listener to reset all states on Play Again/Re-focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (singleExercise) {
+        setExercises([singleExercise]);
+      } else if (remainingExercises) {
+        setExercises(remainingExercises);
+      } else {
+        exerciseService.getDailyWorkout().then(workout => {
+          setExercises(workout);
+        });
+      }
+
+      resetTimer();
+      resetStreak();
+      setPhase('intro');
+      setCountdownVal(3);
+      setRoundScores([]);
+      setRunningScore(0);
+      setVisualScore(0);
+      setRoundsCompleted(0);
+      setCorrectRounds(0);
+      setMaxStreak(0);
+      setGameMetrics({});
+      setShowExitConfirm(false);
+      playAreaFade.setValue(1);
+    });
+
+    return unsubscribe;
+  }, [navigation, singleExercise, remainingExercises]);
+
+  const currentEx = exercises?.[0] || null;
+  const domain = DOMAINS.find(d => d.id === currentEx?.domain);
 
   // Track max streak
   useEffect(() => {
