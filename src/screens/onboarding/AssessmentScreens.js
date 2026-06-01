@@ -420,6 +420,7 @@ export function AssessmentScreen({ navigation }) {
           multiplier={1.0}
           streakCount={trialIndex}
           onRoundComplete={handleGameRoundComplete}
+          onTimerStateChange={() => {}}
         />
       );
     }

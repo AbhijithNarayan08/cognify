@@ -35,14 +35,14 @@ export default function LighthouseWatchStream({
   useEffect(() => {
     if (!isActive) {
       clearAllTimers();
-      onTimerStateChange(false); // Pause clock when app is paused
+      onTimerStateChange?.(false); // Pause clock when app is paused
       return;
     }
 
     clearAllTimers();
 
     if (roundPhase === 'stimulus') {
-      onTimerStateChange(true); // Start session timer when icon displays
+      onTimerStateChange?.(true); // Start session timer when icon displays
 
       const stimTimeout = setTimeout(() => {
         // Star target exits, check if it was missed
@@ -50,13 +50,13 @@ export default function LighthouseWatchStream({
         
         // Start fading current out and queue ISI
         setRoundPhase('isi');
-        onTimerStateChange(false); // Pause timer during ISI dead time
+        onTimerStateChange?.(false); // Pause timer during ISI dead time
       }, config.stimulusDuration);
 
       timeoutsRef.current.push(stimTimeout);
     } else {
       // ISI phase
-      onTimerStateChange(false);
+      onTimerStateChange?.(false);
 
       const isiTimeout = setTimeout(() => {
         advanceStream();
