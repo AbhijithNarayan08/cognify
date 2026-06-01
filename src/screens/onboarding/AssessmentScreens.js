@@ -14,6 +14,23 @@ import { ConfirmModal } from '../../shared/components/ConfirmModal';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../constants/useStrings';
 
+// High-fidelity training games imports
+import SignalChain from '../../features/train/games/SignalChain';
+import FlashSort from '../../features/train/games/FlashSort';
+import LighthouseWatch from '../../features/train/games/LighthouseWatch';
+import ContextSwitch from '../../features/train/games/ContextSwitch';
+import WordWeave from '../../features/train/games/WordWeave';
+import PatternFold from '../../features/train/games/PatternFold';
+
+const GAME_COMPONENTS = {
+  'memory': SignalChain,
+  'speed': FlashSort,
+  'attention': LighthouseWatch,
+  'executive': ContextSwitch,
+  'verbal': WordWeave,
+  'spatial': PatternFold,
+};
+
 const { width, height } = Dimensions.get('window');
 
 export function AssessmentIntroScreen({ navigation }) {
@@ -276,20 +293,9 @@ export function AssessmentScreen({ navigation }) {
   const [taskIndex, setTaskIndex] = useState(0);
   const [scores, setScores] = useState({});
   const [trialIndex, setTrialIndex] = useState(0);
-  const [feedback, setFeedback] = useState(null); // 'correct' | 'wrong'
-  const [seqNums, setSeqNums] = useState([]);
-  const [showSeq, setShowSeq] = useState(true);
-  const [userSeq, setUserSeq] = useState([]);
-  const [highlightNode, setHighlightNode] = useState(null);
   const progressAnim = useRef(new Animated.Value(0)).current;
 
-  // Sustained Vigilance local states
-  const [attentionPhase, setAttentionPhase] = useState('stimulus'); // 'stimulus' | 'isi'
-  const [attentionIcon, setAttentionIcon] = useState('triangle');
-  const [floatPoints, setFloatPoints] = useState(null);
   const attentionHitsRef = useRef(0);
-  const attentionFARef = useRef(0);
-  const hasTappedRef = useRef(false);
 
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
@@ -315,101 +321,14 @@ export function AssessmentScreen({ navigation }) {
   // Task Transitions
   useEffect(() => {
     setTrialIndex(0);
-    setFeedback(null);
-    setUserSeq([]);
-    setHighlightNode(null);
-    setFloatPoints(null);
-    
-    if (task.type === 'sequence') {
-      const nums = Array.from({ length: 4 }, () => Math.floor(Math.random() * 9) + 1);
-      setSeqNums(nums);
-      setShowSeq(true);
-
-      // Sequential highlight flow
-      let currentHighlight = 0;
-      setHighlightNode(nums[0] - 1);
-      
-      const interval = setInterval(() => {
-        currentHighlight++;
-        if (currentHighlight >= nums.length) {
-          clearInterval(interval);
-          setHighlightNode(null);
-          setShowSeq(false);
-        } else {
-          setHighlightNode(nums[currentHighlight] - 1);
-        }
-      }, 700);
-
-      return () => clearInterval(interval);
-    }
-
-    if (task.type === 'vigilance') {
-      attentionHitsRef.current = 0;
-      attentionFARef.current = 0;
-    }
+    attentionHitsRef.current = 0;
 
     Animated.timing(progressAnim, {
-      toValue: (taskIndex) / ASSESSMENT_TASKS.length,
+      toValue: taskIndex / ASSESSMENT_TASKS.length,
       duration: 400,
       useNativeDriver: false,
     }).start();
   }, [taskIndex]);
-
-  // Sustained Vigilance timing clock
-  useEffect(() => {
-    if (task.type !== 'vigilance') return;
-
-    let active = true;
-    let timerId = null;
-    let index = 0;
-    
-    setTrialIndex(0);
-    setAttentionPhase('stimulus');
-    setAttentionIcon(ATTENTION_STIMULI[0]);
-    hasTappedRef.current = false;
-
-    const runStep = () => {
-      if (!active) return;
-
-      if (attentionPhase === 'stimulus') {
-        // Stimulus ended, check if missed star
-        const currentIcon = ATTENTION_STIMULI[index];
-        if (currentIcon === 'star' && !hasTappedRef.current) {
-          setFeedback('wrong');
-          setTimeout(() => setFeedback(null), 200);
-        }
-
-        setAttentionPhase('isi');
-        setAttentionIcon(null);
-        timerId = setTimeout(runStep, 400);
-      } else {
-        // ISI ended, advance
-        index++;
-        if (index >= ATTENTION_STIMULI.length) {
-          const totalStars = ATTENTION_STIMULI.filter(s => s === 'star').length;
-          const starsTapped = attentionHitsRef.current;
-          const wrongTaps = attentionFARef.current;
-          const correctRatio = Math.max(0, starsTapped - wrongTaps) / totalStars;
-          recordScore(correctRatio * totalStars, totalStars);
-          setTimeout(nextTask, 500);
-          return;
-        }
-
-        setTrialIndex(index);
-        hasTappedRef.current = false;
-        setAttentionPhase('stimulus');
-        setAttentionIcon(ATTENTION_STIMULI[index]);
-        timerId = setTimeout(runStep, 800);
-      }
-    };
-
-    timerId = setTimeout(runStep, 800);
-
-    return () => {
-      active = false;
-      if (timerId) clearTimeout(timerId);
-    };
-  }, [taskIndex, attentionPhase]);
 
   const recordScore = (correct, total, reactionMs = 800) => {
     const domainId = task.domain;
@@ -430,356 +349,82 @@ export function AssessmentScreen({ navigation }) {
     }
   };
 
-  const showFeedback = (correct) => {
-    setFeedback(correct ? 'correct' : 'wrong');
-    setTimeout(() => { setFeedback(null); }, 300);
-  };
-
-  const handleNodeTap = (nodeIdx) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const step = userSeq.length;
-    const expected = seqNums[step] - 1;
-    const isCorrect = nodeIdx === expected;
-
-    const next = [...userSeq, nodeIdx];
-    setUserSeq(next);
-
-    setFeedback(isCorrect ? 'correct' : 'wrong');
-    setTimeout(() => setFeedback(null), 200);
-
-    if (!isCorrect || next.length === seqNums.length) {
-      const correctCount = next.filter((v, i) => v === seqNums[i] - 1).length;
-      recordScore(correctCount, seqNums.length);
-      setTimeout(nextTask, 800);
-    }
-  };
-
-  const handleSort = (isLeft) => {
-    const stimuli = SORT_STIMULI[trialIndex] || 'circle';
-    const isCircle = stimuli === 'circle';
-    const isCorrect = isLeft === isCircle;
-
-    showFeedback(isCorrect);
-    Haptics.impactAsync(isCorrect ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Heavy);
-
-    const next = trialIndex + 1;
-    if (next >= SORT_STIMULI.length) {
-      recordScore(isCorrect ? 7 : 5, SORT_STIMULI.length, 450);
-      setTimeout(nextTask, 400);
-    } else {
-      setTimeout(() => setTrialIndex(next), 200);
-    }
-  };
-
-  const handleAttentionTap = () => {
-    if (attentionPhase !== 'stimulus' || hasTappedRef.current) return;
-    hasTappedRef.current = true;
-
-    const isTarget = attentionIcon === 'star';
-    Haptics.impactAsync(isTarget ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Heavy);
-
-    if (isTarget) {
-      attentionHitsRef.current++;
-      setFeedback('correct');
-      setFloatPoints('+100');
-      setTimeout(() => {
-        setFeedback(null);
-        setFloatPoints(null);
-      }, 300);
-    } else {
-      attentionFARef.current++;
-      setFeedback('wrong');
-      setFloatPoints('-60');
-      setTimeout(() => {
-        setFeedback(null);
-        setFloatPoints(null);
-      }, 300);
-    }
-  };
-
-  const handleSwitchPress = (isLeft) => {
-    const q = SWITCH_STIMULI[trialIndex];
-    const isShapeRule = q.rule === 'shape';
-    let isCorrect = false;
-
-    if (isShapeRule) {
-      // shape: leftCircle (isLeft === true) vs rightSquare
-      isCorrect = isLeft === (q.shape === 'circle');
-    } else {
-      // color: leftRed (isLeft === true) vs rightBlue
-      isCorrect = isLeft === (q.color === '#E24B4A');
-    }
-
-    showFeedback(isCorrect);
-    Haptics.impactAsync(isCorrect ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Heavy);
-
-    const next = trialIndex + 1;
-    if (next >= SWITCH_STIMULI.length) {
-      recordScore(isCorrect ? 5 : 4, SWITCH_STIMULI.length);
-      setTimeout(nextTask, 400);
-    } else {
-      setTimeout(() => setTrialIndex(next), 300);
+  const handleGameRoundComplete = (result) => {
+    const domainId = task.domain;
+    
+    if (domainId === 'memory') {
+      // Memory (Signal Chain) ends after 1 full sequence round
+      const isCorrect = result.isCorrect;
+      recordScore(isCorrect ? 4 : 3, 4, 380);
+      setTimeout(nextTask, 1200); // Wait for the feedback pulse animation to complete!
+    } else if (domainId === 'speed') {
+      // Speed (Flash Sort) runs for 8 trials
+      const isCorrect = result.isCorrect;
+      const next = trialIndex + 1;
+      setTrialIndex(next);
+      if (next >= 8) {
+        recordScore(isCorrect ? 7 : 5, 8, 450);
+        setTimeout(nextTask, 1000);
+      }
+    } else if (domainId === 'attention') {
+      // Attention (Lighthouse Watch) runs for 10 trials
+      if (result.metrics?.isHit) {
+        attentionHitsRef.current++;
+      }
+      const next = trialIndex + 1;
+      setTrialIndex(next);
+      if (next >= 10) {
+        recordScore(attentionHitsRef.current, 10, 420);
+        setTimeout(nextTask, 1000);
+      }
+    } else if (domainId === 'executive') {
+      // Executive (Context Switch) runs for 6 trials
+      const isCorrect = result.isCorrect;
+      const next = trialIndex + 1;
+      setTrialIndex(next);
+      if (next >= 6) {
+        recordScore(isCorrect ? 5 : 4, 6);
+        setTimeout(nextTask, 1000);
+      }
+    } else if (domainId === 'verbal') {
+      // Verbal (Word Weave) runs for 3 questions
+      const isCorrect = result.isCorrect;
+      const next = trialIndex + 1;
+      setTrialIndex(next);
+      if (next >= 3) {
+        recordScore(isCorrect ? 3 : 2, 3);
+        setTimeout(nextTask, 1000);
+      }
+    } else if (domainId === 'spatial') {
+      // Spatial (Pattern Fold) runs for 3 questions
+      const isCorrect = result.isCorrect;
+      const next = trialIndex + 1;
+      setTrialIndex(next);
+      if (next >= 3) {
+        recordScore(isCorrect ? 3 : 2, 3);
+        setTimeout(nextTask, 1000);
+      }
     }
   };
 
   // ── Render task content ──
   const renderTask = () => {
-    // 1. Memory (Signal Chain nodes 3x3 grid)
-    if (task.type === 'sequence') {
-      const activeLabel = showSeq ? t('onboarding.assessment.rememberSequence') : t('onboarding.assessment.tapInOrder');
+    const GameComponent = GAME_COMPONENTS[task.domain];
+    
+    if (GameComponent) {
       return (
-        <View style={aStyles.seqContainer}>
-          <Text style={aStyles.seqLabel}>{activeLabel}</Text>
-          <View style={aStyles.grid3x3}>
-            {Array.from({ length: 9 }).map((_, idx) => {
-              const isHighlighted = highlightNode === idx;
-              const isTapped = userSeq.includes(idx);
-              const stepIndex = userSeq.indexOf(idx);
-              const isCorrect = stepIndex !== -1 && idx === seqNums[stepIndex] - 1;
-
-              let nodeBg = Colors.surface;
-              if (isHighlighted) nodeBg = domain.color.main;
-              else if (isTapped) nodeBg = isCorrect ? Colors.positive : Colors.coral;
-
-              return (
-                <TouchableOpacity
-                  key={idx}
-                  disabled={showSeq || isTapped}
-                  style={[
-                    aStyles.gridNode,
-                    { backgroundColor: nodeBg, borderColor: Colors.border, borderWidth: 1 }
-                  ]}
-                  onPress={() => handleNodeTap(idx)}
-                />
-              );
-            })}
-          </View>
-        </View>
+        <GameComponent
+          level={1}
+          isActive={!showExitConfirm}
+          Colors={Colors}
+          multiplier={1.0}
+          streakCount={trialIndex}
+          onRoundComplete={handleGameRoundComplete}
+        />
       );
     }
-
-    // 2. Speed (Flash Sort split panels)
-    if (task.type === 'sort') {
-      const stimuli = SORT_STIMULI[trialIndex] || 'circle';
-      const leftTint = feedback === 'correct' ? 'rgba(61,171,127,0.06)' : feedback === 'wrong' ? 'rgba(226,75,74,0.06)' : 'transparent';
-      const rightTint = feedback === 'correct' ? 'rgba(61,171,127,0.06)' : feedback === 'wrong' ? 'rgba(226,75,74,0.06)' : 'transparent';
-
-      return (
-        <View style={aStyles.splitLayout}>
-          {/* Left panel */}
-          <TouchableOpacity style={[aStyles.splitPanel, { backgroundColor: leftTint }]} onPress={() => handleSort(true)} activeOpacity={1}>
-            <View style={aStyles.cornerHintLeft}>
-              <Circle size={14} color={Colors.textMuted} fill={Colors.textMuted} />
-              <Text style={[aStyles.cornerLabel, { color: Colors.textMuted }]}>Circle</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* Hairline Divider */}
-          <View style={{ width: 1, height: '100%', backgroundColor: 'rgba(0,0,0,0.05)' }} />
-
-          {/* Right panel */}
-          <TouchableOpacity style={[aStyles.splitPanel, { backgroundColor: rightTint }]} onPress={() => handleSort(false)} activeOpacity={1}>
-            <View style={aStyles.cornerHintRight}>
-              <Text style={[aStyles.cornerLabel, { color: Colors.textMuted }]}>Square</Text>
-              <Square size={14} color={Colors.textMuted} fill={Colors.textMuted} />
-            </View>
-          </TouchableOpacity>
-
-          {/* Centered Shape Stimulus */}
-          <View style={aStyles.centeredStimulusLayer} pointerEvents="none">
-            <View style={[aStyles.stimulusCard, Shadow.md, { backgroundColor: Colors.surface }]}>
-              {stimuli === 'circle' ? (
-                <Circle size={64} color={Colors.domain.speed.main} fill={Colors.domain.speed.main} />
-              ) : (
-                <Square size={64} color={Colors.domain.speed.main} fill={Colors.domain.speed.main} />
-              )}
-            </View>
-            <Text style={aStyles.trialMiniCount}>trial {trialIndex + 1} of {SORT_STIMULI.length}</Text>
-          </View>
-        </View>
-      );
-    }
-
-    // 3. Attention (Lighthouse Watch timed shapes flow)
-    if (task.type === 'vigilance') {
-      const isMiss = feedback === 'wrong';
-      const isHit = feedback === 'correct';
-
-      const renderAttentionShape = () => {
-        if (!attentionIcon) return null;
-        let color = isMiss ? Colors.textMuted : Colors.domain.attention.main;
-        if (attentionIcon !== 'star') {
-          color = 'rgba(29, 35, 64, 0.45)';
-        }
-
-        switch (attentionIcon) {
-          case 'star':
-            return <Star size={64} color={color} fill={color} />;
-          case 'triangle':
-            return <Triangle size={64} color={color} fill={color} />;
-          case 'circle':
-            return <Circle size={64} color={color} fill={color} />;
-          case 'hexagon':
-            return <Hexagon size={64} color={color} fill={color} />;
-          default:
-            return <Triangle size={64} color={color} fill={color} />;
-        }
-      };
-
-      return (
-        <TouchableOpacity style={aStyles.fullScreenTap} activeOpacity={1.0} onPress={handleAttentionTap}>
-          {/* Feedback red screen overlay */}
-          {feedback === 'wrong' && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#E24B4A', opacity: 0.08 }]} />}
-
-          {/* Floated score deltas */}
-          {floatPoints && (
-            <View style={aStyles.floatDeltaContainer}>
-              <Text style={[aStyles.floatDeltaText, { color: floatPoints.startsWith('+') ? '#A662C6' : '#E24B4A' }]}>
-                {floatPoints}
-              </Text>
-            </View>
-          )}
-
-          <View style={[aStyles.stimulusCard, Shadow.md, { backgroundColor: Colors.surface }]}>
-            {renderAttentionShape()}
-          </View>
-
-          {/* Caption instructional labels */}
-          {isMiss && <Text style={[aStyles.feedbackCaption, { color: Colors.textMuted }]}>Missed</Text>}
-          {feedback === 'wrong' && !isMiss && (
-            <Text style={[aStyles.feedbackCaption, { color: '#E24B4A' }]}>
-              Too Fast — That Wasn't The Star
-            </Text>
-          )}
-
-          <Text style={aStyles.trialMiniCount}>stimuli {trialIndex + 1} of {ATTENTION_STIMULI.length}</Text>
-        </TouchableOpacity>
-      );
-    }
-
-    // 4. Executive (Context Switch border rules)
-    if (task.type === 'match') {
-      const q = SWITCH_STIMULI[Math.min(trialIndex, SWITCH_STIMULI.length - 1)];
-      const isShapeRule = q.rule === 'shape';
-      const borderTheme = isShapeRule ? '#185FA5' : '#E24B4A'; // Blue for shape, Red for color
-
-      return (
-        <View style={aStyles.switchContainer}>
-          {/* Switches border color card */}
-          <View style={[aStyles.stimulusCard, Shadow.md, { borderColor: borderTheme, borderWidth: 4, backgroundColor: Colors.surface }]}>
-            {q.shape === 'circle' ? (
-              <Circle size={56} color={q.color} fill={q.color} />
-            ) : (
-              <Square size={56} color={q.color} fill={q.color} />
-            )}
-          </View>
-
-          {/* Switching buttons legend */}
-          <View style={aStyles.sortButtons}>
-            <TouchableOpacity
-              style={[aStyles.sortBtn, { backgroundColor: isShapeRule ? '#185FA5' : '#E24B4A' }]}
-              onPress={() => handleSwitchPress(true)}
-            >
-              <Text style={aStyles.sortBtnText}>
-                {isShapeRule ? 'Circle' : 'Red'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[aStyles.sortBtn, { backgroundColor: isShapeRule ? '#185FA5' : '#E24B4A' }]}
-              onPress={() => handleSwitchPress(false)}
-            >
-              <Text style={aStyles.sortBtnText}>
-                {isShapeRule ? 'Square' : 'Blue'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={aStyles.trialMiniCount}>trial {trialIndex + 1} of {SWITCH_STIMULI.length}</Text>
-        </View>
-      );
-    }
-
-    // 5. Verbal (Word Weave premium analogys)
-    if (task.type === 'analogy') {
-      const q = VERBAL_Q[Math.min(trialIndex, VERBAL_Q.length - 1)];
-      return (
-        <View style={aStyles.verbalContainer}>
-          {/* Premium analogy frame card */}
-          <View style={[aStyles.analogyCard, Shadow.sm, { backgroundColor: Colors.surface }]}>
-            <Text style={aStyles.verbalStem}>{q.stem}</Text>
-          </View>
-
-          <View style={aStyles.verbalOptions}>
-            {q.options.map((opt, i) => (
-              <TouchableOpacity
-                key={i}
-                style={[aStyles.verbalOption, Shadow.sm, feedback !== null && i === q.answer && { borderColor: Colors.positive, borderWidth: 1 }]}
-                onPress={() => {
-                  const isCorrect = i === q.answer;
-                  showFeedback(isCorrect);
-                  Haptics.impactAsync(isCorrect ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Heavy);
-
-                  const next = trialIndex + 1;
-                  if (next >= VERBAL_Q.length) {
-                    recordScore(isCorrect ? 3 : 2, VERBAL_Q.length);
-                    setTimeout(nextTask, 500);
-                  } else {
-                    setTimeout(() => setTrialIndex(next), 400);
-                  }
-                }}
-              >
-                <Text style={aStyles.verbalOptionText}>{opt}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      );
-    }
-
-    // 6. Spatial (Pattern Fold 3x3 block rotations)
-    const q = SPATIAL_Q[Math.min(trialIndex, SPATIAL_Q.length - 1)];
-    return (
-      <View style={aStyles.spatialContainer}>
-        <View style={aStyles.blockGridContainer}>
-          {/* Target Pattern Grid on Left */}
-          <View style={[aStyles.spatialTargetCard, Shadow.sm, { backgroundColor: Colors.surface }]}>
-            <Text style={aStyles.spatialTargetLabel}>Target</Text>
-            <OnboardingBlockGrid pattern={q.target} Colors={Colors} />
-          </View>
-        </View>
-
-        {/* Rotate Options on Right */}
-        <Text style={aStyles.spatialOptionsTitle}>Choose Rotated Match:</Text>
-        <View style={aStyles.spatialOptions}>
-          {q.options.map((optionPattern, i) => (
-            <TouchableOpacity
-              key={i}
-              style={[
-                aStyles.spatialOptionBtn,
-                Shadow.sm,
-                feedback !== null && i === q.answer && { borderColor: Colors.positive, borderWidth: 1.5 }
-              ]}
-              onPress={() => {
-                const isCorrect = i === q.answer;
-                showFeedback(isCorrect);
-                Haptics.impactAsync(isCorrect ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Heavy);
-
-                const next = trialIndex + 1;
-                if (next >= SPATIAL_Q.length) {
-                  recordScore(isCorrect ? 3 : 2, SPATIAL_Q.length);
-                  setTimeout(nextTask, 500);
-                } else {
-                  setTimeout(() => setTrialIndex(next), 400);
-                }
-              }}
-            >
-              <OnboardingBlockGrid pattern={optionPattern} size={54} Colors={Colors} />
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    );
+    
+    return null;
   };
 
   const progressWidth = progressAnim.interpolate({
@@ -854,7 +499,7 @@ const getAStyles = (Colors) => StyleSheet.create({
     color: Colors.textSecondary, textAlign: 'center',
     paddingHorizontal: Spacing[8], marginTop: Spacing[6], lineHeight: 24,
   },
-  taskArea: { flex: 1, justifyContent: 'center', paddingHorizontal: Spacing[6] },
+  taskArea: { flex: 1, justifyContent: 'center' },
 
   // Memory (Signal Chain nodes 3x3)
   seqContainer: { alignItems: 'center', gap: Spacing[5] },

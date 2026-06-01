@@ -362,7 +362,6 @@ const styles = StyleSheet.create({
   columnTitle: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
     marginBottom: Spacing[1],
   },
   targetCard: {

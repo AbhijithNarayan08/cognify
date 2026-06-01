@@ -401,7 +401,6 @@ const styles = StyleSheet.create({
   levelChangeText: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
     marginTop: 2,
   },
   gridContainer: {
@@ -421,6 +420,5 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
     textAlign: 'center',
-    textTransform: 'lowercase',
   },
 });

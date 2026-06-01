@@ -349,7 +349,6 @@ const styles = StyleSheet.create({
   optionBtnText: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.body,
-    textTransform: 'lowercase',
   },
   legendStrip: {
     flexDirection: 'row',
@@ -376,6 +375,5 @@ const styles = StyleSheet.create({
   legendLabel: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
   },
 });

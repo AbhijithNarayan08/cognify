@@ -263,6 +263,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: Spacing[4],
     lineHeight: 20,
-    textTransform: 'lowercase',
   },
 });
