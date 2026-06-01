@@ -715,7 +715,6 @@ const getAStyles = (Colors) => StyleSheet.create({
 });
 
 export function ProcessingScreen({ route, navigation }) {
-  const { dispatch } = useApp();
   const scores = route?.params?.scores || {};
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -750,8 +749,7 @@ export function ProcessingScreen({ route, navigation }) {
     };
 
     setTimeout(() => {
-      dispatch({ type: 'COMPLETE_ASSESSMENT', payload });
-      navigation.navigate('Results');
+      navigation.navigate('Results', { payload });
     }, 2200);
   }, []);
 
@@ -798,9 +796,20 @@ const getProcStyles = (Colors) => StyleSheet.create({
 // ─────────────────────────────────────────────────────────────
 // Results Screen
 // ─────────────────────────────────────────────────────────────
-export function ResultsScreen({ navigation }) {
+export function ResultsScreen({ route, navigation }) {
   const { state, dispatch } = useApp();
-  const { cognitiveScore, domainScores, brainAge, cohortPercentile } = state;
+  const payload = route?.params?.payload;
+
+  useEffect(() => {
+    if (payload) {
+      dispatch({ type: 'COMPLETE_ASSESSMENT', payload });
+    }
+  }, [payload]);
+
+  const cognitiveScore = state.cognitiveScore || payload?.cognitiveScore || 600;
+  const domainScores = state.domainScores || payload?.domainScores || null;
+  const brainAge = state.brainAge || payload?.brainAge || 25;
+  const cohortPercentile = state.cohortPercentile || payload?.cohortPercentile || 50;
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -877,10 +886,10 @@ export function ResultsScreen({ navigation }) {
             <View style={resStyles.domainBar}>
               <View style={[
                 resStyles.domainBarFill,
-                { width: `${((domainScores[d.id] - 400) / 600) * 100}%`, backgroundColor: d.color.main }
+                { width: `${(((domainScores[d.id] || 600) - 400) / 600) * 100}%`, backgroundColor: d.color.main }
               ]} />
             </View>
-            <Text style={[resStyles.domainScore, { color: d.color.main }]}>{domainScores[d.id]}</Text>
+            <Text style={[resStyles.domainScore, { color: d.color.main }]}>{domainScores[d.id] || 600}</Text>
           </View>
         ))}
 

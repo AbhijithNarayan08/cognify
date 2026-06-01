@@ -292,5 +292,11 @@ export const STRINGS_MAP = {
   "profile.setting.logout": "Log Out & Clear Data",
   "profile.logoutConfirm.title": "Log Out & Reset?",
   "profile.logoutConfirm.body": "This will log you out, delete all workout history, reset your daily streak, and clear your cognitive profile. This cannot be undone.",
-  "profile.logoutConfirm.confirm": "Yes, Log Out"
+  "profile.logoutConfirm.confirm": "Yes, Log Out",
+  "onboarding.assessment.task.memory": "watch the sequence of glowing nodes, then repeat it.",
+  "onboarding.assessment.task.speed": "tap left for circles and right for squares as fast as you can.",
+  "onboarding.assessment.task.attention": "tap only when you see the star. ignore all other shapes.",
+  "onboarding.assessment.task.executive": "when the border is blue, sort by shape. when red, sort by colour.",
+  "onboarding.assessment.task.verbal": "choose the word that best completes the logical pair analogy.",
+  "onboarding.assessment.task.spatial": "identify the shape that matches the target after rotation."
 };
