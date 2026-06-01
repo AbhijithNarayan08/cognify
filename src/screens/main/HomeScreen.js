@@ -6,6 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
 import { Flame, ArrowRight, Check, X, Shield } from 'lucide-react-native';
+import Svg, { Path, Circle, Ellipse } from 'react-native-svg';
 import ScoreRing from '../../components/ScoreRing';
 import {
   DomainTile, InsightCard, WorkoutCard, CheckinCard, SectionHeader,
@@ -18,6 +19,159 @@ import { useGreeting } from '../../features/home/hooks/useGreeting';
 import { useCheckins } from '../../features/home/hooks/useCheckins';
 import { analytics } from '../../services/analyticsService';
 import { GameHaptics } from '../../utils/haptics';
+import { CheckinBottomSheet } from '../../shared/components/CheckinBottomSheet';
+
+// ─────────────────────────────────────────────────────────────
+// Dynamic Pulse & Sway SVG Flame Mascot Character
+// ─────────────────────────────────────────────────────────────
+function DynamicFlame({ pulseAnim, swayAnim, Colors }) {
+  // Outer layer animations
+  const outerScaleY = pulseAnim.interpolate({
+    inputRange: [1, 1.12],
+    outputRange: [0.97, 1.05],
+  });
+  const outerScaleX = pulseAnim.interpolate({
+    inputRange: [1, 1.12],
+    outputRange: [1.02, 0.97],
+  });
+  const outerRotate = swayAnim.interpolate({
+    inputRange: [-1, 1],
+    outputRange: ['-3deg', '3deg'],
+  });
+  const outerTranslateX = swayAnim.interpolate({
+    inputRange: [-1, 1],
+    outputRange: [-3, 3],
+  });
+
+  // Middle layer animations
+  const middleScaleY = pulseAnim.interpolate({
+    inputRange: [1, 1.12],
+    outputRange: [1.04, 0.94], // out of phase
+  });
+  const middleScaleX = pulseAnim.interpolate({
+    inputRange: [1, 1.12],
+    outputRange: [0.96, 1.03],
+  });
+  const middleRotate = swayAnim.interpolate({
+    inputRange: [-1, 1],
+    outputRange: ['4deg', '-4deg'], // opposite sway
+  });
+  const middleTranslateX = swayAnim.interpolate({
+    inputRange: [-1, 1],
+    outputRange: [2, -2],
+  });
+
+  // Inner core animations
+  const innerScaleY = pulseAnim.interpolate({
+    inputRange: [1, 1.12],
+    outputRange: [0.93, 1.09],
+  });
+  const innerRotate = swayAnim.interpolate({
+    inputRange: [-1, 1],
+    outputRange: ['-2deg', '2deg'],
+  });
+  const innerTranslateX = swayAnim.interpolate({
+    inputRange: [-1, 1],
+    outputRange: [-1, 1],
+  });
+
+  return (
+    <View style={{ width: 100, height: 100, justifyContent: 'center', alignItems: 'center' }}>
+      {/* Layer 1: Outer Flame (Coral #FF5E5B) */}
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFillObject,
+          {
+            transform: [
+              { scaleX: outerScaleX },
+              { scaleY: outerScaleY },
+              { translateX: outerTranslateX },
+              { rotate: outerRotate },
+            ],
+            justifyContent: 'center',
+            alignItems: 'center',
+          },
+        ]}
+      >
+        <Svg width={96} height={96} viewBox="0 0 100 120">
+          <Path
+            d="M 50 110 C 20 110 5 90 5 60 C 5 30 35 15 50 5 C 65 15 95 30 95 60 C 95 90 80 110 50 110 Z"
+            fill="#FF5E5B"
+          />
+        </Svg>
+      </Animated.View>
+
+      {/* Layer 2: Middle Flame (Amber/Gold #FFC000) */}
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFillObject,
+          {
+            transform: [
+              { scaleX: middleScaleX },
+              { scaleY: middleScaleY },
+              { translateX: middleTranslateX },
+              { rotate: middleRotate },
+            ],
+            justifyContent: 'center',
+            alignItems: 'center',
+          },
+        ]}
+      >
+        <Svg width={76} height={76} viewBox="0 0 100 120">
+          <Path
+            d="M 50 100 C 25 100 15 85 15 60 C 15 35 35 25 50 15 C 65 25 85 35 85 60 C 85 85 75 100 50 100 Z"
+            fill="#FFC000"
+          />
+        </Svg>
+      </Animated.View>
+
+      {/* Layer 3: Inner Flame Core (Cream surface #FFF9E6) with Playful Face */}
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFillObject,
+          {
+            transform: [
+              { scaleY: innerScaleY },
+              { translateX: innerTranslateX },
+              { rotate: innerRotate },
+            ],
+            justifyContent: 'center',
+            alignItems: 'center',
+          },
+        ]}
+      >
+        <Svg width={56} height={56} viewBox="0 0 100 120">
+          <Path
+            d="M 50 90 C 32 90 25 80 25 60 C 25 45 40 38 50 30 C 60 38 75 45 75 60 C 75 80 68 90 50 90 Z"
+            fill="#FFF9E6"
+          />
+          {/* Smiling Eye Left */}
+          <Path
+            d="M 38 64 Q 42 67 46 64"
+            stroke="#1A1816"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            fill="none"
+          />
+          {/* Smiling Eye Right */}
+          <Path
+            d="M 54 64 Q 58 67 62 64"
+            stroke="#1A1816"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            fill="none"
+          />
+          {/* Playful Pink Cheeks */}
+          <Ellipse cx="34" cy="69" rx="4.5" ry="2.2" fill="#FF5E5B" opacity="0.65" />
+          <Ellipse cx="66" cy="69" rx="4.5" ry="2.2" fill="#FF5E5B" opacity="0.65" />
+          
+          {/* Happy Gasping Mouth */}
+          <Circle cx="50" cy="72" r="4" fill="#1A1816" />
+        </Svg>
+      </Animated.View>
+    </View>
+  );
+}
 
 export default function HomeScreen({ navigation }) {
   const { state } = useApp();
@@ -54,10 +208,16 @@ export default function HomeScreen({ navigation }) {
 
   const { cognitiveScore, domainScores, workoutComplete, workoutInProgress, streakDays, scoreHistory = [] } = state;
 
+  // ── Checkin Sheet UI State ──────────────────────────────────
+  const [checkinSheetVisible, setCheckinSheetVisible] = useState(false);
+  const [checkinSheetType, setCheckinSheetType] = useState('mood');
+  const [checkinSheetRating, setCheckinSheetRating] = useState(2);
+
   // ── Streak Modal UI State & Animations ──────────────────────
   const [showStreakModal, setShowStreakModal] = useState(false);
   const streakAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const swayAnim = useRef(new Animated.Value(0)).current;
 
   // Spring scale entry transition
   useEffect(() => {
@@ -77,11 +237,12 @@ export default function HomeScreen({ navigation }) {
     }
   }, [showStreakModal]);
 
-  // Infinite pulsing animation for flame backdrop halo
+  // Infinite pulsing & swaying animation for the dynamic flame character
   useEffect(() => {
-    let animation;
+    let pulseAnimation;
+    let swayAnimation;
     if (showStreakModal) {
-      animation = Animated.loop(
+      pulseAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
             toValue: 1.12,
@@ -95,12 +256,30 @@ export default function HomeScreen({ navigation }) {
           }),
         ])
       );
-      animation.start();
+      pulseAnimation.start();
+
+      swayAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(swayAnim, {
+            toValue: 1.0,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(swayAnim, {
+            toValue: -1.0,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      swayAnimation.start();
     } else {
       pulseAnim.setValue(1);
+      swayAnim.setValue(0);
     }
     return () => {
-      if (animation) animation.stop();
+      if (pulseAnimation) pulseAnimation.stop();
+      if (swayAnimation) swayAnimation.stop();
     };
   }, [showStreakModal]);
 
@@ -275,7 +454,11 @@ export default function HomeScreen({ navigation }) {
                 <View key={type} style={styles.checkinWrapper}>
                   <CheckinCard
                     type={type}
-                    onComplete={(val) => handleComplete(type, val)}
+                    onComplete={(val) => {
+                      setCheckinSheetType(type);
+                      setCheckinSheetRating(val);
+                      setCheckinSheetVisible(true);
+                    }}
                     onSkip={() => handleDismiss(type)}
                   />
                   <TouchableOpacity
@@ -391,9 +574,7 @@ export default function HomeScreen({ navigation }) {
                   },
                 ]}
               />
-              <View style={styles.flameInner}>
-                <Flame size={44} color={Colors.brandPrimary} />
-              </View>
+              <DynamicFlame pulseAnim={pulseAnim} swayAnim={swayAnim} Colors={Colors} />
             </View>
 
             {/* Title / Day Counter */}
@@ -500,10 +681,23 @@ export default function HomeScreen({ navigation }) {
                 {workoutComplete ? 'Awesome, Keep It Up!' : "Start Today's Workout"}
               </Text>
             </TouchableOpacity>
-          </Animated.View>
-        </View>
-      </Modal>
-    </View>
+            </Animated.View>
+          </View>
+        </Modal>
+
+        {/* Dynamic Quick Check-in Bottom Sheet */}
+        <CheckinBottomSheet
+          visible={checkinSheetVisible}
+          type={checkinSheetType}
+          initialValue={checkinSheetRating}
+          onClose={() => setCheckinSheetVisible(false)}
+          onComplete={(val) => {
+            setCheckinSheetVisible(false);
+            handleComplete(checkinSheetType, val);
+          }}
+          Colors={Colors}
+        />
+      </View>
   );
 }
 

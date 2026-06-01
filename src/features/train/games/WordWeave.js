@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { WORD_WEAVE_ANALOGIES } from '../../../data/wordWeaveAnalogies';
 import { WORD_WEAVE } from '../../../constants/gameConfig';
-import { Typography, Spacing, Radius } from '../../../theme';
+import { Typography, Spacing, Radius, Shadow } from '../../../theme';
 
 export default function WordWeave({ level, isActive, onRoundComplete, Colors }) {
   const config = WORD_WEAVE.levels[level] || WORD_WEAVE.levels[1];

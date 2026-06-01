@@ -126,6 +126,7 @@ export default function ContextSwitch({ level, isActive, onRoundComplete, Colors
   };
 
   const handleAnswer = (option) => {
+    if (!stimulus) return;
     hasAnsweredRef.current = true;
     setSelectedAnswer(option);
     
@@ -137,13 +138,13 @@ export default function ContextSwitch({ level, isActive, onRoundComplete, Colors
     let expectedAnswer = '';
 
     if (currentRule === 'shape') {
-      expectedAnswer = stimulus.shape; // 'circle' | 'square'
+      expectedAnswer = stimulus?.shape; // 'circle' | 'square'
     } else if (currentRule === 'colour') {
-      expectedAnswer = stimulus.color; // 'red' | 'blue'
+      expectedAnswer = stimulus?.color; // 'red' | 'blue'
     } else if (currentRule === 'size') {
-      expectedAnswer = stimulus.size; // 'large' | 'small'
+      expectedAnswer = stimulus?.size; // 'large' | 'small'
     } else if (currentRule === 'count') {
-      expectedAnswer = stimulus.count === 2 ? 'two' : 'one';
+      expectedAnswer = stimulus?.count === 2 ? 'two' : 'one';
     }
 
     isCorrect = option === expectedAnswer;
@@ -165,6 +166,10 @@ export default function ContextSwitch({ level, isActive, onRoundComplete, Colors
       metrics: {
         reactionTimeMs: responseTime,
         isSwitchRound,
+        rule: currentRule,
+        prevRule,
+        isCorrect,
+        isTimeout: option === null,
       },
     });
 
@@ -196,12 +201,12 @@ export default function ContextSwitch({ level, isActive, onRoundComplete, Colors
   const renderStimulusShape = (scale = 1.0) => {
     if (!stimulus) return null;
 
-    const fill = COLOR_MAP[stimulus.color];
-    const isLarge = stimulus.size === 'large';
+    const fill = COLOR_MAP[stimulus?.color];
+    const isLarge = stimulus?.size === 'large';
     const dim = isLarge ? 48 * scale : 28 * scale;
 
     const drawSingleShape = (key) => {
-      if (stimulus.shape === 'circle') {
+      if (stimulus?.shape === 'circle') {
         return (
           <Svg key={key} width={56} height={56} viewBox="0 0 50 50">
             <Circle cx="25" cy="25" r={dim / 2} fill={fill} />
@@ -216,7 +221,7 @@ export default function ContextSwitch({ level, isActive, onRoundComplete, Colors
       }
     };
 
-    if (stimulus.count === 2) {
+    if (stimulus?.count === 2) {
       return (
         <View style={styles.shapesRow}>
           {drawSingleShape(1)}
@@ -254,12 +259,12 @@ export default function ContextSwitch({ level, isActive, onRoundComplete, Colors
       <View style={styles.buttonsRow}>
         {buttonLabels.map((lbl, idx) => {
           const isSelected = selectedAnswer === lbl;
-          const isCorrectAns = stimulus && (
-            (currentRule === 'shape' && stimulus.shape === lbl) ||
-            (currentRule === 'colour' && stimulus.color === lbl) ||
-            (currentRule === 'size' && stimulus.size === lbl) ||
-            (currentRule === 'count' && (stimulus.count === 2 ? 'two' : 'one') === lbl)
-          );
+          const isCorrectAns = stimulus ? (
+            (currentRule === 'shape' && stimulus?.shape === lbl) ||
+            (currentRule === 'colour' && stimulus?.color === lbl) ||
+            (currentRule === 'size' && stimulus?.size === lbl) ||
+            (currentRule === 'count' && (stimulus?.count === 2 ? 'two' : 'one') === lbl)
+          ) : false;
 
           // Correct highlight coloring on error
           let buttonBg = Colors.surfaceAlt;

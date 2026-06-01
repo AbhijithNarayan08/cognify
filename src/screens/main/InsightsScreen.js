@@ -16,21 +16,34 @@ import ProjectionGraph from '../../shared/components/ProjectionGraph';
 import DomainRadar from '../../shared/components/DomainRadar';
 import { SectionHeader } from '../../shared/components/SectionHeader';
 import { InsightCard } from '../../shared/components/InsightCard';
+import { useInsights } from '../../features/insights/hooks/useInsights';
+import { calculateRegressionSlope, calculatePearson, getLifestyleRating } from '../../shared/utils/analytics';
 
 const { width } = Dimensions.get('window');
 const CHART_W = width - Spacing[6] * 4;
 const CHART_H = 120;
 const PADDING = { left: 8, right: 8, top: 10, bottom: 20 };
 
-// ── Overall Score History Graph (14-day Dynamic) ─────────────────────────
-function ScoreGraph({ history, Colors, graphStyles }) {
+// ── Overall Score History Graph (14-day Dynamic with Projections) ───────────────────
+function ScoreGraph({ history, Colors, graphStyles, optimizeToggle }) {
   if (!history || history.length < 2) return null;
 
   const scores = history.map(h => h.score);
-  const minS = Math.min(...scores) - 20;
-  const maxS = Math.max(...scores) + 20;
+  const lastScore = scores[scores.length - 1];
+  const N = scores.length;
 
-  const toX = (i) => PADDING.left + (i / (scores.length - 1)) * (CHART_W - PADDING.left - PADDING.right);
+  // Linear Regression Projection
+  const slope = calculateRegressionSlope(history);
+  const standardProj = Math.max(300, Math.min(1000, Math.round(lastScore + 7 * slope)));
+  const optimizedProj = Math.max(300, Math.min(1000, Math.round(lastScore + 7 * (slope + 0.82))));
+
+  // Bounds including the 7 days out projections
+  const allValues = [...scores, standardProj, optimizedProj];
+  const minS = Math.min(...allValues) - 20;
+  const maxS = Math.max(...allValues) + 20;
+
+  // X-axis distributed from 0 to N - 1 + 7 (which is N + 6 days total)
+  const toX = (i) => PADDING.left + (i / (N + 6)) * (CHART_W - PADDING.left - PADDING.right);
   const toY = (s) => PADDING.top + ((maxS - s) / (maxS - minS)) * (CHART_H - PADDING.top - PADDING.bottom);
 
   const points = scores.map((s, i) => `${toX(i)},${toY(s)}`).join(' ');
@@ -38,12 +51,19 @@ function ScoreGraph({ history, Colors, graphStyles }) {
   const areaPoints = [
     `${toX(0)},${CHART_H - PADDING.bottom}`,
     ...scores.map((s, i) => `${toX(i)},${toY(s)}`),
-    `${toX(scores.length - 1)},${CHART_H - PADDING.bottom}`,
+    `${toX(N - 1)},${CHART_H - PADDING.bottom}`,
   ].join(' ');
 
   const last7 = scores.slice(-7);
   const avg7 = Math.round(last7.reduce((a, b) => a + b, 0) / last7.length);
   const avgY = toY(avg7);
+
+  const todayX = toX(N - 1);
+  const todayY = toY(lastScore);
+
+  const futureX = toX(N + 5); // 7 days in future
+  const standardY = toY(standardProj);
+  const optimizedY = toY(optimizedProj);
 
   // Self-heal/fallback styles locally to guarantee zero crashes if graphStyles is undefined
   const activeGraphStyles = useMemo(() => {
@@ -60,12 +80,15 @@ function ScoreGraph({ history, Colors, graphStyles }) {
   return (
     <View style={activeGraphStyles.container}>
       <Svg width={CHART_W} height={CHART_H}>
+        {/* Past Area */}
         <Polyline
           points={areaPoints}
           fill={Colors.brandPrimary}
           fillOpacity={0.08}
           stroke="none"
         />
+        
+        {/* 7-Day Reference Line */}
         <Line
           x1={PADDING.left} y1={avgY}
           x2={CHART_W - PADDING.right} y2={avgY}
@@ -83,6 +106,8 @@ function ScoreGraph({ history, Colors, graphStyles }) {
         >
           avg {avg7}
         </SvgText>
+
+        {/* Past Line */}
         <Polyline
           points={points}
           fill="none"
@@ -91,19 +116,76 @@ function ScoreGraph({ history, Colors, graphStyles }) {
           strokeLinejoin="round"
           strokeLinecap="round"
         />
+
+        {/* Today Marker */}
         <Circle
-          cx={toX(scores.length - 1)}
-          cy={toY(scores[scores.length - 1])}
-          r={5}
+          cx={todayX}
+          cy={todayY}
+          r={5.5}
           fill={Colors.coral}
           stroke={Colors.surface}
           strokeWidth={2}
         />
+
+        {/* 7-Day Projection Dashed Line */}
+        {optimizeToggle ? (
+          <G>
+            {/* Optimized path line */}
+            <Line
+              x1={todayX}
+              y1={todayY}
+              x2={futureX}
+              y2={optimizedY}
+              stroke="#FFB300"
+              strokeWidth={2.2}
+              strokeDasharray="4,3"
+              strokeLinecap="round"
+            />
+            {/* Double layer halo */}
+            <Circle cx={futureX} cy={optimizedY} r={8} fill="#FFB300" opacity={0.3} />
+            <Circle cx={futureX} cy={optimizedY} r={4.5} fill="#E65100" stroke={Colors.surface} strokeWidth={1.5} />
+            <SvgText
+              x={futureX}
+              y={optimizedY - 8}
+              fontSize={10}
+              fontFamily={Typography.fontFamily.bold}
+              fill="#E65100"
+              textAnchor="middle"
+            >
+              {optimizedProj}
+            </SvgText>
+          </G>
+        ) : (
+          <G>
+            {/* Standard path line */}
+            <Line
+              x1={todayX}
+              y1={todayY}
+              x2={futureX}
+              y2={standardY}
+              stroke={Colors.textMuted}
+              strokeWidth={2}
+              strokeDasharray="4,3"
+              strokeLinecap="round"
+            />
+            <Circle cx={futureX} cy={standardY} r={4.5} fill={Colors.textMuted} stroke={Colors.surface} strokeWidth={1.5} />
+            <SvgText
+              x={futureX}
+              y={standardY - 8}
+              fontSize={9}
+              fontFamily={Typography.fontFamily.bold}
+              fill={Colors.textMuted}
+              textAnchor="middle"
+            >
+              {standardProj}
+            </SvgText>
+          </G>
+        )}
       </Svg>
       <View style={activeGraphStyles.xLabels}>
         <Text style={activeGraphStyles.xLabel}>{history.length > 14 ? t('insights.time.30d') : t('insights.time.14d')}</Text>
-        <Text style={activeGraphStyles.xLabel}>{t('insights.time.7d')}</Text>
         <Text style={activeGraphStyles.xLabel}>{t('insights.time.today')}</Text>
+        <Text style={[activeGraphStyles.xLabel, { color: optimizeToggle ? '#E65100' : Colors.textMuted, fontFamily: Typography.fontFamily.bold }]}>+7d proj</Text>
       </View>
     </View>
   );
@@ -685,6 +767,233 @@ function ParameterBriefGrid({ history, Colors, DOMAINS, styles }) {
   );
 }
 
+// ── Interactive Habit-Cognitive Correlation Playground (TASK 4) ───────────────────────
+function CorrelationPlayground({ history, correlations, calibrationComplete, Colors, DOMAINS, styles }) {
+  const [selectedHabit, setSelectedHabit] = useState('sleep');
+  const [selectedDomain, setSelectedDomain] = useState('memory');
+
+  const habitOptions = [
+    { id: 'sleep', label: 'Sleep' },
+    { id: 'mood', label: 'Mood' },
+    { id: 'activity', label: 'Activity' },
+  ];
+
+  const domainObj = DOMAINS.find(d => d.id === selectedDomain) || DOMAINS[0];
+
+  // Resolve active Pearson correlation value
+  const r = correlations[selectedHabit]?.[selectedDomain] || 0;
+
+  // Resolve correlation strength tier & plain-language translations
+  let tierLabel = 'Resilient';
+  let tierColor = '#8E8A86'; // neutral grey
+  let tierDescription = 'Stable Baseline';
+  let headline = `${domainObj.label} is highly resilient to ${selectedHabit}`;
+  let coachMessage = `Your ${domainObj.label} scores are highly stable and resilient regardless of changes in your logged ${selectedHabit}. This indicates a strong, consistent baseline. Continue tracking to watch long-term trends!`;
+
+  if (r >= 0.6) {
+    tierLabel = 'Strong Positive';
+    tierColor = Colors.positive || '#3DC27A';
+    tierDescription = 'Superpower Relationship';
+    headline = `${habitOptions.find(h => h.id === selectedHabit).label} heavily elevates your ${domainObj.label}`;
+    coachMessage = `Your data indicates a strong positive correlation between ${selectedHabit} and ${domainObj.label}. On days you log better ${selectedHabit}, your performance in the ${domainObj.label} domain scales up immediately. Keep this habit optimized!`;
+  } else if (r >= 0.3) {
+    tierLabel = 'Moderate Positive';
+    tierColor = '#FF9900';
+    tierDescription = 'Booster Relationship';
+    headline = `${habitOptions.find(h => h.id === selectedHabit).label} moderately boosts your ${domainObj.label}`;
+    coachMessage = `Better ${selectedHabit} results in a moderate boost to your ${domainObj.label} score. Improving this lifestyle habit will give you a clear cognitive edge in your sessions!`;
+  } else if (r <= -0.6) {
+    tierLabel = 'Strong Negative';
+    tierColor = Colors.coral || '#FF7DB4';
+    tierDescription = 'Disruptor Relationship';
+    headline = `Poor ${selectedHabit} heavily impacts your ${domainObj.label}`;
+    coachMessage = `There is a significant negative correlation here. Lack of quality ${selectedHabit} heavily penalizes your ${domainObj.label} performance. Make sure to prioritize rest and recovery!`;
+  } else if (r <= -0.3) {
+    tierLabel = 'Moderate Negative';
+    tierColor = '#D84315';
+    tierDescription = 'Disruptor Relationship';
+    headline = `${habitOptions.find(h => h.id === selectedHabit).label} fatigue moderately dips your ${domainObj.label}`;
+    coachMessage = `Your data shows a moderate decline in ${domainObj.label} on days with poor ${selectedHabit}. Try setting a reminder to check in and manage your lifestyle habits!`;
+  }
+
+  // Extraction of data arrays
+  const X = history.map(h => getLifestyleRating(selectedHabit, h[selectedHabit]));
+  const Y = history.map(h => h.domains?.[selectedDomain] || h.score || 700);
+
+  const timelineHeight = 135;
+  const paddingX = 16;
+  const paddingY = 12;
+
+  const minX = Math.min(...X);
+  const maxX = Math.max(...X);
+  const minY = Math.min(...Y) - 10;
+  const maxY = Math.max(...Y) + 10;
+
+  const toX = (i) => paddingX + (i / (history.length - 1)) * (CHART_W - paddingX * 2);
+  const toY_X = (val) => paddingY + ((maxX - val) / (maxX - minX || 1)) * (timelineHeight - paddingY * 2);
+  const toY_Y = (val) => paddingY + ((maxY - val) / (maxY - minY || 1)) * (timelineHeight - paddingY * 2);
+
+  const pointsX = X.map((v, i) => `${toX(i)},${toY_X(v)}`).join(' ');
+  const pointsY = Y.map((v, i) => `${toX(i)},${toY_Y(v)}`).join(' ');
+
+  return (
+    <View style={styles.playgroundContainer}>
+      {/* Selector Card */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Habit Explorer</Text>
+        <Text style={styles.cardSub}>Pair lifestyle habits with cognitive domains to explore trends</Text>
+
+        {/* Habit Selector */}
+        <Text style={styles.playgroundSectionLabel}>Choose Habit</Text>
+        <View style={styles.playgroundPillRow}>
+          {habitOptions.map(h => (
+            <TouchableOpacity
+              key={h.id}
+              style={[
+                styles.paramTab,
+                selectedHabit === h.id && { backgroundColor: '#FFD56B' }
+              ]}
+              onPress={() => setSelectedHabit(h.id)}
+            >
+              <Text
+                style={[
+                  styles.paramTabText,
+                  selectedHabit === h.id && { color: '#E65100', fontFamily: Typography.fontFamily.bold }
+                ]}
+              >
+                {h.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Cognitive Domain Selector */}
+        <Text style={styles.playgroundSectionLabel}>Choose Domain</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.paramSelectorRow}
+        >
+          {DOMAINS.map(d => (
+            <TouchableOpacity
+              key={d.id}
+              style={[
+                styles.paramTab,
+                selectedDomain === d.id && { backgroundColor: d.color.main }
+              ]}
+              onPress={() => setSelectedDomain(d.id)}
+            >
+              <Text
+                style={[
+                  styles.paramTabText,
+                  selectedDomain === d.id && { color: Colors.textInverse }
+                ]}
+              >
+                {d.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Dynamic Correlation Graph Card */}
+      <View style={[styles.card, Shadow.md]}>
+        <View style={styles.playgroundMeterHeader}>
+          <View style={[styles.correlationBadge, { backgroundColor: tierColor + '15', borderColor: tierColor }]}>
+            <Text style={[styles.correlationBadgeText, { color: tierColor }]}>
+              {r >= 0 ? '+' : ''}{r.toFixed(2)} {tierLabel}
+            </Text>
+          </View>
+          <Text style={styles.correlationTitle}>{headline}</Text>
+          <Text style={styles.correlationSubtitle}>{tierDescription}</Text>
+        </View>
+
+        {/* Paired SVG Timeline Graph */}
+        <View style={{ height: timelineHeight, marginVertical: Spacing[4] }}>
+          <Svg width={CHART_W} height={timelineHeight}>
+            {/* Reference Grid lines */}
+            {[0, 0.5, 1].map((ratio, index) => {
+              const yPos = paddingY + ratio * (timelineHeight - paddingY * 2);
+              return (
+                <Line
+                  key={index}
+                  x1={paddingX}
+                  y1={yPos}
+                  x2={CHART_W - paddingX}
+                  y2={yPos}
+                  stroke={Colors.border}
+                  strokeWidth={0.5}
+                  strokeDasharray="3,3"
+                />
+              );
+            })}
+
+            {/* Lifestyle Line (Gold) */}
+            <Polyline
+              points={pointsX}
+              fill="none"
+              stroke="#FFB300"
+              strokeWidth={2.5}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            <Circle
+              cx={toX(X.length - 1)}
+              cy={toY_X(X[X.length - 1])}
+              r={4}
+              fill="#FFB300"
+              stroke={Colors.surface}
+              strokeWidth={1}
+            />
+
+            {/* Cognitive Line (Domain color) */}
+            <Polyline
+              points={pointsY}
+              fill="none"
+              stroke={domainObj.color.main}
+              strokeWidth={2.5}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            <Circle
+              cx={toX(Y.length - 1)}
+              cy={toY_Y(Y[Y.length - 1])}
+              r={4}
+              fill={domainObj.color.main}
+              stroke={Colors.surface}
+              strokeWidth={1}
+            />
+          </Svg>
+          
+          {/* Timeline X-labels */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: paddingX, marginTop: 4 }}>
+            <Text style={{ fontFamily: Typography.fontFamily.regular, fontSize: 9, color: Colors.textMuted }}>30d ago</Text>
+            <Text style={{ fontFamily: Typography.fontFamily.regular, fontSize: 9, color: Colors.textMuted }}>today</Text>
+          </View>
+        </View>
+
+        {/* Graph Legend */}
+        <View style={styles.playgroundLegend}>
+          <View style={styles.playgroundLegendItem}>
+            <View style={[styles.playgroundDot, { backgroundColor: domainObj.color.main }]} />
+            <Text style={styles.playgroundLegendText}>{domainObj.label} score</Text>
+          </View>
+          <View style={styles.playgroundLegendItem}>
+            <View style={[styles.playgroundDot, { backgroundColor: '#FFB300' }]} />
+            <Text style={styles.playgroundLegendText}>{habitOptions.find(h => h.id === selectedHabit).label} rating</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Dynamic Cream Coach's Analysis Card */}
+      <View style={styles.coachCard}>
+        <Text style={styles.coachCardTitle}>Coach's Analysis</Text>
+        <Text style={styles.coachCardBody}>{coachMessage}</Text>
+      </View>
+    </View>
+  );
+}
+
 const getGraphStyles = (Colors) => StyleSheet.create({
   container: { marginBottom: Spacing[2] },
   xLabels: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: Spacing[1] },
@@ -714,14 +1023,19 @@ export default function InsightsScreen({ navigation, route }) {
   const graphStyles = useMemo(() => getGraphStyles(Colors), [Colors]);
   const DOMAINS = getDomains(Colors);
 
-  const { cognitiveScore, domainScores, scoreHistory, cohortPercentile } = state;
+  const [optimizeToggle, setOptimizeToggle] = useState(false);
 
-  const activeScoreHistory = useMemo(() => {
-    if (!scoreHistory || scoreHistory.length === 0) {
-      return get14DaysDummyData(cognitiveScore || 742);
-    }
-    return scoreHistory;
-  }, [scoreHistory, cognitiveScore]);
+  const {
+    cognitiveScore,
+    domainScores,
+    scoreHistory: activeScoreHistory,
+    cohortPercentile,
+    weeklyBrief,
+    last7Avg,
+    correlations,
+    projections,
+    calibrationComplete,
+  } = useInsights();
 
   const activeDomainScores = useMemo(() => {
     if (domainScores && Object.keys(domainScores).length > 0) {
@@ -740,10 +1054,10 @@ export default function InsightsScreen({ navigation, route }) {
 
   // Self-heal scoreHistory if empty, using old schema, or missing new fields
   React.useEffect(() => {
-    const needsRefresh = !scoreHistory
-      || scoreHistory.length === 0
-      || !scoreHistory[0]?.domains
-      || scoreHistory[0]?.mood === undefined;  // Force refresh for new data format
+    const needsRefresh = !state.scoreHistory
+      || state.scoreHistory.length === 0
+      || !state.scoreHistory[0]?.domains
+      || state.scoreHistory[0]?.mood === undefined;  // Force refresh for new data format
 
     if (needsRefresh) {
       const baseScore = cognitiveScore || 715;
@@ -752,7 +1066,7 @@ export default function InsightsScreen({ navigation, route }) {
         payload: { cognitiveScore: baseScore }
       });
     }
-  }, [scoreHistory, cognitiveScore]);
+  }, [state.scoreHistory, cognitiveScore]);
 
   // ── Dynamic calculations from 14-day history dummy data ─────────────────
   const weeklyInsights = useMemo(() => {
@@ -867,16 +1181,20 @@ export default function InsightsScreen({ navigation, route }) {
       <View style={styles.header}>
         <Text style={styles.title}>{t('insights.title')}</Text>
         <View style={styles.tabRow}>
-          {['overview', 'weekly brief'].map(tab => {
-            const isTabActive = activeTab === 'brief' ? tab === 'weekly brief' : tab === 'overview';
+          {['overview', 'weekly brief', 'playground'].map(tab => {
+            const isTabActive = activeTab === (tab === 'weekly brief' ? 'brief' : tab);
+            let tabLabel = t('insights.overview');
+            if (tab === 'weekly brief') tabLabel = t('home.weeklyBrief');
+            if (tab === 'playground') tabLabel = "Playground";
+
             return (
               <TouchableOpacity
                 key={tab}
                 style={[styles.tab, isTabActive && styles.tabActive]}
-                onPress={() => setActiveTab(tab === 'weekly brief' ? 'brief' : 'overview')}
+                onPress={() => setActiveTab(tab === 'weekly brief' ? 'brief' : tab)}
               >
                 <Text style={[styles.tabText, isTabActive && styles.tabTextActive]}>
-                  {tab === 'weekly brief' ? t('home.weeklyBrief') : t('insights.overview')}
+                  {tabLabel}
                 </Text>
               </TouchableOpacity>
             );
@@ -885,7 +1203,7 @@ export default function InsightsScreen({ navigation, route }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {activeTab === 'overview' ? (
+        {activeTab === 'overview' && (
           <>
             {/* Score history */}
             <FadeInUp delay={0} style={[styles.card, Shadow.md]}>
@@ -898,7 +1216,37 @@ export default function InsightsScreen({ navigation, route }) {
                   <Text style={styles.percentileText}>{t('insights.topPercentile', { percentile: 100 - (cohortPercentile || 78) })}</Text>
                 </View>
               </View>
-              <ScoreGraph history={activeScoreHistory} Colors={Colors} graphStyles={graphStyles} />
+              <ScoreGraph
+                history={activeScoreHistory}
+                Colors={Colors}
+                graphStyles={graphStyles}
+                optimizeToggle={optimizeToggle}
+              />
+              
+              {/* Premium Optimize Habits Toggle */}
+              <View style={styles.optimizeRow}>
+                <View style={styles.optimizeTextContainer}>
+                  <Text style={styles.optimizeTitle}>Optimize My Habits</Text>
+                  <Text style={styles.optimizeDesc}>Show trajectory with 7+ hrs sleep & daily sessions</Text>
+                </View>
+                <TouchableOpacity
+                  style={[
+                    styles.optimizeToggleBg,
+                    optimizeToggle ? { backgroundColor: '#FFD56B' } : { backgroundColor: Colors.border }
+                  ]}
+                  onPress={() => setOptimizeToggle(!optimizeToggle)}
+                  activeOpacity={0.8}
+                >
+                  <View
+                    style={[
+                      styles.optimizeToggleThumb,
+                      optimizeToggle
+                        ? { alignSelf: 'flex-end', backgroundColor: '#E65100' }
+                        : { alignSelf: 'flex-start', backgroundColor: '#FFFFFF' }
+                    ]}
+                  />
+                </TouchableOpacity>
+              </View>
             </FadeInUp>
 
             {/* Cognitive Parameter Trend Graphs (Dedicated graph for each domain!) */}
@@ -1015,7 +1363,9 @@ export default function InsightsScreen({ navigation, route }) {
               </TouchableScale>
             </FadeInUp>
           </>
-        ) : (
+        )}
+
+        {activeTab === 'brief' && (
           // Weekly Brief Redesign
           <View style={styles.briefContainer}>
             <Text style={styles.briefDate}>
@@ -1149,6 +1499,17 @@ export default function InsightsScreen({ navigation, route }) {
               </TouchableScale>
             </FadeInUp>
           </View>
+        )}
+
+        {activeTab === 'playground' && (
+          <CorrelationPlayground
+            history={activeScoreHistory}
+            correlations={correlations}
+            calibrationComplete={calibrationComplete}
+            Colors={Colors}
+            DOMAINS={DOMAINS}
+            styles={styles}
+          />
         )}
 
         <View style={{ height: 100 }} />
@@ -1424,5 +1785,135 @@ const getStyles = (Colors) => StyleSheet.create({
   briefGridDelta: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: 11,
+  },
+
+  /* Premium Optimize Habits Toggle */
+  optimizeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.surfaceAlt,
+    borderRadius: Radius.md,
+    padding: Spacing[3],
+    marginTop: Spacing[4],
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  optimizeTextContainer: {
+    flex: 1,
+    marginRight: Spacing[3],
+  },
+  optimizeTitle: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.size.body - 1,
+    color: Colors.textPrimary,
+  },
+  optimizeDesc: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.caption,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  optimizeToggleBg: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  optimizeToggleThumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    ...Shadow.sm,
+  },
+
+  /* Correlation Playground Styles */
+  playgroundContainer: {
+    width: '100%',
+  },
+  playgroundSectionLabel: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: Spacing[3],
+    marginBottom: Spacing[2],
+    textTransform: 'lowercase',
+  },
+  playgroundPillRow: {
+    flexDirection: 'row',
+    gap: Spacing[2],
+    marginVertical: Spacing[1],
+  },
+  playgroundMeterHeader: {
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: Spacing[2],
+  },
+  correlationBadge: {
+    borderWidth: 1.5,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing[4],
+    paddingVertical: 6,
+    marginBottom: 4,
+  },
+  correlationBadgeText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 12,
+  },
+  correlationTitle: {
+    fontFamily: Typography.fontFamily.extraBold,
+    fontSize: 18,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  correlationSubtitle: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 11,
+    color: Colors.textMuted,
+    textTransform: 'lowercase',
+  },
+  playgroundLegend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing[6],
+    marginTop: Spacing[2],
+  },
+  playgroundLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  playgroundDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  playgroundLegendText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 11,
+    color: Colors.textSecondary,
+    textTransform: 'lowercase',
+  },
+  coachCard: {
+    backgroundColor: '#FAF7F0',
+    borderRadius: Radius.xl,
+    padding: Spacing[6],
+    marginBottom: Spacing[6],
+    borderWidth: 1,
+    borderColor: '#EFECE6',
+    gap: Spacing[2],
+    ...Shadow.sm,
+  },
+  coachCardTitle: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 16,
+    color: '#7C786E',
+  },
+  coachCardBody: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 13,
+    color: '#4C4942',
+    lineHeight: 20,
   },
 });

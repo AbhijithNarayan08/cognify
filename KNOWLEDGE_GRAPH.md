@@ -399,6 +399,17 @@ All game sessions share these hooks/components wired together by `ActiveSessionS
 | `useAdaptiveLadder(exerciseId)` | Loads level from AsyncStorage, tracks consecutive correct/miss, exposes `currentLevel`, `recordCorrect()`, `recordMiss()`, `saveLevel()`. Daily warm-up cap at level 3. |
 | `useStreakMultiplier()` | Tracks streak count, resolves multiplier from `STREAK_MULTIPLIERS`. Returns `streakCount`, `multiplier`, `recordCorrect()`, `recordMiss()`, `reset()`. |
 
+### Advanced Analytics Engine (`src/features/insights/hooks/useInsights.js` & `src/utils/analytics.js`)
+* **Pearson Correlation Coefficient ($r$)**: Computes mathematical correlations between lifestyle habits (sleep, mood, activity) and cognitive domains (Memory, Speed, Attention, Executive, Verbal, Spatial).
+  - Calculated dynamically using covariance divided by the product of standard deviations:
+    $$r = \frac{\sum (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum (x_i - \bar{x})^2 \sum (y_i - \bar{y})^2}}$$
+  - Bounded by a strict standard deviation guard: if standard deviation is zero (e.g. flat user inputs), standard deviation is standardized to $0.0001$ to block division-by-zero (`NaN`) runtime crashes.
+* **Linear Regression Progress Trajectory**:
+  - Calculates the trend slope of historical scores over sequential days $t$:
+    $$slope = \frac{\sum (t_i - \bar{t})(Score_i - \bar{Score})}{\sum (t_i - \bar{t})^2}$$
+  - Models future score projections 7 days out: $Score_{\text{projected}} = Score_{\text{current}} + 7 \times slope$ (bounded securely between `300` and `1000`).
+  - Supports an **"Optimize My Habits"** toggle plotting a compound slope booster ($slope + 0.82$) to demonstrate potential daily gains if consistent sleep and training are maintained.
+
 ### Scoring (`src/features/train/engine/scoring.js`)
 ```js
 calculateRoundScore({ baseScore, speedBonus, multiplier, maxScore })
@@ -558,7 +569,18 @@ When `isComplete` fires: fades play area → navigates to `SessionResult` with:
 ### Game 3 — Lighthouse Watch (Sustained Attention, `#3DAB7F`)
 **File:** `src/features/train/games/LighthouseWatch.js` (monolithic)
 
-**Mechanic:** Continuous shape stream. Tap only on the rare target star. Ignore all distractors.
+**Mechanic:** Continuous, dynamic shape stream with fading overlap visual physics. Tap only on the rare target star. Ignore all distractor shapes.
+
+**Vigilance Analysis & Clinical Metrics**:
+* **Z-Score D-Prime Metric ($d'$)**: Implements a high-precision, zero-dependency rational approximation of the inverse normal cumulative distribution function (CDF) to solve:
+  $$d' = Z(\text{Hit Rate}) - Z(\text{False Alarm Rate})$$
+  Features a mathematical continuity correction ($\pm 0.5 / n$) to handle perfect boundary scores ($100\%$ hits or $0\%$ false alarms) without producing infinite values or runtime crashes.
+* **15-Second Event Quartiles**: Partitions the 60s stimulus period into four distinct 15s quartiles (Q1, Q2, Q3, Q4) to track hits, misses, and false alarms per quartile.
+* **Cognitive Pattern Classifiers**:
+  - `PEAK_PERFORMANCE` (*Elite Vigilance*): $>90\%$ Hit Rate, $<10\%$ False Alarm Rate.
+  - `LATE_FATIGUE` (*Late Session Fatigue*): Q4 False Alarm Rate is $>2\times$ Q1 (with at least 2 FAs in Q4), tracking classic vigilance decrements.
+  - `EARLY_IMPULSIVITY` (*Early Impulsivity*): $\ge 3$ False Alarms in the first 15 seconds (Q1).
+  - `CONSISTENT_MISS` (*High Speed Overload*): $>40\%$ Miss Rate.
 
 **Scoring:** +100 per correct hit. False alarms: −50 direct penalty + full-screen red flash (30% opacity, 200ms). Silence on missed targets.
 
@@ -569,11 +591,20 @@ When `isComplete` fires: fades play area → navigates to `SessionResult` with:
 ### Game 4 — Context Switch (Executive Function, `#A662C6`)
 **File:** `src/features/train/games/ContextSwitch.js` (monolithic)
 
-**Mechanic:** Classify stimuli by a rapidly-switching rule (shape/colour/size/count). Coloured border signals active rule.
+**Mechanic:** Classify stimuli by a rapidly-switching rule (shape/colour/size/count). Coloured border signals the active rule.
 
-**Rules:** Blue=shape, Red=colour, Yellow=size, Purple=count.
+**Rules:** Blue=shape, Red=colour, Yellow=size, Purple=count. Shape fill color never matches active rule border color (Fill color guard).
 
-**Scoring:** +150 base on switch rounds (×SWITCH_ROUND_BONUS_MULTIPLIER). Measures `switchCost` = meanSwitchRT − meanStayRT (ms).
+**Set-Shifting Analytics & Calculations**:
+* **Decomposed Switch Cost**: Calculates global switch cost ($AvgRT_{\text{switch}} - AvgRT_{\text{stay}}$) by isolating rounds where the rule changed vs stay rounds.
+* **Rule-Specific Performance Breakdown**: Tallies attempts, correct, average RT, and local switch costs for each of the 4 individual rules.
+* **Cognitive Transition Classifiers**:
+  - `ELITE_FLEXIBILITY` (*Elite Flexibility*): Switch cost $<50$ms.
+  - `WEAK_RULE` (*Asymmetric Set-Shifting*): Accuracy under $65\%$ on one rule while others exceed $80\%$.
+  - `TIMEOUT_SPIKE` (*Cognitive Overload*): Timeout rate exceeds $20\%$ (too tight response window for selected level).
+  - `STAY_DOMINANT` (*Rule-Switching Deficit*): Stay accuracy $>95\%$ but switch accuracy $<70\%$.
+
+**Scoring:** +150 base on switch rounds. Measures `switchCost` = meanSwitchRT − meanStayRT (ms).
 
 ---
 
@@ -708,13 +739,36 @@ Multi-step: age range → sleep → activity level.
 Post-results projection / brain age screen. Navigates to MainApp on completion.
 
 ### HomeScreen
-- Sticky header: snaps from 60→80px at scroll offset
-- Greeting hook: contextual milestone strings (streaks, post-workout, time-of-day)
-- `ScoreRing` + cohort percentile
-- `WorkoutCard`: triggers daily workout (4-exercise stack)
-- Insight/Weekly Brief teasers: suppressed until daily workout complete
-- Check-in cards: 1 visible at a time, 6h dismiss cooldown
-- Focus Areas: 3 weakest domains (SectionHeader toggle to show all)
+- Sticky header: snaps from 60→80px at scroll offset.
+- Greeting hook: contextual milestone strings (streaks, post-workout, time-of-day).
+- `ScoreRing` + cohort percentile.
+- **Interactive Duolingo-style Streak system**:
+  - Streak badge pill wrapped inside `TouchableScale` triggering correct haptics on press.
+  - Transparent overlay `<Modal>` with an organic spring bounce animation (`Animated.spring` friction 7, tension 50).
+  - **Dynamic Multi-Layered SVG Flame Mascot**: Centered dynamic cartoon character layered with three animated vector shapes: Outer Coral flame (`#FF5E5B`), Middle Amber flame (`#FFC000`), and Inner Cream core (`#FFF9E6`) with closed smiling eyes (`∪ ∪`), pink cheeks, and an open gasping mouth. Animated with dual-axis breathing and out-of-phase organic swaying loops.
+  - Horizontal timezone-safe weekly activity calendar mapping days to score history logs (vibrant filled flames, dashed today, empty grey outlines).
+  - Streak freeze placeholder slot with shield icon on light-blue layout.
+- `WorkoutCard`: triggers daily workout (4-exercise stack).
+- Insight/Weekly Brief teasers: suppressed until daily workout complete.
+- Check-in cards: 1 visible at a time, 6h dismiss cooldown, launches the Check-in Bottom Sheet.
+- Focus Areas: 3 weakest domains (SectionHeader toggle to show all).
+
+### Quick Check-in Bottom Sheet Modal (`CheckinBottomSheet.js`)
+Presents a premium full-width card entry point (`CheckinCard.js`) that slides up a customized, highly-tactile wellness tracker:
+* **Custom gesture slider & floating tooltip**:
+  - 100% custom gesture slider using `PanResponder` to capture drag/taps and snap to steps on release.
+  - Floating speech bubble tooltip CARET (`▼`) that glides horizontally to track the sliding thumb knob.
+* **Procedural SVGs & Face Morphing**:
+  - **Mood & Sleep Face**: Vector face morphing dynamically drawn using quadratic Bezier curve coordinates:
+    $$d = \text{"M 33 startY Q 50 controlY 67 startY"}$$
+    Transitions eyes and mouth smoothly in real-time from terrible (frown, controlY=34) to neutral (straight line, controlY=52) to great (happy curve, controlY=70).
+  - **Energy Pulse Wave (Activity)**: A physical activity wave procedurally plotted using a sine wave modulated by a smooth dome envelope function:
+    $$Y = 40 + A \times \sin(\omega t) \times \sin(\text{pct} \times \pi)$$
+    Automatically increases frequency (1.5 to 7.0 cycles) and amplitude ($A$) as user slider rating increases, from resting flatline to energy pulse, keeping ends flat (`Y=40`) to prevent visual edge clipping.
+* **Emotional color spectrum transitions**:
+  - Transitions background sheet container smoothly across emotional scales: blue scale (Memory-Blue `#BCDBFF`) for low ratings, appBg warm linen (`#F0EEE8`) for neutral, and coral/red scale (`#F4A69A`) for excellent logs.
+* **Sleep Zzzs Animation**:
+  - Looping sequential animation driving drifting sleeping letters (`Z`, `z`, `z`) floating upward and right of the Zzz sleeping face using staggered translate and opacity interpolations on native driver.
 
 ### TrainScreen
 - Domain filter pills (horizontal scroll, 44pt touch targets, right fade mask via LinearGradient)
@@ -838,6 +892,9 @@ Post-results projection / brain age screen. Navigates to MainApp on completion.
 
 - **Root reducer MUST chain.** Parallel spread causes silent data loss on cross-slice actions.
 - **InsightsScreen self-heal.** Checks for `mood` field on mount; add new schema field checks here for backwards compatibility.
+- **Eager Evaluation & Modals in Stack ("Play Again" Crash)**: When navigating from a result dashboard back to the active session modal, React Navigation pops the stack and re-uses the active session screen. During re-rendering, `ContextSwitch` can render with `stimulus` initially reset to `null`. Simple short-circuiting (`stimulus && (...)`) can cause Babel-transpiled eager-evaluation crashes on `.shape` access. Using an explicit ternary condition `stimulus ? ( ... ) : false` combined with optional-chaining (`stimulus?.shape`) completely shields the logic.
+- **Pearson Zero-Variance Guard**: If user scored logs or habits are completely flat (e.g., repeating the same rating), the standard deviation resolves to zero. During Pearson calculations, this standard deviation product in the denominator produces a division-by-zero (`NaN`) crash. A strict boundary standard deviation fallback of `0.0001` serves as an absolute safeguard.
+- **Rational Inverse CDF Perfect-Score Bounds**: In Signal Detection Theory ($d'$ calculations), standard CDF inverse calculations produce infinite boundaries for perfect boundary cases ($100\%$ hit rate or $0\%$ false alarm rate). Applying continuous corrections ($\pm 0.5 / n$) prevents mathematical breakdown and runtime crashes.
 - **`getDomains(Colors)` per-render.** Cheap but could be memoized at module level if needed.
 - **`expo-blur BlurView`** degrades gracefully on Android to solid `backgroundColor`.
 - **AssessmentScreens.js** is ~800 lines — candidate for splitting into feature modules.

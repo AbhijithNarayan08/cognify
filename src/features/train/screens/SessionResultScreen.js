@@ -6,6 +6,24 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Award, Target, Flame, Zap, ArrowRight, CornerDownLeft } from 'lucide-react-native';
+import Svg, { Path, Circle } from 'react-native-svg';
+
+function getZScore(p) {
+  const clampP = Math.max(0.001, Math.min(0.999, p));
+  const t = Math.sqrt(-2.0 * Math.log(clampP < 0.5 ? clampP : 1.0 - clampP));
+  const c0 = 2.515517;
+  const c1 = 0.802853;
+  const c2 = 0.010328;
+  const d1 = 1.432788;
+  const d2 = 0.189269;
+  const d3 = 0.001308;
+  
+  const num = c0 + c1 * t + c2 * t * t;
+  const den = 1.0 + d1 * t + d2 * t * t + d3 * t * t * t;
+  const z = t - num / den;
+  return clampP < 0.5 ? -z : z;
+}
+
 
 import { useThemeColors, Typography, Spacing, Radius, Shadow, getDomains } from '../../../theme';
 import { t } from '../../../constants/useStrings';
@@ -33,6 +51,52 @@ export default function SessionResultScreen({ navigation, route }) {
   const [isNewPersonalBest, setIsNewPersonalBest] = React.useState(false);
   const [hasLoadedBest, setHasLoadedBest] = React.useState(false);
   const celebrationPulse = React.useRef(new Animated.Value(1.0)).current;
+
+  const [lighthouseHistory, setLighthouseHistory] = React.useState([]);
+  const [historyLoaded, setHistoryLoaded] = React.useState(false);
+  const [currentLevel, setCurrentLevel] = React.useState(1);
+  const [levelUpdated, setLevelUpdated] = React.useState(false);
+
+  const [contextswitchHistory, setContextswitchHistory] = React.useState([]);
+  const [csHistoryLoaded, setCsHistoryLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    if (exercise?.id === 'lighthouse-watch') {
+      AsyncStorage.getItem('cognify:lighthouse:sessions').then((storedStr) => {
+        if (storedStr) {
+          try {
+            const parsed = JSON.parse(storedStr);
+            setLighthouseHistory(parsed);
+          } catch (e) {
+            setLighthouseHistory([]);
+          }
+        }
+        setHistoryLoaded(true);
+      });
+      AsyncStorage.getItem('cognify:gameLevel:lighthouse-watch').then((val) => {
+        if (val) {
+          setCurrentLevel(parseInt(val, 10));
+        }
+      });
+    } else if (exercise?.id === 'context-switch') {
+      AsyncStorage.getItem('cognify:contextswitch:sessions').then((storedStr) => {
+        if (storedStr) {
+          try {
+            const parsed = JSON.parse(storedStr);
+            setContextswitchHistory(parsed);
+          } catch (e) {
+            setContextswitchHistory([]);
+          }
+        }
+        setCsHistoryLoaded(true);
+      });
+      AsyncStorage.getItem('cognify:gameLevel:context-switch').then((val) => {
+        if (val) {
+          setCurrentLevel(parseInt(val, 10));
+        }
+      });
+    }
+  }, [exercise?.id]);
 
   React.useEffect(() => {
     if (exercise?.id === 'signal-chain') {
@@ -412,6 +476,165 @@ export default function SessionResultScreen({ navigation, route }) {
       benchmarkDesc = 'Solid vigilance with a steady hand. Keep refining your focus!';
     }
 
+    // Continuity corrected D-Prime calculation
+    let correctedHits = hits;
+    if (hits === totalTargets) {
+      correctedHits = totalTargets - 0.5;
+    } else if (hits === 0) {
+      correctedHits = 0.5;
+    }
+    let correctedFalseAlarms = falseAlarms;
+    if (falseAlarms === totalDistractors) {
+      correctedFalseAlarms = totalDistractors - 0.5;
+    } else if (falseAlarms === 0) {
+      correctedFalseAlarms = 0.5;
+    }
+
+    const hitRateRatio = totalTargets > 0 ? correctedHits / totalTargets : 0.5;
+    const faRateRatio = totalDistractors > 0 ? correctedFalseAlarms / totalDistractors : 0.5;
+    const dPrime = getZScore(hitRateRatio) - getZScore(faRateRatio);
+
+    // Quartiles analysis for Heatmap & Patterns
+    const quartiles = gameSpecificMetrics.quartiles || [
+      { q: 0, hits: 0, misses: 0, falseAlarms: 0 },
+      { q: 1, hits: 0, misses: 0, falseAlarms: 0 },
+      { q: 2, hits: 0, misses: 0, falseAlarms: 0 },
+      { q: 3, hits: 0, misses: 0, falseAlarms: 0 }
+    ];
+
+    let detectedPattern = 'STEADY_FOCUS';
+    let patternTitle = 'steady concentration';
+    let patternDesc = 'you maintained steady focus and guarded against unnecessary distraction triggers.';
+    let patternColor = '#3DAB7F'; // Green
+
+    const q1FAs = quartiles[0]?.falseAlarms || 0;
+    const q4FAs = quartiles[3]?.falseAlarms || 0;
+    const totalMissRate = totalTargets > 0 ? misses / totalTargets : 0;
+
+    if (hits / Math.max(1, totalTargets) > 0.9 && falseAlarms / Math.max(1, totalDistractors) < 0.1) {
+      detectedPattern = 'PEAK_PERFORMANCE';
+      patternTitle = 'elite vigilance';
+      patternDesc = 'flawless target detection and exceptional impulse control. vigilance tier peak achieved!';
+      patternColor = '#A662C6'; // Purple
+    } else if (q4FAs > q1FAs * 2 && q4FAs >= 2) {
+      detectedPattern = 'LATE_FATIGUE';
+      patternTitle = 'late session fatigue';
+      patternDesc = 'your false alarm rate spikes in the final stretch, indicating a classic vigilance decrement. take a deep breath before playing next time!';
+      patternColor = '#BA7517'; // Amber
+    } else if (q1FAs >= 3) {
+      detectedPattern = 'EARLY_IMPULSIVITY';
+      patternTitle = 'early impulsivity';
+      patternDesc = 'you tapped too quickly at the very beginning of the session. slow down and wait for the shape to clearly resolve.';
+      patternColor = '#E24B4A'; // Red
+    } else if (totalMissRate > 0.4) {
+      detectedPattern = 'CONSISTENT_MISS';
+      patternTitle = 'high speed overload';
+      patternDesc = 'you missed more than 40% of the stars. the stream might be moving too fast — try playing at a lower level to build baseline focus.';
+      patternColor = '#BA7517'; // Amber
+    }
+
+    // Adaptive LEVEL prompting logic
+    const allSessionsForAdaptive = [...lighthouseHistory];
+    const existsCurrent = allSessionsForAdaptive.some(s => s.score === score && Math.abs(new Date(s.timestamp) - new Date()) < 60000);
+    if (!existsCurrent) {
+      allSessionsForAdaptive.unshift({
+        hits,
+        misses,
+        falseAlarms,
+        totalTargets,
+        totalDistractors,
+        level: currentLevel,
+      });
+    }
+
+    let adaptivePrompt = null;
+    let targetLevel = 1;
+
+    if (allSessionsForAdaptive.length >= 3) {
+      const last3 = allSessionsForAdaptive.slice(0, 3);
+      const hitRateAvg = last3.reduce((sum, s) => sum + (s.hits / Math.max(1, s.totalTargets || (s.hits + s.misses || 1))), 0) / 3;
+      const faRateAvg = last3.reduce((sum, s) => sum + (s.falseAlarms / Math.max(1, s.totalDistractors || 1)), 0) / 3;
+      
+      if (hitRateAvg > 0.85 && faRateAvg < 0.12) {
+        const curLvl = last3[0].level || currentLevel;
+        if (curLvl < 5) {
+          adaptivePrompt = 'up';
+          targetLevel = curLvl + 1;
+        }
+      }
+    }
+
+    if (!adaptivePrompt && allSessionsForAdaptive.length >= 2) {
+      const last2 = allSessionsForAdaptive.slice(0, 2);
+      const hitRateAvg2 = last2.reduce((sum, s) => sum + (s.hits / Math.max(1, s.totalTargets || (s.hits + s.misses || 1))), 0) / 2;
+      const faRateAvg2 = last2.reduce((sum, s) => sum + (s.falseAlarms / Math.max(1, s.totalDistractors || 1)), 0) / 2;
+
+      if (faRateAvg2 > 0.35 || hitRateAvg2 < 0.50) {
+        const curLvl = last2[0].level || currentLevel;
+        if (curLvl > 1) {
+          adaptivePrompt = 'down';
+          targetLevel = curLvl - 1;
+        }
+      }
+    }
+
+    const handleApplyAdaptiveLevel = async () => {
+      try {
+        await AsyncStorage.setItem('cognify:gameLevel:lighthouse-watch', String(targetLevel));
+        setCurrentLevel(targetLevel);
+        setLevelUpdated(true);
+      } catch (e) {
+        console.error('[SessionResultScreen] Error updating level:', e);
+      }
+    };
+
+    // Render Sparkline path helper
+    const renderSparkline = () => {
+      const trendSessions = allSessionsForAdaptive.slice(0, 7).reverse();
+      if (trendSessions.length < 2) {
+        return (
+          <Text style={styles.trendEmptyText}>
+            play 2 more sessions to unlock your sustained vigilance trend graph.
+          </Text>
+        );
+      }
+
+      const points = trendSessions.map((s, idx) => {
+        const val = s.dPrime !== undefined ? s.dPrime : 1.5;
+        const x = (idx / (trendSessions.length - 1)) * 260 + 20;
+        const y = 50 - (Math.max(0, Math.min(4.0, val)) / 4.0) * 35;
+        return { x, y };
+      });
+
+      const pathD = `M ${points.map(p => `${p.x} ${p.y}`).join(' L ')}`;
+
+      return (
+        <View style={{ alignItems: 'center', marginVertical: 8 }}>
+          <Svg width="100%" height={60} viewBox="0 0 300 60">
+            <Path
+              d={pathD}
+              fill="none"
+              stroke={domain?.color.main}
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {points.map((p, idx) => (
+              <Circle
+                key={idx}
+                cx={p.x}
+                cy={p.y}
+                r={4}
+                fill={Colors.appBg}
+                stroke={domain?.color.main}
+                strokeWidth={2}
+              />
+            ))}
+          </Svg>
+        </View>
+      );
+    };
+
     return (
       <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing[8], paddingBottom: insets.bottom + Spacing[8] }]}>
         <View style={styles.header}>
@@ -435,23 +658,100 @@ export default function SessionResultScreen({ navigation, route }) {
             <Text style={[styles.largeStatDelta, { color: scoreColor }]}>{scoreDeltaText}</Text>
           </View>
 
-          {/* Stat 2: Best streak */}
-          <View style={[styles.largeStatCard, Shadow.md, { borderLeftWidth: 4, borderLeftColor: Colors.brandPrimary || '#F4A041' }]}>
-            <Text style={[styles.largeStatVal, { color: Colors.brandPrimary || '#F4A041' }]}>
-              {longestStreak}
+          {/* Stat 2: Vigilance Index */}
+          <View style={[styles.largeStatCard, Shadow.md, { borderLeftWidth: 4, borderLeftColor: '#A662C6' }]}>
+            <Text style={[styles.largeStatVal, { color: '#A662C6' }]}>
+              {dPrime.toFixed(2)}
             </Text>
-            <Text style={styles.largeStatLabel}>best streak</Text>
+            <Text style={styles.largeStatLabel}>vigilance index (d')</Text>
           </View>
         </View>
 
-        {/* Contextual Benchmark Callout */}
-        <View style={[styles.pbCalloutCard, Shadow.sm, { backgroundColor: Colors.surface, borderColor: Colors.border, borderWidth: 1 }]}>
-          <Text style={[styles.pbCalloutText, { color: Colors.textSecondary, fontFamily: Typography.fontFamily.medium }]}>
-            your performance: <Text style={{ color: domain?.color.main, fontFamily: Typography.fontFamily.bold }}>{benchmarkLabel}</Text>
-          </Text>
-          <Text style={{ fontSize: Typography.size.caption, color: Colors.textMuted, textAlign: 'center', marginTop: 4 }}>
-            {benchmarkDesc}
-          </Text>
+        {/* Adaptive Level Suggestion Banner */}
+        {adaptivePrompt && (
+          <View style={[styles.adaptiveBanner, { backgroundColor: Colors.surface, borderColor: adaptivePrompt === 'up' ? '#3DAB7F' : '#E24B4A' }]}>
+            <View style={styles.adaptiveHeader}>
+              <Text style={[styles.adaptiveTitle, { color: adaptivePrompt === 'up' ? '#3DAB7F' : '#E24B4A' }]}>
+                {adaptivePrompt === 'up' ? '🚀 level up suggestion' : '📉 level recommended'}
+              </Text>
+              <Text style={{ fontSize: 10, color: Colors.textMuted }}>adaptive</Text>
+            </View>
+            <Text style={styles.adaptiveDesc}>
+              {adaptivePrompt === 'up' 
+                ? `you've mastered level ${targetLevel - 1}! let's advance to level ${targetLevel} for higher target vigilance constraints.`
+                : `level ${targetLevel + 1} proved challenging. let's return to level ${targetLevel} to reinforce your precision.`}
+            </Text>
+            
+            {levelUpdated ? (
+              <Text style={[styles.adaptiveSuccessText, { color: '#3DAB7F' }]}>✓ level successfully updated to level {targetLevel}!</Text>
+            ) : (
+              <View style={styles.adaptiveActions}>
+                <TouchableOpacity
+                  style={[styles.adaptiveBtnGo, { backgroundColor: adaptivePrompt === 'up' ? '#3DAB7F' : '#E24B4A' }]}
+                  onPress={handleApplyAdaptiveLevel}
+                >
+                  <Text style={[styles.adaptiveBtnGoText, { color: Colors.textInverse }]}>let's go</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.adaptiveBtnNo, { borderColor: Colors.border }]}
+                  onPress={() => setLevelUpdated(true)}
+                >
+                  <Text style={[styles.adaptiveBtnNoText, { color: Colors.textSecondary }]}>not yet</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Contextual Cognitive Insight Card */}
+        <View style={[styles.pbCalloutCard, Shadow.sm, { backgroundColor: Colors.surface, borderColor: patternColor, borderLeftWidth: 4 }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.pbCalloutText, { color: patternColor, textTransform: 'lowercase' }]}>
+              focus pattern: {patternTitle}
+            </Text>
+            <Text style={{ fontSize: Typography.size.caption, color: Colors.textSecondary, marginTop: 4 }}>
+              {patternDesc}
+            </Text>
+          </View>
+        </View>
+
+        {/* 15-Second Quartile Heatmap */}
+        <View style={{ width: '100%', marginVertical: Spacing[2] }}>
+          <Text style={styles.heatmapSectionTitle}>session precision heatmap</Text>
+          <View style={styles.heatmapRow}>
+            {quartiles.map((q, idx) => {
+              const errors = q.misses + q.falseAlarms;
+              const bg = errors === 0 
+                ? 'rgba(61, 171, 127, 0.08)' 
+                : errors <= 2 
+                  ? 'rgba(186, 117, 23, 0.08)' 
+                  : 'rgba(226, 75, 74, 0.08)';
+              const border = errors === 0 
+                ? '#3DAB7F' 
+                : errors <= 2 
+                  ? '#BA7517' 
+                  : '#E24B4A';
+              const textCol = errors === 0 
+                ? '#3DAB7F' 
+                : errors <= 2 
+                  ? '#BA7517' 
+                  : '#E24B4A';
+              
+              return (
+                <View key={idx} style={[styles.heatmapBlock, { backgroundColor: bg, borderColor: border }]}>
+                  <Text style={styles.heatmapBlockTitle}>{idx * 15}-{ (idx + 1) * 15 }s</Text>
+                  <Text style={styles.heatmapBlockVal}>{q.hits}✓</Text>
+                  <Text style={[styles.heatmapBlockSub, { color: textCol }]}>{errors}✗</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* 7-Session D-Prime Trend Chart */}
+        <View style={[styles.trendCard, Shadow.sm]}>
+          <Text style={styles.trendTitle}>sustained vigilance trend (d')</Text>
+          {renderSparkline()}
         </View>
 
         {/* 3-Axis Vigilance Stats Grid */}
@@ -483,6 +783,335 @@ export default function SessionResultScreen({ navigation, route }) {
               <Text style={styles.gridCardLabel}>total stimuli</Text>
             </View>
           </View>
+        </View>
+
+        {/* CTA Buttons */}
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={[styles.primaryButton, { backgroundColor: Colors.brandPrimary }]}
+            onPress={handlePrimaryCTA}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.primaryButtonText}>
+              {remainingExercises && remainingExercises.length > 0
+                ? (t('train.results.nextExercise') || 'next exercise')
+                : (t('train.results.done') || 'done')}
+            </Text>
+            {remainingExercises && remainingExercises.length > 0 && (
+              <ArrowRight size={20} color={Colors.textInverse} style={{ marginLeft: Spacing[2] }} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handleSecondaryCTA}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.secondaryButtonText, { color: Colors.textSecondary }]}>
+              {t('train.results.playAgain') || 'play again'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  if (exercise?.id === 'context-switch') {
+    const rounds = gameSpecificMetrics.rounds || [];
+    const switchCostMs = gameSpecificMetrics.switchCostMs !== undefined ? gameSpecificMetrics.switchCostMs : 0;
+    
+    const switchRounds = rounds.filter(r => r.isSwitch);
+    const stayRounds = rounds.filter(r => !r.isSwitch);
+    const correctSwitches = switchRounds.filter(r => r.correct).length;
+    const correctStays = stayRounds.filter(r => r.correct).length;
+    const switchAccuracy = switchRounds.length ? Math.round((correctSwitches / switchRounds.length) * 100) : 0;
+    const stayAccuracy = stayRounds.length ? Math.round((correctStays / stayRounds.length) * 100) : 0;
+
+    const ruleStats = gameSpecificMetrics.ruleStats || {
+      shape: { attempts: 0, correct: 0, avgRTms: 0, switchCostMs: 0 },
+      color: { attempts: 0, correct: 0, avgRTms: 0, switchCostMs: 0 },
+      size: { attempts: 0, correct: 0, avgRTms: 0, switchCostMs: 0 },
+      count: { attempts: 0, correct: 0, avgRTms: 0, switchCostMs: 0 }
+    };
+
+    const totalRounds = roundsCompleted || 1;
+    const timeoutCount = rounds.filter(r => r.timedOut).length;
+    const timeoutRate = totalRounds > 0 ? timeoutCount / totalRounds : 0;
+
+    let switchCostDeltaText = 'first session';
+    let switchCostColor = Colors.textMuted;
+    if (contextswitchHistory.length >= 2) {
+      const prevSession = contextswitchHistory[1];
+      if (prevSession && prevSession.switchCostMs !== undefined) {
+        const delta = switchCostMs - prevSession.switchCostMs;
+        if (delta < 0) {
+          switchCostDeltaText = `↓${Math.abs(delta)}ms from last session`;
+          switchCostColor = '#3DAB7F';
+        } else if (delta > 0) {
+          switchCostDeltaText = `↑${delta}ms from last session`;
+          switchCostColor = '#E24B4A';
+        } else {
+          switchCostDeltaText = 'equal to last session';
+          switchCostColor = Colors.textSecondary;
+        }
+      }
+    }
+
+    let detectedPattern = 'STEADY_FOCUS';
+    let patternTitle = 'steady concentration';
+    let patternDesc = 'you maintained steady focus and successfully navigated rule transitions.';
+    let patternColor = '#3DAB7F';
+
+    const ruleAccs = Object.entries(ruleStats).map(([rule, s]) => ({ rule, acc: s.attempts > 0 ? s.correct / s.attempts : 0.8 }));
+    const weakRule = ruleAccs.find(r => r.acc < 0.65 && ruleAccs.filter(x => x.acc > 0.8).length >= 2);
+
+    if (switchCostMs !== null && switchCostMs < 50) {
+      detectedPattern = 'ELITE_FLEXIBILITY';
+      patternTitle = 'elite flexibility';
+      patternDesc = 'your switch cost is incredibly low. you are shifting gears almost instantly. elite executive control!';
+      patternColor = '#A662C6';
+    } else if (weakRule) {
+      detectedPattern = 'WEAK_RULE';
+      patternTitle = `asymmetric set-shifting: ${weakRule.rule}`;
+      patternDesc = `your accuracy on ${weakRule.rule.toUpperCase()} transitions is significantly lower than other rules. focus on the colored border before tapping!`;
+      patternColor = '#BA7517';
+    } else if (timeoutRate > 0.20) {
+      detectedPattern = 'TIMEOUT_SPIKE';
+      patternTitle = 'cognitive overload';
+      patternDesc = 'your timeout rate exceeded 20%. the response window may be too tight for this level. take a brief breath between trials.';
+      patternColor = '#E24B4A';
+    } else if (stayAccuracy > 0.95 && switchAccuracy < 0.70) {
+      detectedPattern = 'STAY_DOMINANT';
+      patternTitle = 'rule-switching deficit';
+      patternDesc = 'you are highly precise on stay rounds but struggle to load new rules. try slowing down slightly on switch borders.';
+      patternColor = '#BA7517';
+    }
+
+    const allSessionsForCS = [...contextswitchHistory];
+    const existsCSCurrent = allSessionsForCS.some(s => s.score === score && Math.abs(new Date(s.timestamp) - new Date()) < 60000);
+    if (!existsCSCurrent) {
+      allSessionsForCS.unshift({
+        score,
+        completedRounds: totalRounds,
+        switchAccuracy,
+        timeoutRate,
+        level: currentLevel,
+      });
+    }
+
+    let adaptivePrompt = null;
+    let targetLevel = 1;
+
+    if (allSessionsForCS.length >= 3) {
+      const last3 = allSessionsForCS.slice(0, 3);
+      const switchAccAvg = last3.reduce((sum, s) => sum + (s.switchAccuracy || 0), 0) / 3;
+      const timeoutRateAvg = last3.reduce((sum, s) => sum + (s.timeoutRate || 0), 0) / 3;
+      
+      if (switchAccAvg > 88 && timeoutRateAvg < 0.08) {
+        const curLvl = last3[0].level || currentLevel;
+        if (curLvl < 5) {
+          adaptivePrompt = 'up';
+          targetLevel = curLvl + 1;
+        }
+      }
+    }
+
+    if (!adaptivePrompt && allSessionsForCS.length >= 2) {
+      const last2 = allSessionsForCS.slice(0, 2);
+      const switchAccAvg2 = last2.reduce((sum, s) => sum + (s.switchAccuracy || 0), 0) / 2;
+      const timeoutRateAvg2 = last2.reduce((sum, s) => sum + (s.timeoutRate || 0), 0) / 2;
+
+      if (switchAccAvg2 < 55 || timeoutRateAvg2 > 0.25) {
+        const curLvl = last2[0].level || currentLevel;
+        if (curLvl > 1) {
+          adaptivePrompt = 'down';
+          targetLevel = curLvl - 1;
+        }
+      }
+    }
+
+    const handleApplyAdaptiveLevel = async () => {
+      try {
+        const key = exercise?.id === 'context-switch' 
+          ? 'cognify:gameLevel:context-switch' 
+          : 'cognify:gameLevel:lighthouse-watch';
+        await AsyncStorage.setItem(key, String(targetLevel));
+        setCurrentLevel(targetLevel);
+        setLevelUpdated(true);
+      } catch (e) {
+        console.error('[SessionResultScreen] Error updating level:', e);
+      }
+    };
+
+    const renderCSSparkline = () => {
+      const trendSessions = allSessionsForCS.slice(0, 7).reverse();
+      if (trendSessions.length < 2) {
+        return (
+          <Text style={styles.trendEmptyText}>
+            play 2 more sessions to unlock your sustained vigilance trend graph.
+          </Text>
+        );
+      }
+
+      const points = trendSessions.map((s, idx) => {
+        const val = s.switchCostMs !== undefined ? s.switchCostMs : 150;
+        const x = (idx / (trendSessions.length - 1)) * 260 + 20;
+        const boundedVal = Math.max(-100, Math.min(500, val));
+        const y = 50 - ((boundedVal + 100) / 600) * 35;
+        return { x, y };
+      });
+
+      const pathD = `M ${points.map(p => `${p.x} ${p.y}`).join(' L ')}`;
+
+      return (
+        <View style={{ alignItems: 'center', marginVertical: 8 }}>
+          <Svg width="100%" height={60} viewBox="0 0 300 60">
+            <Path
+              d={pathD}
+              fill="none"
+              stroke={domain?.color.main}
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {points.map((p, idx) => (
+              <Circle
+                key={idx}
+                cx={p.x}
+                cy={p.y}
+                r={4}
+                fill={Colors.appBg}
+                stroke={domain?.color.main}
+                strokeWidth={2}
+              />
+            ))}
+          </Svg>
+        </View>
+      );
+    };
+
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing[8], paddingBottom: insets.bottom + Spacing[8] }]}>
+        <View style={styles.header}>
+          <View style={[styles.domainChip, { backgroundColor: domain?.color.light }]}>
+            <Text style={[styles.domainChipText, { color: domain?.color.main }]}>{domain?.label}</Text>
+          </View>
+          <Text style={styles.exerciseName}>{exercise?.name}</Text>
+          {gameSpecificMetrics.sessionEndedEarly && (
+            <Text style={styles.earlyExitNote}>session ended early.</Text>
+          )}
+        </View>
+
+        {/* Horizontal Large Stats Row */}
+        <View style={styles.largeStatsRow}>
+          {/* Stat 1: Session score */}
+          <View style={[styles.largeStatCard, Shadow.md, { borderLeftWidth: 4, borderLeftColor: domain?.color.main }]}>
+            <Text style={[styles.largeStatVal, { color: domain?.color.main }]}>
+              {score.toLocaleString()}
+            </Text>
+            <Text style={styles.largeStatLabel}>session score</Text>
+            <Text style={[styles.largeStatDelta, { color: scoreColor }]}>{scoreDeltaText}</Text>
+          </View>
+
+          {/* Stat 2: Switch Cost */}
+          <View style={[styles.largeStatCard, Shadow.md, { borderLeftWidth: 4, borderLeftColor: '#A662C6' }]}>
+            <Text style={[styles.largeStatVal, { color: '#A662C6' }]}>
+              {switchCostMs}ms
+            </Text>
+            <Text style={styles.largeStatLabel}>switch cost (rt delta)</Text>
+            <Text style={[styles.largeStatDelta, { color: switchCostColor }]}>{switchCostDeltaText}</Text>
+          </View>
+        </View>
+
+        {/* Adaptive Level Suggestion Banner */}
+        {adaptivePrompt && (
+          <View style={[styles.adaptiveBanner, { backgroundColor: Colors.surface, borderColor: adaptivePrompt === 'up' ? '#3DAB7F' : '#E24B4A' }]}>
+            <View style={styles.adaptiveHeader}>
+              <Text style={[styles.adaptiveTitle, { color: adaptivePrompt === 'up' ? '#3DAB7F' : '#E24B4A' }]}>
+                {adaptivePrompt === 'up' ? '🚀 level up suggestion' : '📉 level recommended'}
+              </Text>
+              <Text style={{ fontSize: 10, color: Colors.textMuted }}>adaptive</Text>
+            </View>
+            <Text style={styles.adaptiveDesc}>
+              {adaptivePrompt === 'up' 
+                ? `you've mastered level ${targetLevel - 1}! let's advance to level ${targetLevel} for faster rule set-shifting constraints.`
+                : `level ${targetLevel + 1} proved challenging. let's return to level ${targetLevel} to reinforce your precision.`}
+            </Text>
+            
+            {levelUpdated ? (
+              <Text style={[styles.adaptiveSuccessText, { color: '#3DAB7F' }]}>✓ level successfully updated to level {targetLevel}!</Text>
+            ) : (
+              <View style={styles.adaptiveActions}>
+                <TouchableOpacity
+                  style={[styles.adaptiveBtnGo, { backgroundColor: adaptivePrompt === 'up' ? '#3DAB7F' : '#E24B4A' }]}
+                  onPress={handleApplyAdaptiveLevel}
+                >
+                  <Text style={[styles.adaptiveBtnGoText, { color: Colors.textInverse }]}>let's go</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.adaptiveBtnNo, { borderColor: Colors.border }]}
+                  onPress={() => setLevelUpdated(true)}
+                >
+                  <Text style={[styles.adaptiveBtnNoText, { color: Colors.textSecondary }]}>not yet</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Accuracy Pills */}
+        <View style={styles.largeStatsRow}>
+          <View style={[styles.largeStatCard, Shadow.sm, { minHeight: 70, padding: 12 }]}>
+            <Text style={{ fontFamily: Typography.fontFamily.bold, fontSize: 20, color: '#3DAB7F' }}>{switchAccuracy}%</Text>
+            <Text style={{ fontSize: 10, color: Colors.textSecondary }}>switch accuracy</Text>
+          </View>
+          <View style={[styles.largeStatCard, Shadow.sm, { minHeight: 70, padding: 12 }]}>
+            <Text style={{ fontFamily: Typography.fontFamily.bold, fontSize: 20, color: '#0073E6' }}>{stayAccuracy}%</Text>
+            <Text style={{ fontSize: 10, color: Colors.textSecondary }}>stay accuracy</Text>
+          </View>
+        </View>
+
+        {/* Contextual Cognitive Insight Card */}
+        <View style={[styles.pbCalloutCard, Shadow.sm, { backgroundColor: Colors.surface, borderColor: patternColor, borderLeftWidth: 4 }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.pbCalloutText, { color: patternColor, textTransform: 'lowercase' }]}>
+              set-shifting pattern: {patternTitle}
+            </Text>
+            <Text style={{ fontSize: Typography.size.caption, color: Colors.textSecondary, marginTop: 4 }}>
+              {patternDesc}
+            </Text>
+          </View>
+        </View>
+
+        {/* Rule Breakdown Strip */}
+        <View style={{ width: '100%', marginVertical: Spacing[2] }}>
+          <Text style={styles.heatmapSectionTitle}>classification rule breakdown</Text>
+          <View style={styles.heatmapRow}>
+            {Object.entries(ruleStats).map(([rule, s]) => {
+              const ruleAcc = s.attempts > 0 ? Math.round((s.correct / s.attempts) * 100) : 100;
+              const bg = ruleAcc >= 85 
+                ? 'rgba(61, 171, 127, 0.08)' 
+                : ruleAcc >= 70 
+                  ? 'rgba(186, 117, 23, 0.08)' 
+                  : 'rgba(226, 75, 74, 0.08)';
+              const border = ruleAcc >= 85 ? '#3DAB7F' : ruleAcc >= 70 ? '#BA7517' : '#E24B4A';
+              const textCol = ruleAcc >= 85 ? '#3DAB7F' : ruleAcc >= 70 ? '#BA7517' : '#E24B4A';
+              
+              return (
+                <View key={rule} style={[styles.heatmapBlock, { backgroundColor: bg, borderColor: border }]}>
+                  <Text style={styles.heatmapBlockTitle}>{rule}</Text>
+                  <Text style={styles.heatmapBlockVal}>{ruleAcc}%</Text>
+                  <Text style={[styles.heatmapBlockSub, { color: textCol }]}>{s.attempts} trials</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* 7-Session D-Prime Trend Chart */}
+        <View style={[styles.trendCard, Shadow.sm]}>
+          <Text style={styles.trendTitle}>set-shifting cost trend (switch cost)</Text>
+          {renderCSSparkline()}
         </View>
 
         {/* CTA Buttons */}
@@ -898,5 +1527,130 @@ const getStyles = (Colors) => StyleSheet.create({
     color: Colors.textSecondary,
     textTransform: 'lowercase',
     marginTop: 2,
+  },
+
+  // Heatmap styles
+  heatmapSectionTitle: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.size.caption + 1,
+    color: Colors.textSecondary,
+    marginTop: Spacing[4],
+    marginBottom: Spacing[2],
+    textTransform: 'lowercase',
+  },
+  heatmapRow: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: Spacing[2],
+    marginVertical: Spacing[2],
+  },
+  heatmapBlock: {
+    flex: 1,
+    paddingVertical: Spacing[3],
+    paddingHorizontal: Spacing[2],
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heatmapBlockTitle: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 10,
+    color: Colors.textSecondary,
+    marginBottom: 4,
+  },
+  heatmapBlockVal: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 14,
+    color: Colors.textPrimary,
+  },
+  heatmapBlockSub: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 10,
+    marginTop: 2,
+  },
+
+  // Trend Chart styles
+  trendCard: {
+    width: '100%',
+    padding: Spacing[4],
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.surface,
+    borderColor: Colors.border,
+    borderWidth: 1,
+    marginVertical: Spacing[2],
+  },
+  trendTitle: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.size.caption,
+    color: Colors.textSecondary,
+    textTransform: 'lowercase',
+    marginBottom: Spacing[3],
+  },
+  trendEmptyText: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.caption,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    paddingVertical: Spacing[2],
+  },
+
+  // Adaptive Level Banner styles
+  adaptiveBanner: {
+    width: '100%',
+    padding: Spacing[4],
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    marginVertical: Spacing[3],
+  },
+  adaptiveHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  adaptiveTitle: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.size.body,
+  },
+  adaptiveDesc: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.caption,
+    color: Colors.textSecondary,
+    marginTop: 4,
+    lineHeight: 16,
+  },
+  adaptiveActions: {
+    flexDirection: 'row',
+    gap: Spacing[2],
+    marginTop: Spacing[3],
+  },
+  adaptiveBtnGo: {
+    paddingHorizontal: Spacing[4],
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adaptiveBtnGoText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 12,
+  },
+  adaptiveBtnNo: {
+    paddingHorizontal: Spacing[4],
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adaptiveBtnNoText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 12,
+  },
+  adaptiveSuccessText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 12,
+    marginTop: Spacing[2],
   },
 });

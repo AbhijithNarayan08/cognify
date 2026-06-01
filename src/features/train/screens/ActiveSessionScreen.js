@@ -46,10 +46,27 @@ const toCamelCase = (str) => {
   return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
 };
 
+function getZScore(p) {
+  const clampP = Math.max(0.001, Math.min(0.999, p));
+  const t = Math.sqrt(-2.0 * Math.log(clampP < 0.5 ? clampP : 1.0 - clampP));
+  const c0 = 2.515517;
+  const c1 = 0.802853;
+  const c2 = 0.010328;
+  const d1 = 1.432788;
+  const d2 = 0.189269;
+  const d3 = 0.001308;
+  
+  const num = c0 + c1 * t + c2 * t * t;
+  const den = 1.0 + d1 * t + d2 * t * t + d3 * t * t * t;
+  const z = t - num / den;
+  return clampP < 0.5 ? -z : z;
+}
+
+
 const getDifficultyLabel = (level) => {
-  if (level <= 1) return 'beginner';
-  if (level <= 3) return 'intermediate';
-  return 'advanced';
+  if (level <= 1) return 'Beginner';
+  if (level <= 3) return 'Intermediate';
+  return 'Advanced';
 };
 
 function StreakBadgeWithAnimation({ multiplier, domainColor }) {
@@ -163,6 +180,7 @@ export function ActiveSessionScreen({ navigation, route }) {
   // Game specific accrued metrics
   const [gameMetrics, setGameMetrics] = useState({});
   const [showFlashSortIntroTip, setShowFlashSortIntroTip] = useState(false);
+  const [showLighthouseIntroTip, setShowLighthouseIntroTip] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Animations
@@ -181,6 +199,12 @@ export function ActiveSessionScreen({ navigation, route }) {
       AsyncStorage.getItem('cognify:tutorial:flashSort:introTip').then((val) => {
         if (!val) {
           setShowFlashSortIntroTip(true);
+        }
+      });
+    } else if (currentEx?.id === 'lighthouse-watch') {
+      AsyncStorage.getItem('cognify:tutorial:lighthouse:introTip').then((val) => {
+        if (!val) {
+          setShowLighthouseIntroTip(true);
         }
       });
     }
@@ -218,6 +242,136 @@ export function ActiveSessionScreen({ navigation, route }) {
           
           // Save today's score as the new previous score for next time
           AsyncStorage.setItem(prevSessionKey, String(finalScore));
+
+          // Save complete session record for Lighthouse Watch
+          if (currentEx.id === 'lighthouse-watch') {
+            const totalHits = gameMetrics.hits || 0;
+            const totalMisses = gameMetrics.misses || 0;
+            const totalFalseAlarms = gameMetrics.falseAlarms || 0;
+            const totalTargets = totalHits + totalMisses;
+            const totalDistractors = Math.max(1, totalRounds - totalTargets);
+
+            let correctedHits = totalHits;
+            if (totalHits === totalTargets) {
+              correctedHits = totalTargets - 0.5;
+            } else if (totalHits === 0) {
+              correctedHits = 0.5;
+            }
+            let correctedFalseAlarms = totalFalseAlarms;
+            if (totalFalseAlarms === totalDistractors) {
+              correctedFalseAlarms = totalDistractors - 0.5;
+            } else if (totalFalseAlarms === 0) {
+              correctedFalseAlarms = 0.5;
+            }
+
+            const hitRate = totalTargets > 0 ? correctedHits / totalTargets : 0.5;
+            const faRate = totalDistractors > 0 ? correctedFalseAlarms / totalDistractors : 0.5;
+            const dPrimeValue = getZScore(hitRate) - getZScore(faRate);
+
+            const newRecord = {
+              sessionId: Math.random().toString(36).substring(2, 11),
+              timestamp: new Date().toISOString(),
+              level: currentLevel,
+              totalTargets,
+              totalDistractors,
+              hits: totalHits,
+              misses: totalMisses,
+              falseAlarms: totalFalseAlarms,
+              hitRate: totalTargets > 0 ? totalHits / totalTargets : 0,
+              faRate: totalDistractors > 0 ? totalFalseAlarms / totalDistractors : 0,
+              dPrime: dPrimeValue,
+              score: finalScore,
+              longestStreak: maxStreak,
+              quartiles: gameMetrics.quartiles || [
+                { q: 0, hits: 0, misses: 0, falseAlarms: 0 },
+                { q: 1, hits: 0, misses: 0, falseAlarms: 0 },
+                { q: 2, hits: 0, misses: 0, falseAlarms: 0 },
+                { q: 3, hits: 0, misses: 0, falseAlarms: 0 }
+              ]
+            };
+
+            AsyncStorage.getItem('cognify:lighthouse:sessions').then((storedStr) => {
+              let sessions = [];
+              if (storedStr) {
+                try {
+                  sessions = JSON.parse(storedStr);
+                } catch (e) {
+                  sessions = [];
+                }
+              }
+              sessions.unshift(newRecord);
+              if (sessions.length > 100) {
+                sessions = sessions.slice(0, 100);
+              }
+              AsyncStorage.setItem('cognify:lighthouse:sessions', JSON.stringify(sessions));
+            });
+          }
+
+          // Save complete session record for Context Switch
+          if (currentEx.id === 'context-switch') {
+            const rounds = gameMetrics.rounds || [];
+            const switchRounds = rounds.filter(r => r.isSwitch);
+            const stayRounds = rounds.filter(r => !r.isSwitch);
+
+            const correctSwitches = switchRounds.filter(r => r.correct).length;
+            const correctStays = stayRounds.filter(r => r.correct).length;
+
+            const switchAccuracy = switchRounds.length ? Math.round((correctSwitches / switchRounds.length) * 100) : 0;
+            const stayAccuracy = stayRounds.length ? Math.round((correctStays / stayRounds.length) * 100) : 0;
+            
+            const avgRT = (arr) => arr.length ? arr.reduce((s, r) => s + r.reactionTimeMs, 0) / arr.length : null;
+            const avgSwitch = avgRT(switchRounds);
+            const avgStay = avgRT(stayRounds);
+            const switchCost = (avgSwitch !== null && avgStay !== null) ? Math.round(avgSwitch - avgStay) : 0;
+
+            const ruleStats = ['shape', 'color', 'size', 'count'].reduce((acc, rule) => {
+              const ruleRounds = rounds.filter(r => r.rule === rule);
+              const ruleSwitches = ruleRounds.filter(r => r.isSwitch);
+              acc[rule] = {
+                attempts: ruleRounds.length,
+                correct: ruleRounds.filter(r => r.correct).length,
+                avgRTms: ruleRounds.length ? Math.round(avgRT(ruleRounds)) : 0,
+                switchCostMs: (ruleSwitches.length && avgStay !== null) 
+                  ? Math.round(avgRT(ruleSwitches) - avgStay) 
+                  : 0
+              };
+              return acc;
+            }, {});
+
+            const timeoutCount = rounds.filter(r => r.timedOut).length;
+            const timeoutRate = totalRounds > 0 ? timeoutCount / totalRounds : 0;
+
+            const newRecord = {
+              sessionId: Math.random().toString(36).substring(2, 11),
+              timestamp: new Date().toISOString(),
+              level: currentLevel,
+              totalRounds,
+              completedRounds: totalRounds,
+              score: finalScore,
+              accuracy: accuracyPct,
+              switchAccuracy,
+              stayAccuracy,
+              switchCostMs: switchCost,
+              longestStreak: maxStreak,
+              timeoutRate,
+              ruleStats,
+              rounds
+            };
+
+            if (totalRounds >= 8) {
+              AsyncStorage.getItem('cognify:contextswitch:sessions').then((storedStr) => {
+                let sessions = [];
+                if (storedStr) {
+                  try { sessions = JSON.parse(storedStr); } catch (e) { sessions = []; }
+                }
+                sessions.unshift(newRecord);
+                if (sessions.length > 100) {
+                  sessions = sessions.slice(0, 100);
+                }
+                AsyncStorage.setItem('cognify:contextswitch:sessions', JSON.stringify(sessions));
+              });
+            }
+          }
 
           setTimeout(() => {
             // Dispatch COMPLETE_WORKOUT to the global store with score payload
@@ -360,6 +514,64 @@ export function ActiveSessionScreen({ navigation, route }) {
         const totalRounds = roundsCompleted || 1;
         const accuracyPct = Math.round((correctRounds / totalRounds) * 100);
 
+        const totalHits = gameMetrics.hits || 0;
+        const totalMisses = gameMetrics.misses || 0;
+        const totalFalseAlarms = gameMetrics.falseAlarms || 0;
+        const totalTargets = totalHits + totalMisses;
+        const totalDistractors = Math.max(1, totalRounds - totalTargets);
+
+        let correctedHits = totalHits;
+        if (totalHits === totalTargets) {
+          correctedHits = totalTargets - 0.5;
+        } else if (totalHits === 0) {
+          correctedHits = 0.5;
+        }
+        let correctedFalseAlarms = totalFalseAlarms;
+        if (totalFalseAlarms === totalDistractors) {
+          correctedFalseAlarms = totalDistractors - 0.5;
+        } else if (totalFalseAlarms === 0) {
+          correctedFalseAlarms = 0.5;
+        }
+
+        const hitRate = totalTargets > 0 ? correctedHits / totalTargets : 0.5;
+        const faRate = totalDistractors > 0 ? correctedFalseAlarms / totalDistractors : 0.5;
+        const dPrimeValue = getZScore(hitRate) - getZScore(faRate);
+
+        const newRecord = {
+          sessionId: Math.random().toString(36).substring(2, 11),
+          timestamp: new Date().toISOString(),
+          level: currentLevel,
+          totalTargets,
+          totalDistractors,
+          hits: totalHits,
+          misses: totalMisses,
+          falseAlarms: totalFalseAlarms,
+          hitRate: totalTargets > 0 ? totalHits / totalTargets : 0,
+          faRate: totalDistractors > 0 ? totalFalseAlarms / totalDistractors : 0,
+          dPrime: dPrimeValue,
+          score: finalScore,
+          longestStreak: maxStreak,
+          quartiles: gameMetrics.quartiles || [
+            { q: 0, hits: 0, misses: 0, falseAlarms: 0 },
+            { q: 1, hits: 0, misses: 0, falseAlarms: 0 },
+            { q: 2, hits: 0, misses: 0, falseAlarms: 0 },
+            { q: 3, hits: 0, misses: 0, falseAlarms: 0 }
+          ],
+          sessionEndedEarly: true
+        };
+
+        if (roundsCompleted >= 10) {
+          AsyncStorage.getItem('cognify:lighthouse:sessions').then((storedStr) => {
+            let sessions = [];
+            if (storedStr) {
+              try { sessions = JSON.parse(storedStr); } catch (e) { sessions = []; }
+            }
+            sessions.unshift(newRecord);
+            if (sessions.length > 100) sessions = sessions.slice(0, 100);
+            AsyncStorage.setItem('cognify:lighthouse:sessions', JSON.stringify(sessions));
+          });
+        }
+
         const prevSessionKey = `cognify:previousScore:${currentEx.id}`;
         AsyncStorage.getItem(prevSessionKey).then((val) => {
           const prevScore = val ? parseInt(val, 10) : null;
@@ -392,19 +604,119 @@ export function ActiveSessionScreen({ navigation, route }) {
       } else {
         navigation.navigate('TrainRoot');
       }
+    } else if (currentEx?.id === 'context-switch') {
+      if (roundsCompleted >= 8) {
+        // Save partial score
+        saveLevel(currentLevel);
+        const finalScore = runningScore;
+        const totalRounds = roundsCompleted || 1;
+        const accuracyPct = Math.round((correctRounds / totalRounds) * 100);
+
+        const rounds = gameMetrics.rounds || [];
+        const switchRounds = rounds.filter(r => r.isSwitch);
+        const stayRounds = rounds.filter(r => !r.isSwitch);
+
+        const correctSwitches = switchRounds.filter(r => r.correct).length;
+        const correctStays = stayRounds.filter(r => r.correct).length;
+
+        const switchAccuracy = switchRounds.length ? Math.round((correctSwitches / switchRounds.length) * 100) : 0;
+        const stayAccuracy = stayRounds.length ? Math.round((correctStays / stayRounds.length) * 100) : 0;
+
+        const avgRT = (arr) => arr.length ? arr.reduce((s, r) => s + r.reactionTimeMs, 0) / arr.length : null;
+        const avgSwitch = avgRT(switchRounds);
+        const avgStay = avgRT(stayRounds);
+        const switchCost = (avgSwitch !== null && avgStay !== null) ? Math.round(avgSwitch - avgStay) : 0;
+
+        const ruleStats = ['shape', 'color', 'size', 'count'].reduce((acc, rule) => {
+          const ruleRounds = rounds.filter(r => r.rule === rule);
+          const ruleSwitches = ruleRounds.filter(r => r.isSwitch);
+          acc[rule] = {
+            attempts: ruleRounds.length,
+            correct: ruleRounds.filter(r => r.correct).length,
+            avgRTms: ruleRounds.length ? Math.round(avgRT(ruleRounds)) : 0,
+            switchCostMs: (ruleSwitches.length && avgStay !== null) 
+              ? Math.round(avgRT(ruleSwitches) - avgStay) 
+              : 0
+          };
+          return acc;
+        }, {});
+
+        const timeoutCount = rounds.filter(r => r.timedOut).length;
+        const timeoutRate = totalRounds > 0 ? timeoutCount / totalRounds : 0;
+
+        const newRecord = {
+          sessionId: Math.random().toString(36).substring(2, 11),
+          timestamp: new Date().toISOString(),
+          level: currentLevel,
+          totalRounds,
+          completedRounds: totalRounds,
+          score: finalScore,
+          accuracy: accuracyPct,
+          switchAccuracy,
+          stayAccuracy,
+          switchCostMs: switchCost,
+          longestStreak: maxStreak,
+          timeoutRate,
+          ruleStats,
+          rounds,
+          sessionEndedEarly: true
+        };
+
+        AsyncStorage.getItem('cognify:contextswitch:sessions').then((storedStr) => {
+          let sessions = [];
+          if (storedStr) {
+            try { sessions = JSON.parse(storedStr); } catch (e) { sessions = []; }
+          }
+          sessions.unshift(newRecord);
+          if (sessions.length > 100) {
+            sessions = sessions.slice(0, 100);
+          }
+          AsyncStorage.setItem('cognify:contextswitch:sessions', JSON.stringify(sessions));
+        });
+
+        const prevSessionKey = `cognify:previousScore:${currentEx.id}`;
+        AsyncStorage.getItem(prevSessionKey).then((val) => {
+          const prevScore = val ? parseInt(val, 10) : null;
+          AsyncStorage.setItem(prevSessionKey, String(finalScore));
+
+          dispatch(completeWorkout({
+            domain: currentEx.domain,
+            sessionScore: finalScore,
+          }));
+
+          navigation.navigate('SessionResult', {
+            exercise: currentEx,
+            score: finalScore,
+            prevScore: prevScore,
+            roundsCompleted: roundsCompleted,
+            accuracy: accuracyPct,
+            longestStreak: maxStreak,
+            gameSpecificMetrics: {
+              ...gameMetrics,
+              avgPerRound: Math.round(finalScore / (roundsCompleted || 1)),
+              difficultyReached: `${gameMetrics.difficultyTier || 'Easy'} (Level ${currentLevel})`,
+              sessionEndedEarly: true,
+              switchCostMs: switchCost,
+              switchAccuracy,
+              stayAccuracy,
+              ruleStats,
+            },
+            remainingExercises: exercises.slice(1),
+          });
+        });
+      } else {
+        navigation.navigate('TrainRoot');
+      }
     } else {
       navigation.goBack();
     }
   };
 
   const confirmExit = () => {
-    if (currentEx?.id === 'signal-chain' || currentEx?.id === 'flash-sort' || currentEx?.id === 'lighthouse-watch') {
-      setShowExitConfirm(true);
+    if (phase === 'intro') {
+      navigation.goBack();
     } else {
-      Alert.alert(t('train.activeSession.exitTitle'), t('train.activeSession.exitSubtitle'), [
-        { text: t('train.activeSession.exitCancel'), style: 'cancel' },
-        { text: t('train.activeSession.exitConfirm'), onPress: () => navigation.goBack(), style: 'destructive' },
-      ]);
+      setShowExitConfirm(true);
     }
   };
 
@@ -477,6 +789,22 @@ export function ActiveSessionScreen({ navigation, route }) {
         const count = (prev.count || 0) + 1;
         const averageLevel = levelSum / count;
 
+        // Initialize and update quartiles (four 15s blocks of a 60s session)
+        const quartiles = prev.quartiles
+          ? prev.quartiles.map((qObj) => ({ ...qObj }))
+          : [
+              { q: 0, hits: 0, misses: 0, falseAlarms: 0 },
+              { q: 1, hits: 0, misses: 0, falseAlarms: 0 },
+              { q: 2, hits: 0, misses: 0, falseAlarms: 0 },
+              { q: 3, hits: 0, misses: 0, falseAlarms: 0 },
+            ];
+
+        // Determine current active quartile based on elapsed time (capped to 3)
+        const qIndex = Math.min(3, Math.floor(activeTimeElapsed / 15000));
+        if (metrics.isHit) quartiles[qIndex].hits++;
+        if (metrics.isMiss) quartiles[qIndex].misses++;
+        if (metrics.isFalseAlarm) quartiles[qIndex].falseAlarms++;
+
         return {
           ...prev,
           hits,
@@ -486,6 +814,7 @@ export function ActiveSessionScreen({ navigation, route }) {
           count,
           averageLevel,
           difficultyTier: metrics.tier || prev.difficultyTier || 'Easy',
+          quartiles,
         };
       });
 
@@ -514,6 +843,76 @@ export function ActiveSessionScreen({ navigation, route }) {
 
       // Use the raw round score directly from Lighthouse Watch metrics to ensure total precision
       roundScore = metrics.roundScore || 0;
+      setRoundScores((prev) => [...prev, roundScore]);
+      setRunningScore((prev) => Math.max(0, prev + roundScore));
+      setVisualScore((prev) => Math.max(0, prev + roundScore));
+      
+      return;
+    }
+
+    if (currentEx?.id === 'context-switch') {
+      // Accumulate Context Switch metrics
+      setGameMetrics((prev) => {
+        const rounds = prev.rounds ? [...prev.rounds] : [];
+        rounds.push({
+          roundIndex: roundsCompleted,
+          rule: metrics.rule,
+          prevRule: metrics.prevRule,
+          isSwitch: metrics.isSwitchRound,
+          correct: isCorrect,
+          timedOut: metrics.isTimeout,
+          reactionTimeMs: metrics.reactionTimeMs,
+        });
+
+        const switchRTs = prev.switchRTs || [];
+        const stayRTs = prev.stayRTs || [];
+        if (metrics.isSwitchRound) {
+          switchRTs.push(metrics.reactionTimeMs);
+        } else {
+          stayRTs.push(metrics.reactionTimeMs);
+        }
+        const avgSwitch = switchRTs.length ? Math.round(switchRTs.reduce((a,b)=>a+b,0)/switchRTs.length) : 0;
+        const avgStay = stayRTs.length ? Math.round(stayRTs.reduce((a,b)=>a+b,0)/stayRTs.length) : 0;
+        const switchCost = avgSwitch - avgStay;
+
+        return {
+          ...prev,
+          rounds,
+          switchRTs,
+          stayRTs,
+          avgSwitch,
+          avgStay,
+          switchCost,
+        };
+      });
+
+      // Update adaptive ladder and haptics
+      if (isCorrect) {
+        setCorrectRounds((prev) => prev + 1);
+        recordCorrect();
+        
+        const newStreak = streakCount + 1;
+        recordStreakCorrect();
+
+        if (newStreak === 3 || newStreak === 6 || newStreak === 10) {
+          GameHaptics.streakMilestone();
+        } else {
+          GameHaptics.correct();
+        }
+      } else {
+        recordMiss();
+        recordStreakMiss();
+        GameHaptics.incorrect();
+      }
+
+      // Calculate round score
+      roundScore = calculateRoundScore({
+        baseScore: scoreProps.baseScore,
+        speedBonus: scoreProps.speedBonus || 0,
+        multiplier: multiplier,
+        maxScore: scoreProps.maxScore || 100,
+      });
+
       setRoundScores((prev) => [...prev, roundScore]);
       setRunningScore((prev) => Math.max(0, prev + roundScore));
       setVisualScore((prev) => Math.max(0, prev + roundScore));
@@ -698,11 +1097,6 @@ export function ActiveSessionScreen({ navigation, route }) {
       <Animated.View style={[styles.container, { paddingTop: insets.top, opacity: introFade }]}>
         <StatusBar barStyle="dark-content" />
 
-        {/* Zone 1 — Top Area (Close button absolute) */}
-        <TouchableOpacity style={styles.exitBtn} onPress={confirmExit} activeOpacity={0.8}>
-          <X size={20} color={Colors.textSecondary} />
-        </TouchableOpacity>
-
         <View style={styles.introContent}>
           {/* Centered Large Domain Icon */}
           <View style={styles.iconContainer}>
@@ -741,6 +1135,25 @@ export function ActiveSessionScreen({ navigation, route }) {
                 <Text style={[styles.tipTitle, { color: '#D89E00' }]}>💡 speed tip</Text>
                 <Text style={[styles.tipBody, { color: Colors.textSecondary }]}>
                   your score is based on speed — respond the moment you recognise the shape.
+                </Text>
+                <Text style={[styles.tipDismiss, { color: Colors.textTertiary }]}>
+                  tap to dismiss
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {currentEx.id === 'lighthouse-watch' && showLighthouseIntroTip && (
+              <TouchableOpacity
+                style={[styles.tipCard, { backgroundColor: 'rgba(166, 98, 198, 0.08)', borderColor: '#A662C6', borderWidth: 1 }]}
+                onPress={() => {
+                  setShowLighthouseIntroTip(false);
+                  AsyncStorage.setItem('cognify:tutorial:lighthouse:introTip', 'true');
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.tipTitle, { color: '#A662C6' }]}>💡 vigilance tip</Text>
+                <Text style={[styles.tipBody, { color: Colors.textSecondary }]}>
+                  tap as fast as you can when you see the Star, but stay calm and ignore all other shapes to avoid false alarm penalties.
                 </Text>
                 <Text style={[styles.tipDismiss, { color: Colors.textTertiary }]}>
                   tap to dismiss
@@ -791,6 +1204,11 @@ export function ActiveSessionScreen({ navigation, route }) {
             )}
           </View>
         </View>
+
+        {/* Zone 1 — Top Area (Close button absolute) */}
+        <TouchableOpacity style={styles.exitBtn} onPress={confirmExit} activeOpacity={0.8}>
+          <X size={20} color={Colors.textSecondary} />
+        </TouchableOpacity>
       </Animated.View>
     );
   }
