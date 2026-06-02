@@ -3,15 +3,11 @@ import { View, Text, StyleSheet, Dimensions, AccessibilityInfo, Animated, Easing
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import Svg, { Path } from 'react-native-svg';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Spacing, Radius, Typography } from '../../theme';
 import { TouchableScale } from '../../components/Motion';
 import LoginForm from './LoginForm';
 import { useApp } from '../../context/AppContext';
-
-// Safe redirect completion helper
-WebBrowser.maybeCompleteAuthSession();
 
 // Import existing high-fidelity animated mascots including the DynamicFlame streak mascot
 import {
@@ -41,27 +37,19 @@ const snapNative = (node, val) => {
 export default function LoginScreen({ navigation }) {
   const { loginWithEmail, signupWithEmail, loginWithGoogle, loginWithApple, loginWithGoogleCredential } = useApp();
 
-  // Expo AuthSession request hook configuration
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    webClientId: '1007104068828-web-client-id-here.apps.googleusercontent.com', // Replace with real Web Client ID
-    iosClientId: '1007104068828-ios-client-id-here.apps.googleusercontent.com', // Replace with real iOS Client ID
-    androidClientId: '1007104068828-android-client-id-here.apps.googleusercontent.com', // Replace with real Android Client ID
-  });
-
+  // Initialize the native GoogleSignin SDK on mobile platform launch
   useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.authentication;
-      handleGoogleSessionSignIn(id_token);
+    if (Platform.OS !== 'web') {
+      try {
+        GoogleSignin.configure({
+          webClientId: '1007104068828-web-client-id-here.apps.googleusercontent.com', // Replace with real Web Client ID
+          offlineAccess: true,
+        });
+      } catch (err) {
+        console.warn("⚠️ [GoogleSignin] Configure failed:", err);
+      }
     }
-  }, [response]);
-
-  const handleGoogleSessionSignIn = async (idToken) => {
-    try {
-      await loginWithGoogleCredential(idToken);
-    } catch (error) {
-      console.error("❌ Firebase Google Credential Sign-in failed:", error);
-    }
-  };
+  }, []);
 
   // Rigorous State Machine Phases:
   // 'idle' ➔ 'mascots' ➔ 'login' ➔ 'ready'
@@ -331,15 +319,19 @@ export default function LoginScreen({ navigation }) {
       if (Platform.OS === 'web') {
         await loginWithGoogle();
       } else {
-        // Trigger the Expo Google AuthSession prompt on native mobile!
+        // Trigger the fully native Google Sign-in sheet prompt!
         try {
-          const result = await promptAsync();
-          if (result && result.type !== 'success') {
-            console.warn("⚠️ [AuthSession] Google Sign-In closed or cancelled.", result);
+          await GoogleSignin.hasPlayServices();
+          const userInfo = await GoogleSignin.signIn();
+          // Extract the idToken from different potential GoogleSignin version structures
+          const idToken = userInfo.idToken || userInfo.data?.idToken;
+          if (!idToken) {
+            throw new Error("No Google ID Token found in response");
           }
+          await loginWithGoogleCredential(idToken);
         } catch (err) {
-          console.warn("⚠️ [AuthSession] Failed to open Google Sign-In prompt. Using Demo User.", err);
-          // Safe mobile fallback in case client IDs are missing or misconfigured
+          console.warn("⚠️ [Native Google Sign-In] Failed or cancelled. Using Demo User fallback.", err);
+          // Fall back gracefully to the Mock Demo user if not configured / cancelled
           await loginWithGoogle();
         }
       }

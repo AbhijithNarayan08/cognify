@@ -22,7 +22,13 @@
     },
     "plugins": [
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.1007104068828-ios-client-id-here"
+        }
+      ]
     ]
   }
 }
