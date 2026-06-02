@@ -1,14 +1,16 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import {
-  getAuth,
-  signInWithEmailAndPassword as fbSignIn,
-  createUserWithEmailAndPassword as fbCreateUser,
-  signOut as fbSignOut,
-  onAuthStateChanged as fbOnAuthStateChanged,
-  GoogleAuthProvider,
-  OAuthProvider,
-  signInWithPopup
-} from 'firebase/auth';
+import * as FirebaseAuth from 'firebase/auth';
+
+const fbSignIn = FirebaseAuth.signInWithEmailAndPassword;
+const fbCreateUser = FirebaseAuth.createUserWithEmailAndPassword;
+const fbSignOut = FirebaseAuth.signOut;
+const fbOnAuthStateChanged = FirebaseAuth.onAuthStateChanged;
+const GoogleAuthProvider = FirebaseAuth.GoogleAuthProvider;
+const OAuthProvider = FirebaseAuth.OAuthProvider;
+const getAuth = FirebaseAuth.getAuth;
+
+// Safely extract signInWithPopup if present (undefined in React Native mobile bundles)
+const fbSignInWithPopup = FirebaseAuth.signInWithPopup;
 
 // ── Firebase Configuration ────────────────────────────────────────────────
 // Place your real credentials here. The application automatically detects
@@ -191,11 +193,14 @@ export const auth = {
       return { user: mockUser };
     } else {
       try {
+        if (typeof fbSignInWithPopup !== 'function') {
+          throw new Error("signInWithPopup is not defined in this React Native environment bundle");
+        }
         const provider = new GoogleAuthProvider();
-        const result = await signInWithPopup(realAuth, provider);
+        const result = await fbSignInWithPopup(realAuth, provider);
         return result;
       } catch (error) {
-        console.warn("⚠️ [Firebase Auth] Google signInWithPopup failed or is unsupported on this platform. Falling back to Demo User.", error);
+        console.warn("⚠️ [Firebase Auth] Google Auth popup is unsupported on this platform. Falling back to Demo User.", error);
         // On mobile native, return a mock user so local flow works beautifully
         const mockUser = {
           uid: "google-user-" + Math.random().toString(36).substr(2, 9),
@@ -222,11 +227,14 @@ export const auth = {
       return { user: mockUser };
     } else {
       try {
+        if (typeof fbSignInWithPopup !== 'function') {
+          throw new Error("signInWithPopup is not defined in this React Native environment bundle");
+        }
         const provider = new OAuthProvider('apple.com');
-        const result = await signInWithPopup(realAuth, provider);
+        const result = await fbSignInWithPopup(realAuth, provider);
         return result;
       } catch (error) {
-        console.warn("⚠️ [Firebase Auth] Apple signInWithPopup failed or is unsupported on this platform. Falling back to Demo User.", error);
+        console.warn("⚠️ [Firebase Auth] Apple Auth popup is unsupported on this platform. Falling back to Demo User.", error);
         const mockUser = {
           uid: "apple-user-" + Math.random().toString(36).substr(2, 9),
           email: "apple-user@example.com",
