@@ -11,12 +11,13 @@ import {
 // Place your real credentials here. The application automatically detects
 // default placeholders and falls back gracefully to "Demo/Mock Mode" to prevent crashes.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCjtVgkzv1_P2ctnUcaiBCuo0wX3cJ_Veg",
+  authDomain: "cognifyapp-9d381.firebaseapp.com",
+  projectId: "cognifyapp-9d381",
+  storageBucket: "cognifyapp-9d381.firebasestorage.app",
+  messagingSenderId: "1007104068828",
+  appId: "1:1007104068828:web:e50709239cbef123c1b819",
+  measurementId: "G-EZSVYJXQYQ"
 };
 
 // Check if credentials are default placeholders
