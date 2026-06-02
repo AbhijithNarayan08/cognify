@@ -9,8 +9,9 @@ const GoogleAuthProvider = FirebaseAuth.GoogleAuthProvider;
 const OAuthProvider = FirebaseAuth.OAuthProvider;
 const getAuth = FirebaseAuth.getAuth;
 
-// Safely extract signInWithPopup if present (undefined in React Native mobile bundles)
+// Safely extract optional functions for native support
 const fbSignInWithPopup = FirebaseAuth.signInWithPopup;
+const fbSignInWithCredential = FirebaseAuth.signInWithCredential;
 
 // ── Firebase Configuration ────────────────────────────────────────────────
 // Place your real credentials here. The application automatically detects
@@ -243,6 +244,27 @@ export const auth = {
         };
         return { user: mockUser };
       }
+    }
+  },
+
+  signInWithGoogleCredential: async (idToken) => {
+    if (isMock) {
+      await mockAuthInstance._delay(1000);
+      const mockUser = {
+        uid: "mock-google-user-999",
+        email: "google-user@example.com",
+        displayName: "Google User",
+        emailVerified: true
+      };
+      mockAuthInstance.currentUser = mockUser;
+      mockAuthInstance._triggerListeners();
+      return { user: mockUser };
+    } else {
+      if (typeof fbSignInWithCredential !== 'function') {
+        throw new Error("signInWithCredential is not defined in this React Native environment bundle");
+      }
+      const credential = GoogleAuthProvider.credential(idToken);
+      return fbSignInWithCredential(realAuth, credential);
     }
   }
 };

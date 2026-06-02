@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions, AccessibilityInfo, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, AccessibilityInfo, Animated, Easing, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import Svg, { Path } from 'react-native-svg';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import { Spacing, Radius, Typography } from '../../theme';
 import { TouchableScale } from '../../components/Motion';
 import LoginForm from './LoginForm';
 import { useApp } from '../../context/AppContext';
+
+// Safe redirect completion helper
+WebBrowser.maybeCompleteAuthSession();
 
 // Import existing high-fidelity animated mascots including the DynamicFlame streak mascot
 import {
@@ -34,7 +39,30 @@ const snapNative = (node, val) => {
 };
 
 export default function LoginScreen({ navigation }) {
-  const { loginWithEmail, signupWithEmail, loginWithGoogle, loginWithApple } = useApp();
+  const { loginWithEmail, signupWithEmail, loginWithGoogle, loginWithApple, loginWithGoogleCredential } = useApp();
+
+  // Expo AuthSession request hook configuration
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    webClientId: '1007104068828-web-client-id-here.apps.googleusercontent.com', // Replace with real Web Client ID
+    iosClientId: '1007104068828-ios-client-id-here.apps.googleusercontent.com', // Replace with real iOS Client ID
+    androidClientId: '1007104068828-android-client-id-here.apps.googleusercontent.com', // Replace with real Android Client ID
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.authentication;
+      handleGoogleSessionSignIn(id_token);
+    }
+  }, [response]);
+
+  const handleGoogleSessionSignIn = async (idToken) => {
+    try {
+      await loginWithGoogleCredential(idToken);
+    } catch (error) {
+      console.error("❌ Firebase Google Credential Sign-in failed:", error);
+    }
+  };
+
   // Rigorous State Machine Phases:
   // 'idle' ➔ 'mascots' ➔ 'login' ➔ 'ready'
   const [animationPhase, setAnimationPhase] = useState('idle');
@@ -300,7 +328,21 @@ export default function LoginScreen({ navigation }) {
         await loginWithEmail(email, password);
       }
     } else if (method === 'google') {
-      await loginWithGoogle();
+      if (Platform.OS === 'web') {
+        await loginWithGoogle();
+      } else {
+        // Trigger the Expo Google AuthSession prompt on native mobile!
+        try {
+          const result = await promptAsync();
+          if (result && result.type !== 'success') {
+            console.warn("⚠️ [AuthSession] Google Sign-In closed or cancelled.", result);
+          }
+        } catch (err) {
+          console.warn("⚠️ [AuthSession] Failed to open Google Sign-In prompt. Using Demo User.", err);
+          // Safe mobile fallback in case client IDs are missing or misconfigured
+          await loginWithGoogle();
+        }
+      }
     } else if (method === 'apple') {
       await loginWithApple();
     }

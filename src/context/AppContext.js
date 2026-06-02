@@ -160,6 +160,21 @@ export function AppProvider({ children }) {
     return result;
   };
 
+  const loginWithGoogleCredential = async (idToken) => {
+    const result = await auth.signInWithGoogleCredential(idToken);
+    if (result && result.user) {
+      dispatch({
+        type: 'SET_USER',
+        payload: {
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName: result.user.displayName || "Google User",
+        }
+      });
+    }
+    return result;
+  };
+
   const logout = async () => {
     try {
       await auth.signOut();
@@ -180,14 +195,14 @@ export function AppProvider({ children }) {
   }
 
   return (
-    <AppContext.Provider value={{ state, dispatch, loginWithEmail, signupWithEmail, loginWithGoogle, loginWithApple, logout }}>
+    <AppContext.Provider value={{ state, dispatch, loginWithEmail, signupWithEmail, loginWithGoogle, loginWithApple, loginWithGoogleCredential, logout }}>
       {children}
     </AppContext.Provider>
   );
 }
 
 /**
- * @returns {{ state: typeof initialState, dispatch: React.Dispatch<any>, loginWithEmail: Function, signupWithEmail: Function, loginWithGoogle: Function, loginWithApple: Function, logout: Function }}
+ * @returns {{ state: typeof initialState, dispatch: React.Dispatch<any>, loginWithEmail: Function, signupWithEmail: Function, loginWithGoogle: Function, loginWithApple: Function, loginWithGoogleCredential: Function, logout: Function }}
  */
 export function useApp() {
   const ctx = useContext(AppContext);
