@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { Spacing, Radius, Typography } from '../../theme';
 import { TouchableScale } from '../../components/Motion';
 
@@ -27,12 +28,18 @@ export default function LoginForm({
   Colors
 }) {
   const [formPhase, setFormPhase] = useState('entry'); // 'entry' | 'sso' | 'email'
+  const [isSignUp, setIsSignUp] = useState(false); // Email signup vs login toggle
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [termsError, setTermsError] = useState(false);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [secureText, setSecureText] = useState(true);
+  
   const [inputFocused, setInputFocused] = useState(false);
+  const [passFocused, setPassFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState(null);
+  const [authError, setAuthError] = useState(null);
 
   // Separate animation nodes to handle transition between phases safely on native thread
   const entryAnim = useRef(new Animated.Value(0)).current;
@@ -78,10 +85,14 @@ export default function LoginForm({
       Animated.timing(ssoAnim, { toValue: 0, duration: 0, useNativeDriver: true }).start();
       Animated.timing(emailAnim, { toValue: 0, duration: 0, useNativeDriver: true }).start();
       setFormPhase('entry');
+      setIsSignUp(false);
       setTermsAgreed(false);
       setTermsError(false);
       setEmail('');
+      setPassword('');
+      setSecureText(true);
       setEmailError(null);
+      setAuthError(null);
     }
   }, [visible, formPhase]);
 
@@ -95,6 +106,7 @@ export default function LoginForm({
       useNativeDriver: true,
     }).start(() => {
       setFormPhase(newPhase);
+      setAuthError(null);
     });
   };
 
@@ -104,6 +116,7 @@ export default function LoginForm({
       setTermsError(true);
       return;
     }
+    setIsSignUp(true);
     transitionTo('sso');
   };
 
@@ -113,44 +126,82 @@ export default function LoginForm({
       setTermsError(true);
       return;
     }
+    setIsSignUp(false);
     transitionTo('email');
   };
 
-  const handleAppleLogin = () => {
+  const handleAppleLogin = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLoading(true);
-    setEmailError(null);
-    setTimeout(() => {
+    setAuthError(null);
+    try {
+      if (onLoginSubmit) {
+        await onLoginSubmit('apple');
+      }
+    } catch (err) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setAuthError(err.message || 'Apple sign-in failed.');
+    } finally {
       setLoading(false);
-      if (onLoginSubmit) onLoginSubmit('apple');
-    }, 1200);
+    }
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLoading(true);
-    setEmailError(null);
-    setTimeout(() => {
+    setAuthError(null);
+    try {
+      if (onLoginSubmit) {
+        await onLoginSubmit('google');
+      }
+    } catch (err) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setAuthError(err.message || 'Google sign-in failed.');
+    } finally {
       setLoading(false);
-      if (onLoginSubmit) onLoginSubmit('google');
-    }, 1200);
+    }
   };
 
-  const handleEmailSubmit = () => {
+  const handleEmailSubmit = async () => {
     if (!email.trim() || !email.includes('@')) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setEmailError('please enter a valid email address');
+      return;
+    }
+    if (!password || password.length < 6) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setAuthError('password must be at least 6 characters');
       return;
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
     setEmailError(null);
+    setAuthError(null);
     
-    setTimeout(() => {
+    try {
+      if (onLoginSubmit) {
+        await onLoginSubmit('email', { email: email.trim(), password, isSignUp });
+      }
+    } catch (err) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      let errMsg = err.message || 'an error occurred. please try again.';
+      // Custom mapping for Firebase Auth error codes
+      if (err.code === 'auth/wrong-password') {
+        errMsg = 'incorrect password. please try again.';
+      } else if (err.code === 'auth/user-not-found') {
+        errMsg = 'no account found for this email address.';
+      } else if (err.code === 'auth/email-already-in-use') {
+        errMsg = 'this email address is already registered.';
+      } else if (err.code === 'auth/weak-password') {
+        errMsg = 'password is too weak. use at least 6 characters.';
+      } else if (err.code === 'auth/invalid-email') {
+        errMsg = 'invalid email address format.';
+      }
+      setAuthError(errMsg);
+    } finally {
       setLoading(false);
-      if (onLoginSubmit) onLoginSubmit('email', email.trim());
-    }, 1500);
+    }
   };
 
   // Interpolated Styles for smooth transitions
@@ -311,10 +362,22 @@ export default function LoginForm({
               <Text style={styles.ssoButtonText}>continue with Google</Text>
             </View>
           </TouchableScale>
+
+          {/* Email Signup Option */}
+          <TouchableOpacity
+            style={styles.emailSignupLink}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setIsSignUp(true);
+              transitionTo('email');
+            }}
+          >
+            <Text style={styles.emailSignupLinkText}>or sign up with email</Text>
+          </TouchableOpacity>
         </Animated.View>
 
         {/* ======================================================== */}
-        {/* PHASE 3: EMAIL FORM INPUT                                */}
+        {/* PHASE 3: EMAIL FORM INPUT (WITH PASSWORD FOR OPTION 1)  */}
         {/* ======================================================== */}
         <Animated.View style={emailStyle}>
           {/* Back Arrow */}
@@ -328,7 +391,7 @@ export default function LoginForm({
             <Text style={styles.backBtnText}>← back to options</Text>
           </TouchableOpacity>
 
-          <Text style={styles.ssoTitle}>email login</Text>
+          <Text style={styles.ssoTitle}>{isSignUp ? 'create account' : 'email login'}</Text>
 
           {/* Email Text Input */}
           <View style={styles.inputWrapper}>
@@ -354,6 +417,47 @@ export default function LoginForm({
             {emailError && <Text style={styles.errorText}>{emailError}</Text>}
           </View>
 
+          {/* Password Text Input (Option A: Side-by-side) */}
+          <View style={styles.inputWrapper}>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.inputPassword,
+                  passFocused && styles.inputFocused,
+                  authError && styles.inputError
+                ]}
+                placeholder="enter your password"
+                placeholderTextColor="#8A8E94"
+                secureTextEntry={secureText}
+                autoCapitalize="none"
+                value={password}
+                onChangeText={(txt) => {
+                  setPassword(txt);
+                  if (authError) setAuthError(null);
+                }}
+                onFocus={() => setPassFocused(true)}
+                onBlur={() => setPassFocused(false)}
+                editable={!loading}
+              />
+              <TouchableOpacity
+                style={styles.eyeIconWrapper}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSecureText(!secureText);
+                }}
+                activeOpacity={0.7}
+              >
+                {secureText ? (
+                  <EyeOff size={20} color="#8A8E94" />
+                ) : (
+                  <Eye size={20} color="#0066FF" />
+                )}
+              </TouchableOpacity>
+            </View>
+            {authError && <Text style={styles.errorText}>{authError}</Text>}
+          </View>
+
           {/* Continue with Email CTA */}
           <TouchableScale
             style={styles.emailSubmitBtn}
@@ -363,9 +467,28 @@ export default function LoginForm({
             {loading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Text style={styles.emailSubmitBtnText}>continue with email</Text>
+              <Text style={styles.emailSubmitBtnText}>
+                {isSignUp ? 'create account' : 'continue'}
+              </Text>
             )}
           </TouchableScale>
+
+          {/* Mode Switch Row */}
+          <TouchableOpacity
+            style={styles.modeSwitchBtn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setIsSignUp(!isSignUp);
+              setAuthError(null);
+            }}
+          >
+            <Text style={styles.modeSwitchText}>
+              {isSignUp ? 'already have an account? ' : "don't have an account? "}
+              <Text style={styles.modeSwitchLink}>
+                {isSignUp ? 'log in' : 'sign up'}
+              </Text>
+            </Text>
+          </TouchableOpacity>
         </Animated.View>
 
       </View>
@@ -513,9 +636,32 @@ const getStyles = (Colors) => StyleSheet.create({
     color: '#2D3139',
     textTransform: 'lowercase',
   },
+  emailSignupLink: {
+    marginTop: Spacing[6],
+    paddingVertical: Spacing[2],
+  },
+  emailSignupLinkText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 14,
+    color: '#0066FF',
+    textTransform: 'lowercase',
+  },
   inputWrapper: {
     width: '100%',
     marginBottom: Spacing[4],
+  },
+  passwordContainer: {
+    position: 'relative',
+    width: '100%',
+    justifyContent: 'center',
+  },
+  eyeIconWrapper: {
+    position: 'absolute',
+    right: Spacing[4],
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
   input: {
     backgroundColor: 'rgba(0, 0, 0, 0.04)',
@@ -528,6 +674,9 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     fontSize: 15,
     color: '#2D3139',
+  },
+  inputPassword: {
+    paddingRight: 48,
   },
   inputFocused: {
     borderColor: '#0066FF',
@@ -552,11 +701,27 @@ const getStyles = (Colors) => StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: Spacing[2],
   },
   emailSubmitBtnText: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: 15,
     color: '#FFFFFF',
     textTransform: 'lowercase',
+  },
+  modeSwitchBtn: {
+    marginTop: Spacing[4],
+    paddingVertical: Spacing[2],
+  },
+  modeSwitchText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 13,
+    color: '#60646D',
+    textAlign: 'center',
+    textTransform: 'lowercase',
+  },
+  modeSwitchLink: {
+    fontFamily: Typography.fontFamily.bold,
+    color: '#0066FF',
   },
 });

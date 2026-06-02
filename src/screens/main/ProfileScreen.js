@@ -88,7 +88,7 @@ const getSectionStyles = (Colors) => StyleSheet.create({
 
 // ── ProfileScreen ──────────────────────────────────────────────────────────
 export default function ProfileScreen({ navigation }) {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, logout } = useApp();
   const insets = useSafeAreaInsets();
   const { profile, domainScores } = state;
   const Colors = useThemeColors();
@@ -242,9 +242,8 @@ export default function ProfileScreen({ navigation }) {
         title={t('profile.logoutConfirm.title')}
         body={t('profile.logoutConfirm.body')}
         onConfirm={async () => {
-          await clearAllStorage();
-          dispatch(resetApp());
           setShowLogoutConfirm(false);
+          await logout();
         }}
         onCancel={() => setShowLogoutConfirm(false)}
         Colors={Colors}

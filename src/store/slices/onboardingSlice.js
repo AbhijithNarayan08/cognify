@@ -1,6 +1,7 @@
 // ── Onboarding Slice ──────────────────────────────────────────────────────
 export const onboardingInitialState = {
   onboardingComplete: false,
+  user: null, // Firebase user or mock user object (or null)
   intent: null, // 'sharpen' | 'focus' | 'protect' | 'curious'
   profile: {
     firstName: 'there',
@@ -12,6 +13,8 @@ export const onboardingInitialState = {
 
 export function onboardingReducer(state, action) {
   switch (action.type) {
+    case 'SET_USER':
+      return { ...state, user: action.payload };
     case 'SET_INTENT':
       return { ...state, intent: action.payload };
     case 'SET_PROFILE':

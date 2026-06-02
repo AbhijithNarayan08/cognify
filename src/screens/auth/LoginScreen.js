@@ -6,6 +6,7 @@ import Svg, { Path } from 'react-native-svg';
 import { Spacing, Radius, Typography } from '../../theme';
 import { TouchableScale } from '../../components/Motion';
 import LoginForm from './LoginForm';
+import { useApp } from '../../context/AppContext';
 
 // Import existing high-fidelity animated mascots including the DynamicFlame streak mascot
 import {
@@ -33,6 +34,7 @@ const snapNative = (node, val) => {
 };
 
 export default function LoginScreen({ navigation }) {
+  const { loginWithEmail, signupWithEmail } = useApp();
   // Rigorous State Machine Phases:
   // 'idle' ➔ 'mascots' ➔ 'login' ➔ 'ready'
   const [animationPhase, setAnimationPhase] = useState('idle');
@@ -289,8 +291,21 @@ export default function LoginScreen({ navigation }) {
     AsyncStorage.setItem('cognify:hasSeenIntro', 'true').catch(() => {});
   };
 
-  const handleLoginSubmit = (method, emailValue) => {
-    navigation.replace('Welcome');
+  const handleLoginSubmit = async (method, data) => {
+    if (method === 'email') {
+      const { email, password, isSignUp } = data;
+      if (isSignUp) {
+        await signupWithEmail(email, password);
+      } else {
+        await loginWithEmail(email, password);
+      }
+    } else {
+      // Mock / fallback for Social SSO
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log(`[Social Auth] Method: ${method} initialized.`);
+      // Register a mock user for demo when clicking Google or Apple
+      await signupWithEmail(`${method}-user@example.com`, "socialLoginSecret123");
+    }
   };
 
   // Standard Animated Mascot styles applying entrance transforms

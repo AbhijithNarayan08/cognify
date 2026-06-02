@@ -1,5 +1,5 @@
 /**
- * AppContext — composed store with AsyncStorage persistence
+ * AppContext — composed store with AsyncStorage persistence & Firebase Auth integration
  */
 import React, { createContext, useContext, useReducer, useState, useEffect } from 'react';
 import { onboardingInitialState, onboardingReducer } from '../store/slices/onboardingSlice';
@@ -7,8 +7,10 @@ import { scoresInitialState, scoresReducer } from '../store/slices/scoresSlice';
 import { sessionInitialState, sessionReducer } from '../store/slices/sessionSlice';
 import {
   loadOnboarding, loadScores, loadSession,
-  saveOnboarding, saveScores, saveSession
+  saveOnboarding, saveScores, saveSession,
+  clearAllStorage
 } from '../services/storage';
+import { auth } from '../services/firebase';
 import { View, ActivityIndicator } from 'react-native';
 
 // ── Compose initial state from slices ─────────────────────────────────────
@@ -20,12 +22,11 @@ const initialState = {
 
 // ── Compose reducer from slices ───────────────────────────────────────────
 function rootReducer(state, action) {
-  // If the RESET action is dispatched, clear AsyncStorage and return initial states
+  // If the RESET action is dispatched, return initial states
   if (action.type === 'RESET') {
     return initialState;
   }
   // Chain reducers sequentially — each sees the previous reducer's output.
-  // This prevents later reducers from overwriting earlier ones' changes via ...state.
   let next = onboardingReducer(state, action);
   next = scoresReducer(next, action);
   next = sessionReducer(next, action);
@@ -66,15 +67,37 @@ export function AppProvider({ children }) {
     bootstrap();
   }, []);
 
-  // 2. Auto-save onboarding slice updates
+  // 2. Listen to Firebase auth changes on startup
+  useEffect(() => {
+    if (!hydrated) return;
+
+    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+      if (firebaseUser) {
+        dispatch({
+          type: 'SET_USER',
+          payload: {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+          }
+        });
+      } else {
+        dispatch({ type: 'SET_USER', payload: null });
+      }
+    });
+
+    return unsubscribe;
+  }, [hydrated]);
+
+  // 3. Auto-save onboarding slice updates
   useEffect(() => {
     if (hydrated) {
-      const { onboardingComplete, intent, profile } = state;
-      saveOnboarding({ onboardingComplete, intent, profile });
+      const { onboardingComplete, intent, profile, user } = state;
+      saveOnboarding({ onboardingComplete, intent, profile, user });
     }
-  }, [state.onboardingComplete, state.intent, state.profile, hydrated]);
+  }, [state.onboardingComplete, state.intent, state.profile, state.user, hydrated]);
 
-  // 3. Auto-save scores slice updates
+  // 4. Auto-save scores slice updates
   useEffect(() => {
     if (hydrated) {
       const { cognitiveScore, domainScores, brainAge, cohortPercentile, scoreHistory } = state;
@@ -82,7 +105,7 @@ export function AppProvider({ children }) {
     }
   }, [state.cognitiveScore, state.domainScores, state.brainAge, state.cohortPercentile, state.scoreHistory, hydrated]);
 
-  // 4. Auto-save session slice updates
+  // 5. Auto-save session slice updates
   useEffect(() => {
     if (hydrated) {
       const { workoutComplete, workoutInProgress, checkins, checkinDismissedAt, streakDays, lastWorkoutDate } = state;
@@ -98,6 +121,25 @@ export function AppProvider({ children }) {
     hydrated
   ]);
 
+  // ── Auth Actions ────────────────────────────────────────────────────────
+  const loginWithEmail = async (email, password) => {
+    return auth.signInWithEmailAndPassword(email, password);
+  };
+
+  const signupWithEmail = async (email, password) => {
+    return auth.createUserWithEmailAndPassword(email, password);
+  };
+
+  const logout = async () => {
+    try {
+      await auth.signOut();
+    } catch (e) {
+      console.error('Firebase Auth sign out error:', e);
+    }
+    await clearAllStorage();
+    dispatch({ type: 'RESET' });
+  };
+
   if (!hydrated) {
     // Show a clean background loader during rehydration
     return (
@@ -108,14 +150,14 @@ export function AppProvider({ children }) {
   }
 
   return (
-    <AppContext.Provider value={{ state, dispatch }}>
+    <AppContext.Provider value={{ state, dispatch, loginWithEmail, signupWithEmail, logout }}>
       {children}
     </AppContext.Provider>
   );
 }
 
 /**
- * @returns {{ state: typeof initialState, dispatch: React.Dispatch<any> }}
+ * @returns {{ state: typeof initialState, dispatch: React.Dispatch<any>, loginWithEmail: Function, signupWithEmail: Function, logout: Function }}
  */
 export function useApp() {
   const ctx = useContext(AppContext);

@@ -138,6 +138,9 @@ function AppStackNavigator() {
 
 // ── Onboarding Stack ──────────────────────────────────────────────────────
 function OnboardingNavigator() {
+  const { state } = useApp();
+  const isAuthenticated = !!state.user;
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -156,17 +159,22 @@ function OnboardingNavigator() {
         }),
       }}
     >
-      <Stack.Screen name="Login"           component={LoginScreen}          />
-      <Stack.Screen name="Welcome"         component={WelcomeScreen}        />
-      <Stack.Screen name="Intent"          component={IntentScreen}         />
-      <Stack.Screen name="QuickProfile"    component={QuickProfileScreen}   />
-      <Stack.Screen name="AssessmentIntro" component={AssessmentIntroScreen}/>
-      <Stack.Screen name="Assessment"      component={AssessmentScreen}     />
-      <Stack.Screen name="Processing"      component={ProcessingScreen}     />
-      <Stack.Screen name="Results"         component={ResultsScreen}        />
-      <Stack.Screen name="Projection"      component={ProjectionScreen}     />
-      <Stack.Screen name="NotificationOptIn" component={NotificationOptInScreen} />
-      <Stack.Screen name="MainApp"         component={AppStackNavigator}    options={{ gestureEnabled: false }} />
+      {!isAuthenticated ? (
+        <Stack.Screen name="Login" component={LoginScreen} />
+      ) : (
+        <>
+          <Stack.Screen name="Welcome"         component={WelcomeScreen}        />
+          <Stack.Screen name="Intent"          component={IntentScreen}         />
+          <Stack.Screen name="QuickProfile"    component={QuickProfileScreen}   />
+          <Stack.Screen name="AssessmentIntro" component={AssessmentIntroScreen}/>
+          <Stack.Screen name="Assessment"      component={AssessmentScreen}     />
+          <Stack.Screen name="Processing"      component={ProcessingScreen}     />
+          <Stack.Screen name="Results"         component={ResultsScreen}        />
+          <Stack.Screen name="Projection"      component={ProjectionScreen}     />
+          <Stack.Screen name="NotificationOptIn" component={NotificationOptInScreen} />
+          <Stack.Screen name="MainApp"         component={AppStackNavigator}    options={{ gestureEnabled: false }} />
+        </>
+      )}
     </Stack.Navigator>
   );
 }
@@ -174,10 +182,11 @@ function OnboardingNavigator() {
 // ── Root Navigator ────────────────────────────────────────────────────────
 export default function RootNavigator() {
   const { state } = useApp();
+  const isAuthenticated = !!state.user;
 
   return (
     <NavigationContainer>
-      {state.onboardingComplete ? (
+      {isAuthenticated && state.onboardingComplete ? (
         <AppStackNavigator />
       ) : (
         <OnboardingNavigator />
