@@ -37,3 +37,6 @@ jobs:
 
       - name: Verify Metro Web Bundling Export
         run: npx expo export -p web
+
+      - name: Verify Insights Pipeline Integrity
+        run: node scripts/verifyInsights.js
