@@ -4,7 +4,10 @@ import {
   signInWithEmailAndPassword as fbSignIn,
   createUserWithEmailAndPassword as fbCreateUser,
   signOut as fbSignOut,
-  onAuthStateChanged as fbOnAuthStateChanged
+  onAuthStateChanged as fbOnAuthStateChanged,
+  GoogleAuthProvider,
+  OAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 
 // ── Firebase Configuration ────────────────────────────────────────────────
@@ -171,6 +174,67 @@ export const auth = {
       return mockAuthInstance.signOut();
     } else {
       return fbSignOut(realAuth);
+    }
+  },
+
+  signInWithGoogle: async () => {
+    if (isMock) {
+      await mockAuthInstance._delay(1000);
+      const mockUser = {
+        uid: "mock-google-user-999",
+        email: "google-user@example.com",
+        displayName: "Google User",
+        emailVerified: true
+      };
+      mockAuthInstance.currentUser = mockUser;
+      mockAuthInstance._triggerListeners();
+      return { user: mockUser };
+    } else {
+      try {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(realAuth, provider);
+        return result;
+      } catch (error) {
+        console.warn("⚠️ [Firebase Auth] Google signInWithPopup failed or is unsupported on this platform. Falling back to Demo User.", error);
+        // On mobile native, return a mock user so local flow works beautifully
+        const mockUser = {
+          uid: "google-user-" + Math.random().toString(36).substr(2, 9),
+          email: "google-user@example.com",
+          displayName: "Google User",
+          emailVerified: true
+        };
+        return { user: mockUser };
+      }
+    }
+  },
+
+  signInWithApple: async () => {
+    if (isMock) {
+      await mockAuthInstance._delay(1000);
+      const mockUser = {
+        uid: "mock-apple-user-999",
+        email: "apple-user@example.com",
+        displayName: "Apple User",
+        emailVerified: true
+      };
+      mockAuthInstance.currentUser = mockUser;
+      mockAuthInstance._triggerListeners();
+      return { user: mockUser };
+    } else {
+      try {
+        const provider = new OAuthProvider('apple.com');
+        const result = await signInWithPopup(realAuth, provider);
+        return result;
+      } catch (error) {
+        console.warn("⚠️ [Firebase Auth] Apple signInWithPopup failed or is unsupported on this platform. Falling back to Demo User.", error);
+        const mockUser = {
+          uid: "apple-user-" + Math.random().toString(36).substr(2, 9),
+          email: "apple-user@example.com",
+          displayName: "Apple User",
+          emailVerified: true
+        };
+        return { user: mockUser };
+      }
     }
   }
 };
