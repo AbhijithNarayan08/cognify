@@ -7,6 +7,7 @@ import { useApp } from '../../../context/AppContext';
 import { INSIGHT_TEMPLATES, WEEKLY_BRIEF } from '../../../data/exercises';
 import { get14DaysDummyData } from '../../../data/dummyData';
 import { calculatePearson, calculateRegressionSlope, getLifestyleRating } from '../../../shared/utils/analytics';
+import { isMock } from '../../../services/firebase/firebase.config';
 
 export function useInsights() {
   const { state } = useApp();
@@ -14,7 +15,7 @@ export function useInsights() {
 
   const activeScoreHistory = useMemo(() => {
     if (!scoreHistory || scoreHistory.length === 0) {
-      return get14DaysDummyData(cognitiveScore || 742);
+      return isMock ? get14DaysDummyData(cognitiveScore || 742) : [];
     }
     return scoreHistory;
   }, [scoreHistory, cognitiveScore]);
@@ -30,6 +31,15 @@ export function useInsights() {
     const habits = ['sleep', 'mood', 'activity'];
     const domains = ['memory', 'speed', 'attention', 'executive', 'verbal', 'spatial'];
     const result = { sleep: {}, mood: {}, activity: {} };
+
+    if (!activeScoreHistory || activeScoreHistory.length === 0) {
+      habits.forEach(habit => {
+        domains.forEach(domain => {
+          result[habit][domain] = 0;
+        });
+      });
+      return result;
+    }
 
     habits.forEach(habit => {
       domains.forEach(domain => {
@@ -56,6 +66,15 @@ export function useInsights() {
   // 2. Compute 7-day future regression projections
   const projections = useMemo(() => {
     const currentScore = cognitiveScore || 742;
+
+    if (!activeScoreHistory || activeScoreHistory.length === 0) {
+      return {
+        slope: 0,
+        standardProjected: currentScore,
+        optimizedProjected: currentScore,
+      };
+    }
+
     const slope = calculateRegressionSlope(activeScoreHistory);
     
     // Project standard score 7 days out

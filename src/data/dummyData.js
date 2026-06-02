@@ -40,6 +40,7 @@ export function get14DaysDummyData(baseScore = 680) {
       sleep: day.sleep,
       trained: day.trained,
       mood: day.mood || 'neutral',
+      isDummy: true,
       domains: {
         memory:    clamp(day.domains.memory + scoreOffset),
         speed:     clamp(day.domains.speed + scoreOffset),

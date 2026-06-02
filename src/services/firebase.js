@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import * as FirebaseAuth from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 const fbSignIn = FirebaseAuth.signInWithEmailAndPassword;
 const fbCreateUser = FirebaseAuth.createUserWithEmailAndPassword;
@@ -34,6 +35,7 @@ const isConfigPlaceholder =
 
 let app;
 let realAuth;
+let db;
 let isMock = false;
 
 if (isConfigPlaceholder) {
@@ -46,11 +48,14 @@ if (isConfigPlaceholder) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     realAuth = getAuth(app);
+    db = getFirestore(app);
   } catch (error) {
     console.error("❌ [Firebase] Initialization failed. Falling back to Mock Mode.", error);
     isMock = true;
   }
 }
+
+export { db };
 
 // ── Mock Firebase Authentication Implementation ──────────────────────────
 class MockAuth {

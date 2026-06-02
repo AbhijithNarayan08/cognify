@@ -1,0 +1,71 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Core check: Request must be authenticated and target UID must match authenticated UID
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Collection: users profile
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) 
+        && request.resource.data.email is string
+        && request.resource.data.authProvider in ['google', 'apple', 'email'];
+      allow update: if isOwner(userId);
+      allow delete: if false; // Profiles cannot be deleted from the client
+    }
+
+    // Subcollection: completed workouts sessions
+    match /users/{userId}/sessions/{sessionId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.game in ['lighthouse_watch', 'context_switch', 'pattern_fold']
+        && request.resource.data.level >= 1 && request.resource.data.level <= 5
+        && request.resource.data.score >= 0;
+      allow update: if isOwner(userId); // Allows merging details
+      allow delete: if false; // Immutable session history — no deletions allowed!
+    }
+
+    // Subcollection: rounds micro-logs within sessions
+    match /users/{userId}/sessions/{sessionId}/rounds/{roundIndex} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if false; // Round logs are permanent once written
+    }
+
+    // Collection: userProgress denormalized dashboard cache
+    match /userProgress/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.cognitiveScore >= 300
+        && request.resource.data.cognitiveScore <= 1000;
+      allow delete: if false;
+    }
+
+    // Collection: streaks inventory and history tracker
+    match /streaks/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId)
+        // CRITICAL INVENTORY RULE: Clients can only DECREMENT or preserve owned streak freezes, 
+        // preventing malicious clients from arbitrarily incrementing their freeze balance!
+        && (
+          !('freezesOwned' in resource.data) ||
+          request.resource.data.freezesOwned <= resource.data.freezesOwned
+        );
+      allow delete: if false;
+    }
+
+    // Collection: adaptiveState per-game difficulty state
+    match /adaptiveState/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId);
+      allow delete: if false;
+    }
+
+  }
+}

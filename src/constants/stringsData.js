@@ -94,6 +94,7 @@ export const STRINGS_MAP = {
   "insights.dateRange.current": "This Week",
   "insights.deltaText.negative": "{{delta}} from last week",
   "insights.deltaText.positive": "+{{delta}} from last week",
+  "insights.deltaText.baseline": "establishing baseline",
   "insights.domainBreakdown": "Domain Breakdown",
   "insights.domainBreakdownSub": "Your category strengths and proportions this week.",
   "insights.focusReasonDipped": "Your {{domain}} score dipped {{points}} pts this week.",

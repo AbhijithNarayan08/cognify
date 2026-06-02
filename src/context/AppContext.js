@@ -71,16 +71,101 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!hydrated) return;
 
-    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
+        const uid = firebaseUser.uid;
+        
         dispatch({
           type: 'SET_USER',
           payload: {
-            uid: firebaseUser.uid,
+            uid: uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
           }
         });
+
+        // Pull Firestore data dynamically to skip onboarding if completed once
+        if (!auth.isMock && !uid.startsWith("mock-")) {
+          console.log(`🔍 [AppContext] Fetching Firestore cloud profile for user: ${uid}`);
+          try {
+            // Lazy require services to avoid circular dependencies during initial boot
+            const { userService } = require('../services/firebase/user.service');
+            const { progressService } = require('../services/firebase/progress.service');
+            const { streakService } = require('../services/firebase/streak.service');
+            const { sessionService } = require('../services/firebase/session.service');
+
+            const [userProfileRes, progressRes, streakRes] = await Promise.all([
+              userService.getUserProfile(uid),
+              progressService.getProgress(uid),
+              streakService.getStreak(uid)
+            ]);
+
+            if (userProfileRes.success && userProfileRes.data) {
+              const userData = userProfileRes.data;
+              console.log("📥 [AppContext] Firestore profile fetched successfully:", userData);
+              
+              if (userData.onboardingCompleted) {
+                // User has completed onboarding once! Restore onboarding choice to skip Onboarding stack
+                dispatch({
+                  type: 'REHYDRATE_ONBOARDING',
+                  payload: {
+                    onboardingComplete: true,
+                    intent: userData.intent,
+                    profile: userData.profile || {},
+                  }
+                });
+
+                // Load real score history from progress and sessions
+                if (progressRes.success && progressRes.data) {
+                  const progressData = progressRes.data;
+                  const sessionRes = await sessionService.getRecentSessions(uid, 50);
+                  const dbSessions = sessionRes.success ? sessionRes.data : [];
+
+                  const localHistory = dbSessions.map(s => ({
+                    date: s.timestamp ? (typeof s.timestamp.toDate === 'function' ? s.timestamp.toDate() : new Date(s.timestamp)).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                    score: s.score || 600,
+                    trained: true,
+                    sleep: s.notes?.includes("sleep:") ? parseFloat(s.notes.split("sleep:")[1].split(",")[0]) : 7.5,
+                    mood: s.notes?.includes("mood:") ? s.notes.split("mood:")[1].trim() : 'good'
+                  })).reverse();
+
+                  dispatch({
+                    type: 'REHYDRATE_SCORES',
+                    payload: {
+                      cognitiveScore: progressData.cognitiveScore || 680,
+                      domainScores: progressData.domainScores || null,
+                      brainAge: progressData.brainAge || null,
+                      cohortPercentile: progressData.cohortPercentile || null,
+                      scoreHistory: localHistory,
+                    }
+                  });
+                }
+
+                if (streakRes.success && streakRes.data) {
+                  const streakData = streakRes.data;
+                  dispatch({
+                    type: 'REHYDRATE_SESSION',
+                    payload: {
+                      streakDays: streakData.streakDays || 0,
+                      lastWorkoutDate: streakData.lastWorkoutDate || null,
+                      workoutComplete: streakData.lastWorkoutDate === new Date().toISOString().split('T')[0]
+                    }
+                  });
+                }
+                
+                console.log("⚡️ [AppContext] User profile successfully rehydrated from Firestore. Onboarding bypassed.");
+              } else {
+                console.log("🔒 [AppContext] Firestore profile exists but onboarding incomplete. Purging dummy onboarding history.");
+                dispatch({ type: 'CLEAR_MOCK_HISTORY' });
+              }
+            } else {
+              console.log("🆕 [AppContext] New Firebase user detected. Purging all local onboarding dummy history.");
+              dispatch({ type: 'CLEAR_MOCK_HISTORY' });
+            }
+          } catch (error) {
+            console.warn("⚠️ [AppContext] Failed to sync Firestore user profile on auth state change:", error);
+          }
+        }
       } else {
         dispatch({ type: 'SET_USER', payload: null });
       }

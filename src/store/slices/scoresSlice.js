@@ -1,5 +1,6 @@
 // ── Scores Slice ──────────────────────────────────────────────────────────
 import { get14DaysDummyData } from '../../data/dummyData';
+import { isMock } from '../../services/firebase/firebase.config';
 // Generate 30-day mock score history with realistic variance
 export function generateMockHistory(baseScore) {
   const history = [];
@@ -47,7 +48,7 @@ export function scoresReducer(state, action) {
         streakDays: 1,
         cognitiveScore: finalScore,
         domainScores: state.domainScores || defaultDomains,
-        scoreHistory: get14DaysDummyData(finalScore),
+        scoreHistory: isMock ? get14DaysDummyData(finalScore) : [],
       };
     case 'COMPLETE_WORKOUT': {
       const todayStr = new Date().toISOString().split('T')[0];
@@ -82,6 +83,11 @@ export function scoresReducer(state, action) {
         scoreHistory: newHistory,
       };
     }
+    case 'CLEAR_MOCK_HISTORY':
+      return {
+        ...state,
+        scoreHistory: [], // Completely wipe local onboarding dummy history records
+      };
     case 'REHYDRATE_SCORES':
       return { ...state, ...action.payload };
     case 'RESET':

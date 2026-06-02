@@ -1041,3 +1041,61 @@ App.js
                 └── SessionResultScreen (modal)
                      └── navigation.navigate('TrainRoot' | 'ActiveSession')
 ```
+
+---
+
+## 21. Firebase & Firestore Data Layer Architecture
+
+### Core Design
+Cognify's data layer has been fully evolved from device-bound local-only caching to a cloud-synced, offline-persistent architecture using **Firebase Authentication** and **Google Cloud Firestore**. 
+
+The implementation strictly follows a **decoupled service-and-hook pattern** under `src/services/firebase/` and `src/hooks/`. React screens and game engines never interact with Firebase SDK APIs directly, ensuring modularity and compile-time isolation.
+
+### Dynamic Sandbox Mode (`isMock`)
+To maintain seamless on-device local development without requiring live Firebase configurations or causing connection crashes, the data layer utilizes a **dynamic live-bound sandbox toggle (`isMock`)**:
+* **Initial State**: The app boots safely in **Mock Mode** (`isMock = true`), utilizing offline in-memory cache adapters and local storage, keeping Firebase fully shielded.
+* **Email Authentication Promotion**: When a real Firebase user registers or logs in via email/password, the auth state listener dynamically updates the live binding to `isMock = false`.
+* **Immediate Cloud Promotion**: All database services instantly shift from local mock buffers to real Firestore connections. Upon logout, the binding reverts to `true` (locking database access).
+
+### Firestore Document & Collection Layout
+
+#### 1. Core Profile Details
+* **Path**: `/users/{uid}` (Document ID = Auth `uid`)
+* **Scope**: Demographics, focus choices, onboarding status, and first-time gameplay trackers.
+
+#### 2. Progress Aggregates (Denormalization for Performance)
+* **Path**: `/userProgress/{uid}`
+* **Scope**: Denormalized aggregate cognitive domain scores, rolling averages, personal bests, and dynamic brain age calculations.
+* **Why**: Prevents write amplification and keeps dashboard loading speeds limited to exactly **1 document read** instead of querying $N$ sessions.
+
+#### 3. Streaks & Inventory Balances
+* **Path**: `/streaks/{uid}`
+* **Scope**: Active streak calendars, weekly activity grids, and streak freeze balances.
+
+#### 4. Adaptive Difficulty
+* **Path**: `/adaptiveState/{uid}`
+* **Scope**: Calibrated active difficulty levels across all three cognitive games.
+
+#### 5. Chronological Workout Sessions & Micro-Logs
+* **Path**: `/users/{uid}/sessions/{id}` & subcollection `/rounds/{idx}`
+* **Scope**: Detailed round-by-round micro-logs (accuracy, reaction times, correct rotations) and qualitative cognitive patterns (e.g. fatigue triggers).
+
+---
+
+### Onboarding Auto-Bypass & Hydration Flow
+When a user logs in, `AppContext.js` queries Firestore in the background:
+1. If `/users/{uid}` has `onboardingCompleted: true`, it loads all scores, aggregates, and streaks from the cloud.
+2. It dispatches rehydration events (`REHYDRATE_ONBOARDING`, etc.), immediately bypassing onboarding slides and routing the user straight to the main tab Dashboard.
+3. If they are a new Firebase user (no cloud profile), it dispatches a `CLEAR_MOCK_HISTORY` action to completely sweep away any local placeholder/dummy history from the state, starting them with a clean slate.
+
+### Background Legacy Migration (`useLegacyMigration`)
+Fires silently on startup once a real Firebase email login is established:
+* Scans local `AsyncStorage` for historical sessions or records.
+* **Dummy Log Isolation**: Any onboarding placeholder records (which are generated during guest assessments) are explicitly tagged with `isDummy: true` in [dummyData.js](file:///src/data/dummyData.js) and filtered out by the migration script, keeping the Firestore collection completely clean.
+* Packages and uploads only real, user-played gameplay sessions in transaction batches.
+* Safely clears device cache items on completion.
+
+### Strict Security Policies (`firestore.rules`)
+* **User Identity Boundaries**: Read and Write access is strictly limited to the owner (`request.auth.uid == userId`).
+* **Protected Deletions**: Deleting session histories, rounds, or profiles from the client is prohibited.
+* **Inventory Balance Lock**: Clients are restricted from arbitrarily increasing their owned streak freezes. Rules enforce that clients can only decrement or maintain (`request.resource.data.freezesOwned <= resource.data.freezesOwned`) their balance, fully neutralizing balance-modification hacks from the client.

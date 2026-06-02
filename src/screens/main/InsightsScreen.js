@@ -10,6 +10,7 @@ import { t } from '../../constants/useStrings';
 import { INSIGHT_TEMPLATES } from '../../data/exercises';
 import { get14DaysDummyData } from '../../data/dummyData';
 import { analytics } from '../../services/analyticsService';
+import { isMock } from '../../services/firebase/firebase.config';
 import { useApp } from '../../context/AppContext';
 import { FadeInUp, TouchableScale } from '../../components/Motion';
 import ProjectionGraph from '../../shared/components/ProjectionGraph';
@@ -1053,8 +1054,10 @@ export default function InsightsScreen({ navigation, route }) {
     };
   }, [domainScores, cognitiveScore]);
 
-  // Self-heal scoreHistory if empty, using old schema, or missing new fields
+  // Self-heal scoreHistory if empty, using old schema, or missing new fields (only in local mock mode)
   React.useEffect(() => {
+    if (!isMock) return; // Skip self-heal entirely for real Firebase users to allow empty histories!
+
     const needsRefresh = !state.scoreHistory
       || state.scoreHistory.length === 0
       || !state.scoreHistory[0]?.domains

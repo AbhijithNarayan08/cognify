@@ -43,6 +43,7 @@ export default function LoginScreen({ navigation }) {
       try {
         GoogleSignin.configure({
           webClientId: '1007104068828-web-client-id-here.apps.googleusercontent.com', // Replace with real Web Client ID
+          iosClientId: '1007104068828-ios-client-id-here.apps.googleusercontent.com', // Placeholder to prevent native iOS crash if GoogleService-Info.plist is absent
           offlineAccess: true,
         });
       } catch (err) {

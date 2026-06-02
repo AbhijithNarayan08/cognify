@@ -20,6 +20,7 @@ import { useCheckins } from '../../features/home/hooks/useCheckins';
 import { analytics } from '../../services/analyticsService';
 import { GameHaptics } from '../../utils/haptics';
 import { CheckinBottomSheet } from '../../shared/components/CheckinBottomSheet';
+import { useLegacyMigration } from '../../hooks/useLegacyMigration';
 
 // ─────────────────────────────────────────────────────────────
 // Dynamic Pulse & Sway SVG Flame Mascot Character
@@ -180,6 +181,9 @@ export default function HomeScreen({ navigation }) {
 
   const Colors = useThemeColors();
   const styles = useMemo(() => getStyles(Colors), [Colors]);
+
+  // Run the background legacy migration to sync AsyncStorage score history to Firebase Firestore
+  useLegacyMigration();
 
   const today = new Date();
   const isSundayEvening = today.getDay() === 0 && today.getHours() >= 18;
