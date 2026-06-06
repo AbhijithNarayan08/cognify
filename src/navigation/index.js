@@ -27,6 +27,9 @@ import HomeScreen from '../screens/main/HomeScreen';
 import { TrainScreen, ActiveSessionScreen, SessionResultScreen } from '../screens/main/TrainScreen';
 import InsightsScreen from '../screens/main/InsightsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
+import AIFruitWorkshopScreen from '../screens/main/AIFruitWorkshopScreen';
+import ArrowEscapeScreen from '../screens/main/ArrowEscapeScreen';
+import ArrowEscapeDesignerScreen from '../screens/main/ArrowEscapeDesignerScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -131,6 +134,21 @@ function AppStackNavigator() {
         name="SessionResult"
         component={SessionResultScreen}
         options={{ gestureEnabled: false }}
+      />
+      <RootAppStack.Screen
+        name="AIFruitWorkshop"
+        component={AIFruitWorkshopScreen}
+        options={{ gestureEnabled: true }}
+      />
+      <RootAppStack.Screen
+        name="ArrowEscape"
+        component={ArrowEscapeScreen}
+        options={{ gestureEnabled: true }}
+      />
+      <RootAppStack.Screen
+        name="ArrowEscapeDesigner"
+        component={ArrowEscapeDesignerScreen}
+        options={{ gestureEnabled: true }}
       />
     </RootAppStack.Navigator>
   );

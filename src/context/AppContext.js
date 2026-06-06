@@ -193,8 +193,8 @@ export function AppProvider({ children }) {
   // 5. Auto-save session slice updates
   useEffect(() => {
     if (hydrated) {
-      const { workoutComplete, workoutInProgress, checkins, checkinDismissedAt, streakDays, lastWorkoutDate } = state;
-      saveSession({ workoutComplete, workoutInProgress, checkins, checkinDismissedAt, streakDays, lastWorkoutDate });
+      const { workoutComplete, workoutInProgress, checkins, checkinDismissedAt, streakDays, lastWorkoutDate, customFruits } = state;
+      saveSession({ workoutComplete, workoutInProgress, checkins, checkinDismissedAt, streakDays, lastWorkoutDate, customFruits });
     }
   }, [
     state.workoutComplete,
@@ -203,6 +203,7 @@ export function AppProvider({ children }) {
     state.checkinDismissedAt,
     state.streakDays,
     state.lastWorkoutDate,
+    state.customFruits,
     hydrated
   ]);
 

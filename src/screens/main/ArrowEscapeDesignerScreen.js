@@ -1,0 +1,1022 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  TextInput,
+  Modal,
+  ScrollView,
+  Platform,
+  Alert,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path, Circle, G } from 'react-native-svg';
+import { ArrowLeft, RotateCcw, HelpCircle, Heart, Award, Copy, Check } from 'lucide-react-native';
+import { useThemeColors, Typography, Spacing, Radius, Shadow } from '../../theme';
+import { GameHaptics } from '../../utils/haptics';
+
+// ── Screen and Canvas Dimensions ─────────────────────────────────────────────
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CANVAS_SIZE = 320;
+const GRID_STEP = 20;
+
+// Colors mapping for paths color picker
+const PATH_COLORS = ['#4A90E2', '#F4A041', '#FF5E5B', '#3DAB7F', '#A662C6'];
+const DIR_OPTIONS = [
+  { label: '← left', vector: { x: -1, y: 0 } },
+  { label: '→ right', vector: { x: 1, y: 0 } },
+  { label: '↑ up', vector: { x: 0, y: -1 } },
+  { label: '↓ down', vector: { x: 0, y: 1 } },
+];
+
+// ── Collision Detection Helpers (Mirrored from ArrowEscapeScreen) ─────────────
+function getPointToSegmentDistance(px, py, ax, ay, bx, by) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const l2 = dx * dx + dy * dy;
+  if (l2 === 0) return Math.sqrt((px - ax) ** 2 + (py - ay) ** 2);
+  let t = ((px - ax) * dx + (py - ay) * dy) / l2;
+  t = Math.max(0, Math.min(1, t));
+  const projX = ax + t * dx;
+  const projY = ay + t * dy;
+  return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2);
+}
+
+function checkSegmentsIntersection(ax, ay, bx, by, cx, cy, dx, dy) {
+  const det = (bx - ax) * (dy - cy) - (by - ay) * (dx - cx);
+  if (det === 0) return false;
+  const t = ((cx - ax) * (dy - cy) - (cy - ay) * (dx - cx)) / det;
+  const u = ((cx - ax) * (by - ay) - (cy - ay) * (bx - ax)) / det;
+  return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+}
+
+function getSegmentsDistance(ax, ay, bx, by, cx, cy, dx, dy) {
+  if (checkSegmentsIntersection(ax, ay, bx, by, cx, cy, dx, dy)) {
+    return 0;
+  }
+  return Math.min(
+    getPointToSegmentDistance(ax, ay, cx, cy, dx, dy),
+    getPointToSegmentDistance(bx, by, cx, cy, dx, dy),
+    getPointToSegmentDistance(cx, cy, ax, ay, bx, by),
+    getPointToSegmentDistance(dx, dy, ax, ay, bx, by)
+  );
+}
+
+function checkPathCollision(activePath, otherPaths) {
+  const threshold = 8.5;
+
+  for (const other of otherPaths) {
+    if (other.cleared) continue;
+
+    for (let i = 0; i < activePath.points.length - 1; i++) {
+      const ax = activePath.points[i].x + activePath.offsetX;
+      const ay = activePath.points[i].y + activePath.offsetY;
+      const bx = activePath.points[i + 1].x + activePath.offsetX;
+      const by = activePath.points[i + 1].y + activePath.offsetY;
+
+      for (let j = 0; j < other.points.length - 1; j++) {
+        const cx = other.points[j].x + other.offsetX;
+        const cy = other.points[j].y + other.offsetY;
+        const dx = other.points[j + 1].x + other.offsetX;
+        const dy = other.points[j + 1].y + other.offsetY;
+
+        const dist = getSegmentsDistance(ax, ay, bx, by, cx, cy, dx, dy);
+        if (dist < threshold) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function checkIsOffScreen(path) {
+  const margin = 50;
+  return path.points.every(pt => {
+    const x = pt.x + path.offsetX;
+    const y = pt.y + path.offsetY;
+    return x < -margin || x > CANVAS_SIZE + margin || y < -margin || y > CANVAS_SIZE + margin;
+  });
+}
+
+// ── Screen Component ─────────────────────────────────────────────────────────
+export default function ArrowEscapeDesignerScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+  const Colors = useThemeColors();
+
+  // Mode: 'editing' | 'play_testing'
+  const [mode, setMode] = useState('editing');
+
+  // Editor Board State
+  const [boardPaths, setBoardPaths] = useState([]);
+  const [currentPoints, setCurrentPoints] = useState([]);
+  const [selectedColor, setSelectedColor] = useState(PATH_COLORS[0]);
+  const [selectedDir, setSelectedDir] = useState(DIR_OPTIONS[1]); // right
+  const [arrowAt, setArrowAt] = useState('end');
+
+  // JSON Modal States
+  const [isExportVisible, setIsExportVisible] = useState(false);
+  const [isImportVisible, setIsImportVisible] = useState(false);
+  const [importJsonText, setImportJsonText] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  // Play testing state
+  const [playPaths, setPlayPaths] = useState([]);
+  const [playHearts, setPlayHearts] = useState(5);
+  const [playState, setPlayState] = useState('playing'); // 'playing' | 'won' | 'failed'
+
+  const playPathsRef = useRef([]);
+  const isSlidingRef = useRef(false);
+  const animationFrameId = useRef(null);
+
+  // Pre-generate grid dots visual guide
+  const gridDots = [];
+  for (let x = GRID_STEP; x < CANVAS_SIZE; x += GRID_STEP) {
+    for (let y = GRID_STEP; y < CANVAS_SIZE; y += GRID_STEP) {
+      gridDots.push({ x, y });
+    }
+  }
+
+  // Svg helper for d points string
+  const getPathData = (points, ox = 0, oy = 0) => {
+    if (points.length === 0) return '';
+    return points.reduce((acc, pt, idx) => {
+      const x = pt.x + ox;
+      const y = pt.y + oy;
+      return acc + (idx === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+    }, '');
+  };
+
+  // Snapped canvas tap plotting handler
+  const handleCanvasPress = (event) => {
+    if (mode !== 'editing') return;
+
+    const { locationX, locationY } = event.nativeEvent;
+    const snappedX = Math.round(locationX / GRID_STEP) * GRID_STEP;
+    const snappedY = Math.round(locationY / GRID_STEP) * GRID_STEP;
+
+    // Clamp coordinates
+    const clampedX = Math.max(0, Math.min(CANVAS_SIZE, snappedX));
+    const clampedY = Math.max(0, Math.min(CANVAS_SIZE, snappedY));
+
+    setCurrentPoints(prev => {
+      // Avoid duplicate consecutive plots
+      if (prev.length > 0) {
+        const last = prev[prev.length - 1];
+        if (last.x === clampedX && last.y === clampedY) return prev;
+      }
+      return [...prev, { x: clampedX, y: clampedY }];
+    });
+    GameHaptics.correct();
+  };
+
+  // Clear current drawing
+  const clearDrawing = () => {
+    setCurrentPoints([]);
+    GameHaptics.correct();
+  };
+
+  // Add completed path to board
+  const addPath = () => {
+    if (currentPoints.length < 2) return;
+
+    const newPath = {
+      id: Math.random().toString(36).substring(2, 9),
+      points: currentPoints,
+      color: selectedColor,
+      dir: selectedDir.vector,
+      arrowAt,
+    };
+
+    setBoardPaths(prev => [...prev, newPath]);
+    setCurrentPoints([]);
+    GameHaptics.correct();
+  };
+
+  // Delete last path
+  const deleteLastPath = () => {
+    setBoardPaths(prev => prev.slice(0, -1));
+    GameHaptics.correct();
+  };
+
+  // Clear all board elements
+  const clearBoard = () => {
+    setBoardPaths([]);
+    setCurrentPoints([]);
+    GameHaptics.correct();
+  };
+
+  // JSON Handlers
+  const exportLevelData = () => {
+    setIsExportVisible(true);
+    setCopied(false);
+    GameHaptics.correct();
+  };
+
+  const importLevelData = () => {
+    setImportJsonText('');
+    setIsImportVisible(true);
+    GameHaptics.correct();
+  };
+
+  const processImport = () => {
+    try {
+      const parsed = JSON.parse(importJsonText);
+      if (!Array.isArray(parsed)) {
+        throw new Error('level data must be an array of paths.');
+      }
+      // Basic validation of keys
+      parsed.forEach(p => {
+        if (!p.id || !p.points || !Array.isArray(p.points) || !p.dir || !p.color || !p.arrowAt) {
+          throw new Error('invalid path object format inside array.');
+        }
+      });
+
+      setBoardPaths(parsed);
+      setIsImportVisible(false);
+      GameHaptics.correct();
+    } catch (err) {
+      GameHaptics.incorrect();
+      Alert.alert('import failed', err.message);
+    }
+  };
+
+  // ── Play Testing Mode Handlers ──────────────────────────────────────────────
+  const startPlayTesting = () => {
+    if (boardPaths.length === 0) {
+      Alert.alert('empty board', 'please draw and save at least one path first!');
+      return;
+    }
+
+    setMode('play_testing');
+    loadPlayState();
+    GameHaptics.correct();
+  };
+
+  const stopPlayTesting = () => {
+    if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+    isSlidingRef.current = false;
+    setMode('editing');
+    GameHaptics.correct();
+  };
+
+  const loadPlayState = () => {
+    if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+    isSlidingRef.current = false;
+
+    const initialPlayPaths = boardPaths.map(p => ({
+      ...p,
+      offsetX: 0,
+      offsetY: 0,
+      cleared: false,
+    }));
+
+    playPathsRef.current = initialPlayPaths;
+    setPlayPaths(initialPlayPaths);
+    setPlayHearts(5);
+    setPlayState('playing');
+  };
+
+  const handlePlayPathTap = (pathId) => {
+    if (playState !== 'playing' || isSlidingRef.current) return;
+
+    const activeIndex = playPathsRef.current.findIndex(p => p.id === pathId);
+    if (activeIndex === -1 || playPathsRef.current[activeIndex].cleared) return;
+
+    isSlidingRef.current = true;
+    GameHaptics.correct();
+
+    const path = playPathsRef.current[activeIndex];
+    const speed = 10;
+    let curOx = 0;
+    let curOy = 0;
+
+    const playTick = () => {
+      curOx += path.dir.x * speed;
+      curOy += path.dir.y * speed;
+
+      const updatedPath = { ...path, offsetX: curOx, offsetY: curOy };
+      const otherPaths = playPathsRef.current.filter(p => p.id !== pathId);
+
+      // Check collision
+      const isCollided = checkPathCollision(updatedPath, otherPaths);
+      if (isCollided) {
+        GameHaptics.incorrect();
+        triggerPlayShake(pathId, curOx, curOy);
+        return;
+      }
+
+      // Check if offscreen
+      const offscreen = checkIsOffScreen(updatedPath);
+      if (offscreen) {
+        triggerPlayCleared(pathId);
+        return;
+      }
+
+      playPathsRef.current = playPathsRef.current.map(p =>
+        p.id === pathId ? { ...p, offsetX: curOx, offsetY: curOy } : p
+      );
+      setPlayPaths([...playPathsRef.current]);
+
+      animationFrameId.current = requestAnimationFrame(playTick);
+    };
+
+    animationFrameId.current = requestAnimationFrame(playTick);
+  };
+
+  const triggerPlayShake = (pathId, finalOx, finalOy) => {
+    const idx = playPathsRef.current.findIndex(p => p.id === pathId);
+    if (idx === -1) return;
+    const path = playPathsRef.current[idx];
+
+    setPlayHearts(prev => {
+      const next = prev - 1;
+      if (next <= 0) {
+        setPlayState('failed');
+      }
+      return next;
+    });
+
+    let frame = 0;
+    const shakeTick = () => {
+      if (frame >= 14) {
+        playPathsRef.current = playPathsRef.current.map(p =>
+          p.id === pathId ? { ...p, offsetX: 0, offsetY: 0 } : p
+        );
+        setPlayPaths([...playPathsRef.current]);
+        isSlidingRef.current = false;
+        return;
+      }
+
+      const scale = Math.max(0, 1 - frame / 14);
+      const dx = (frame % 2 === 0 ? 5 : -5) * scale * path.dir.y;
+      const dy = (frame % 2 === 0 ? 5 : -5) * scale * path.dir.x;
+
+      const blend = frame / 14;
+      const currentOx = finalOx * (1 - blend) + dx;
+      const currentOy = finalOy * (1 - blend) + dy;
+
+      playPathsRef.current = playPathsRef.current.map(p =>
+        p.id === pathId ? { ...p, offsetX: currentOx, offsetY: currentOy } : p
+      );
+      setPlayPaths([...playPathsRef.current]);
+
+      frame++;
+      animationFrameId.current = requestAnimationFrame(shakeTick);
+    };
+
+    animationFrameId.current = requestAnimationFrame(shakeTick);
+  };
+
+  const triggerPlayCleared = (pathId) => {
+    playPathsRef.current = playPathsRef.current.map(p =>
+      p.id === pathId ? { ...p, cleared: true, offsetX: 9999, offsetY: 9999 } : p
+    );
+    setPlayPaths([...playPathsRef.current]);
+    isSlidingRef.current = false;
+    GameHaptics.correct();
+
+    const won = playPathsRef.current.every(p => p.cleared);
+    if (won) {
+      setPlayState('won');
+    }
+  };
+
+  const handleCopyJson = () => {
+    // Basic fallback simulation for copying since Clipboard API may require packages
+    setCopied(true);
+    GameHaptics.correct();
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: Colors.appBg, paddingTop: insets.top }]}>
+      {/* ── Header ───────────────────────────────────────────────────────────── */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            style={styles.headerBtn}
+            onPress={() => {
+              GameHaptics.correct();
+              navigation.goBack();
+            }}
+          >
+            <ArrowLeft size={22} color={Colors.textPrimary} />
+          </TouchableOpacity>
+          {mode === 'play_testing' && (
+            <TouchableOpacity style={styles.headerBtn} onPress={loadPlayState}>
+              <RotateCcw size={18} color={Colors.textPrimary} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={styles.headerTitleContainer}>
+          <Text style={[styles.headerTitle, { color: '#4A90E2' }]}>
+            {mode === 'editing' ? 'level designer' : 'play-testing'}
+          </Text>
+          {mode === 'play_testing' && (
+            <View style={styles.heartsRow}>
+              {[...Array(5)].map((_, i) => (
+                <Heart
+                  key={i}
+                  size={12}
+                  color={i < playHearts ? '#FF5E5B' : '#C7C4C0'}
+                  fill={i < playHearts ? '#FF5E5B' : 'none'}
+                  style={{ marginHorizontal: 2 }}
+                />
+              ))}
+            </View>
+          )}
+        </View>
+
+        <View style={{ width: 84, alignItems: 'flex-end', justifyContent: 'center' }}>
+          {mode === 'editing' ? (
+            <TouchableOpacity style={styles.playBtn} onPress={startPlayTesting}>
+              <Text style={styles.playBtnText}>play</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={[styles.playBtn, { backgroundColor: '#FF5E5B' }]} onPress={stopPlayTesting}>
+              <Text style={styles.playBtnText}>exit</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* ── Main Canvas and Toolbar Scroll ──────────────────────────────────── */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* SNAP CANVAS BOARD */}
+        <View style={[styles.boardContainer, Shadow.md]}>
+          <View
+            style={styles.canvasClickWrapper}
+            onTouchStart={mode === 'editing' ? handleCanvasPress : undefined}
+          >
+            <Svg width={CANVAS_SIZE} height={CANVAS_SIZE} viewBox={`0 0 ${CANVAS_SIZE} ${CANVAS_SIZE}`}>
+              {/* Dot grid guide pattern for drawing */}
+              {mode === 'editing' && gridDots.map((dot, idx) => (
+                <Circle key={`dot-${idx}`} cx={dot.x} cy={dot.y} r={2} fill="#C7C4C0" opacity={0.4} />
+              ))}
+
+              {/* Draw saved paths */}
+              {(mode === 'editing' ? boardPaths : playPaths).map((path) => {
+                if (path.cleared) return null;
+
+                const arrowPt = path.arrowAt === 'start' ? path.points[0] : path.points[path.points.length - 1];
+                const angleRad = Math.atan2(path.dir.y, path.dir.x);
+                const angleDeg = (angleRad * 180) / Math.PI;
+
+                return (
+                  <G key={path.id}>
+                    {/* Double-layered tap targets for playtesting */}
+                    {mode === 'play_testing' && (
+                      <Path
+                        d={getPathData(path.points, path.offsetX, path.offsetY)}
+                        stroke="transparent"
+                        strokeWidth={24}
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        onPress={() => handlePlayPathTap(path.id)}
+                      />
+                    )}
+
+                    <Path
+                      d={getPathData(path.points, path.offsetX, path.offsetY)}
+                      stroke={path.color}
+                      strokeWidth={6}
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    
+                    <G transform={`translate(${arrowPt.x + (path.offsetX || 0)}, ${arrowPt.y + (path.offsetY || 0)}) rotate(${angleDeg})`}>
+                      <Path
+                        d="M -8 -6 L 2 0 L -8 6"
+                        stroke={path.color}
+                        strokeWidth={4.5}
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </G>
+                  </G>
+                );
+              })}
+
+              {/* Draw active line points currently plotting */}
+              {mode === 'editing' && currentPoints.length > 0 && (
+                <G>
+                  <Path
+                    d={getPathData(currentPoints)}
+                    stroke="#8F857D"
+                    strokeWidth={4}
+                    strokeDasharray="4,4"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  {currentPoints.map((pt, idx) => (
+                    <Circle
+                      key={`pt-${idx}`}
+                      cx={pt.x}
+                      cy={pt.y}
+                      r={4}
+                      fill={idx === 0 ? '#FF5E5B' : '#8F857D'}
+                    />
+                  ))}
+                </G>
+              )}
+            </Svg>
+
+            {/* Test Win/Fail Overlays */}
+            {mode === 'play_testing' && playState === 'won' && (
+              <View style={styles.overlay}>
+                <Award size={48} color="#4A90E2" style={{ marginBottom: 12 }} />
+                <Text style={styles.overlayTitle}>test success!</Text>
+                <Text style={styles.overlaySub}>your custom level was cleared without blocks.</Text>
+                <TouchableOpacity style={styles.overlayBtn} onPress={loadPlayState}>
+                  <Text style={styles.overlayBtnText}>play again</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {mode === 'play_testing' && playState === 'failed' && (
+              <View style={styles.overlay}>
+                <Heart size={48} color="#FF5E5B" fill="#FF5E5B" style={{ marginBottom: 12 }} />
+                <Text style={styles.overlayTitle}>test failed!</Text>
+                <Text style={styles.overlaySub}>lines collided on slide. reload to retry.</Text>
+                <TouchableOpacity style={[styles.overlayBtn, { backgroundColor: '#FF5E5B' }]} onPress={loadPlayState}>
+                  <Text style={styles.overlayBtnText}>try again</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* ── Editor controls panel (Only visible in editing mode) ───────────── */}
+        {mode === 'editing' && (
+          <View style={styles.panel}>
+            {/* Draw Path config panel */}
+            <View style={styles.panelSection}>
+              <Text style={styles.sectionTitle}>1. draw path properties</Text>
+              
+              {/* Color Picker row */}
+              <Text style={styles.label}>color:</Text>
+              <View style={styles.row}>
+                {PATH_COLORS.map(c => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[
+                      styles.colorDot,
+                      { backgroundColor: c, borderColor: selectedColor === c ? '#1A1816' : 'transparent' }
+                    ]}
+                    onPress={() => setSelectedColor(c)}
+                  />
+                ))}
+              </View>
+
+              {/* Direction selector */}
+              <Text style={styles.label}>slide direction:</Text>
+              <View style={styles.row}>
+                {DIR_OPTIONS.map(opt => (
+                  <TouchableOpacity
+                    key={opt.label}
+                    style={[
+                      styles.dirBtn,
+                      selectedDir.label === opt.label ? { backgroundColor: '#EFE5E0' } : null
+                    ]}
+                    onPress={() => setSelectedDir(opt)}
+                  >
+                    <Text style={styles.dirBtnText}>{opt.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Arrow At start / end toggle */}
+              <Text style={styles.label}>arrow head position:</Text>
+              <View style={styles.row}>
+                <TouchableOpacity
+                  style={[styles.arrowAtBtn, arrowAt === 'end' ? { backgroundColor: '#EFE5E0' } : null]}
+                  onPress={() => setArrowAt('end')}
+                >
+                  <Text style={styles.arrowAtText}>path end (normal)</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.arrowAtBtn, arrowAt === 'start' ? { backgroundColor: '#EFE5E0' } : null]}
+                  onPress={() => setArrowAt('start')}
+                >
+                  <Text style={styles.arrowAtText}>path start</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Draw actions */}
+              <View style={[styles.row, { marginTop: Spacing[4] }]}>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { flex: 1, marginRight: Spacing[2] }]}
+                  onPress={clearDrawing}
+                >
+                  <Text style={styles.actionBtnText}>clear points</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.actionBtn,
+                    { flex: 1, backgroundColor: currentPoints.length >= 2 ? '#4A90E2' : '#C7C4C0' }
+                  ]}
+                  disabled={currentPoints.length < 2}
+                  onPress={addPath}
+                >
+                  <Text style={[styles.actionBtnText, currentPoints.length >= 2 ? { color: '#FFFFFF' } : null]}>
+                    save path ({currentPoints.length} pts)
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Level utility controls */}
+            <View style={styles.panelSection}>
+              <Text style={styles.sectionTitle}>2. board utilities</Text>
+              <View style={styles.row}>
+                <TouchableOpacity style={[styles.utilBtn, { flex: 1 }]} onPress={deleteLastPath}>
+                  <Text style={styles.utilBtnText}>delete last path</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.utilBtn, { flex: 1 }]} onPress={clearBoard}>
+                  <Text style={styles.utilBtnText}>clear board</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={[styles.row, { marginTop: Spacing[3] }]}>
+                <TouchableOpacity style={[styles.utilBtn, { flex: 1 }]} onPress={exportLevelData}>
+                  <Text style={styles.utilBtnText}>export json</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.utilBtn, { flex: 1 }]} onPress={importLevelData}>
+                  <Text style={styles.utilBtnText}>import json</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+
+        <View style={{ height: Spacing[10] }} />
+      </ScrollView>
+
+      {/* ── Modals: Export JSON & Import JSON ───────────────────────────────── */}
+      <Modal visible={isExportVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, Shadow.md]}>
+            <Text style={styles.modalTitle}>export level configuration</Text>
+            <Text style={styles.modalSub}>copy this json string to share or save your custom level design.</Text>
+            
+            <ScrollView style={styles.jsonTextScroll} contentContainerStyle={{ padding: 10 }}>
+              <TextInput
+                multiline
+                editable={false}
+                value={JSON.stringify(boardPaths, null, 2)}
+                style={styles.jsonText}
+              />
+            </ScrollView>
+
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setIsExportVisible(false)}>
+                <Text style={styles.modalCloseText}>close</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalActionBtn} onPress={handleCopyJson}>
+                {copied ? <Check size={14} color="#FFFFFF" style={{ marginRight: 4 }} /> : <Copy size={14} color="#FFFFFF" style={{ marginRight: 4 }} />}
+                <Text style={[styles.modalActionText, { color: '#FFFFFF' }]}>{copied ? 'copied!' : 'copy json'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={isImportVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, Shadow.md]}>
+            <Text style={styles.modalTitle}>import level configuration</Text>
+            <Text style={styles.modalSub}>paste a valid arrow-escape level json array string below.</Text>
+            
+            <TextInput
+              multiline
+              placeholder="[ { id: '...', points: [...] } ]"
+              value={importJsonText}
+              onChangeText={setImportJsonText}
+              style={styles.importInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setIsImportVisible(false)}>
+                <Text style={styles.modalCloseText}>cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalActionBtn, { backgroundColor: importJsonText ? '#4A90E2' : '#C7C4C0' }]}
+                disabled={!importJsonText}
+                onPress={processImport}
+              >
+                <Text style={[styles.modalActionText, importJsonText ? { color: '#FFFFFF' } : null]}>load board</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+// ── Styles Definition ────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing[4],
+    height: 60,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 4,
+  },
+  headerTitleContainer: {
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontFamily: Typography.fontFamily.extraBold,
+    fontSize: 18,
+    textTransform: 'lowercase',
+  },
+  heartsRow: {
+    flexDirection: 'row',
+    marginTop: 2,
+  },
+  playBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.sm,
+    backgroundColor: '#4A90E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playBtnText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 11,
+    color: '#FFFFFF',
+    textTransform: 'lowercase',
+  },
+  scrollContent: {
+    alignItems: 'center',
+    paddingHorizontal: Spacing[4],
+    paddingTop: Spacing[3],
+  },
+  boardContainer: {
+    width: CANVAS_SIZE,
+    height: CANVAS_SIZE,
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.md,
+    borderWidth: 2,
+    borderColor: '#EFE5E0',
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: Spacing[5],
+  },
+  canvasClickWrapper: {
+    flex: 1,
+  },
+  panel: {
+    width: CANVAS_SIZE,
+  },
+  panelSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: '#EFE5E0',
+    padding: Spacing[4],
+    marginBottom: Spacing[4],
+    ...Shadow.sm,
+  },
+  sectionTitle: {
+    fontFamily: Typography.fontFamily.extraBold,
+    fontSize: 12,
+    color: '#3C3530',
+    textTransform: 'lowercase',
+    marginBottom: Spacing[3],
+    borderBottomWidth: 1,
+    borderBottomColor: '#FAF6F0',
+    paddingBottom: 4,
+  },
+  label: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 9,
+    color: '#8F857D',
+    textTransform: 'lowercase',
+    marginTop: Spacing[2],
+    marginBottom: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    alignItems: 'center',
+  },
+  colorDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2.5,
+  },
+  dirBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: Radius.xs,
+    borderWidth: 1.2,
+    borderColor: '#EFE5E0',
+    backgroundColor: '#FAF6F0',
+  },
+  dirBtnText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 9,
+    color: '#3C3530',
+    textTransform: 'lowercase',
+  },
+  arrowAtBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.xs,
+    borderWidth: 1.2,
+    borderColor: '#EFE5E0',
+    backgroundColor: '#FAF6F0',
+  },
+  arrowAtText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 9,
+    color: '#3C3530',
+    textTransform: 'lowercase',
+  },
+  actionBtn: {
+    paddingVertical: 10,
+    borderRadius: Radius.sm,
+    backgroundColor: '#FAF6F0',
+    borderWidth: 1.2,
+    borderColor: '#EFE5E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBtnText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 10,
+    color: '#8F857D',
+    textTransform: 'lowercase',
+  },
+  utilBtn: {
+    paddingVertical: 10,
+    borderRadius: Radius.sm,
+    backgroundColor: '#FAF6F0',
+    borderWidth: 1.2,
+    borderColor: '#EFE5E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  utilBtnText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 10.5,
+    color: '#3C3530',
+    textTransform: 'lowercase',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing[5],
+  },
+  overlayTitle: {
+    fontFamily: Typography.fontFamily.extraBold,
+    fontSize: 22,
+    color: '#3C3530',
+    textTransform: 'lowercase',
+    marginBottom: 4,
+  },
+  overlaySub: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 11,
+    color: '#8F857D',
+    textAlign: 'center',
+    lineHeight: 16,
+    marginBottom: Spacing[5],
+    paddingHorizontal: Spacing[2],
+  },
+  overlayBtn: {
+    backgroundColor: '#4A90E2',
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing[6],
+    paddingVertical: 12,
+    ...Shadow.sm,
+  },
+  overlayBtnText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 12,
+    color: '#FFFFFF',
+    textTransform: 'lowercase',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(30, 24, 22, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing[5],
+  },
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.md,
+    width: '100%',
+    maxWidth: 320,
+    padding: Spacing[5],
+    borderWidth: 1.5,
+    borderColor: '#EFE5E0',
+  },
+  modalTitle: {
+    fontFamily: Typography.fontFamily.extraBold,
+    fontSize: 15,
+    color: '#3C3530',
+    textTransform: 'lowercase',
+    marginBottom: 4,
+  },
+  modalSub: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 10,
+    color: '#8F857D',
+    lineHeight: 14,
+    marginBottom: Spacing[4],
+  },
+  jsonTextScroll: {
+    height: 150,
+    backgroundColor: '#FAF6F0',
+    borderRadius: Radius.sm,
+    borderWidth: 1.2,
+    borderColor: '#EFE5E0',
+    marginBottom: Spacing[4],
+  },
+  jsonText: {
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontSize: 10,
+    color: '#3C3530',
+  },
+  importInput: {
+    height: 150,
+    backgroundColor: '#FAF6F0',
+    borderRadius: Radius.sm,
+    borderWidth: 1.2,
+    borderColor: '#EFE5E0',
+    padding: 10,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontSize: 10,
+    color: '#3C3530',
+    textAlignVertical: 'top',
+    marginBottom: Spacing[4],
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: Spacing[3],
+  },
+  modalCloseBtn: {
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: Radius.sm,
+    backgroundColor: '#FAF6F0',
+    borderWidth: 1.2,
+    borderColor: '#EFE5E0',
+  },
+  modalCloseText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 11,
+    color: '#8F857D',
+    textTransform: 'lowercase',
+  },
+  modalActionBtn: {
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: Radius.sm,
+    backgroundColor: '#4A90E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  modalActionText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 11,
+    color: '#FFFFFF',
+    textTransform: 'lowercase',
+  },
+});

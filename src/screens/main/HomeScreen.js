@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
-import { Flame, ArrowRight, Check, X, Shield } from 'lucide-react-native';
+import { Flame, ArrowRight, Check, X, Shield, Sparkles } from 'lucide-react-native';
 import Svg, { Path, Circle, Ellipse } from 'react-native-svg';
 import ScoreRing from '../../components/ScoreRing';
 import {
@@ -498,6 +498,90 @@ export default function HomeScreen({ navigation }) {
           </FadeInUp>
         )}
 
+        {/* Games Section */}
+        <FadeInUp delay={450} style={styles.section}>
+          <SectionHeader title="games" />
+          
+          {/* Fruit Merge Card */}
+          <TouchableScale
+            style={[styles.workshopCard, Shadow.sm, { marginBottom: Spacing[3] }]}
+            onPress={() => {
+              GameHaptics.correct();
+              navigation.navigate('AIFruitWorkshop');
+            }}
+          >
+            <View style={styles.workshopCardContent}>
+              <View style={styles.workshopTextContainer}>
+                <View style={styles.workshopTag}>
+                  <Sparkles size={12} color="#8F857D" style={{ marginRight: 4 }} />
+                  <Text style={styles.workshopTagText}>cozy puzzle</Text>
+                </View>
+                <Text style={styles.workshopTitle}>fruit merge</Text>
+                <Text style={styles.workshopSub}>drop and merge cute mascot fruits in this cozy physics puzzle sandbox!</Text>
+                <View style={styles.workshopCtaRow}>
+                  <Text style={styles.workshopCta}>play now</Text>
+                  <ArrowRight size={14} color="#F4A041" style={{ marginLeft: 6 }} />
+                </View>
+              </View>
+              <View style={styles.workshopVisual}>
+                <Svg width="72" height="72" viewBox="0 0 100 100">
+                  {/* Peach / Fruit Body */}
+                  <Circle cx="50" cy="53" r="36" fill="#FAD4C0" />
+                  <Circle cx="44" cy="53" r="36" fill="#FFC0CB" opacity="0.6" />
+                  {/* Leaf */}
+                  <Path d="M48,18 C48,18 53,5 65,10 C65,10 60,23 48,18" fill="#A8D5BA" />
+                  {/* Stem */}
+                  <Path d="M48,18 Q45,23 42,28" stroke="#8B5E3C" strokeWidth="3" fill="none" strokeLinecap="round" />
+                  {/* Cheeks */}
+                  <Circle cx="32" cy="58" r="5" fill="#FF8D8D" opacity="0.5" />
+                  <Circle cx="68" cy="58" r="5" fill="#FF8D8D" opacity="0.5" />
+                  {/* Eyes */}
+                  <Circle cx="40" cy="52" r="3.5" fill="#1A1816" />
+                  <Circle cx="60" cy="52" r="3.5" fill="#1A1816" />
+                  {/* Mouth */}
+                  <Path d="M48,59 Q50,62 52,59" stroke="#1A1816" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                </Svg>
+              </View>
+            </View>
+          </TouchableScale>
+
+          {/* Arrow Escape Card */}
+          <TouchableScale
+            style={[styles.workshopCard, Shadow.sm]}
+            onPress={() => {
+              GameHaptics.correct();
+              navigation.navigate('ArrowEscape');
+            }}
+          >
+            <View style={styles.workshopCardContent}>
+              <View style={styles.workshopTextContainer}>
+                <View style={styles.workshopTag}>
+                  <Sparkles size={12} color="#8F857D" style={{ marginRight: 4 }} />
+                  <Text style={styles.workshopTagText}>logic puzzle</Text>
+                </View>
+                <Text style={styles.workshopTitle}>arrow escape</Text>
+                <Text style={styles.workshopSub}>slide hooks and twisted lines out of the grid. plan your sequence to avoid collisions!</Text>
+                <View style={styles.workshopCtaRow}>
+                  <Text style={styles.workshopCta}>play now</Text>
+                  <ArrowRight size={14} color="#F4A041" style={{ marginLeft: 6 }} />
+                </View>
+              </View>
+              <View style={styles.workshopVisual}>
+                <Svg width="72" height="72" viewBox="0 0 100 100">
+                  {/* Interlocking logic arrows visual */}
+                  <Path d="M25,25 L75,25 L75,75" stroke="#1A1816" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                  <Path d="M75,75 L70,70 M75,75 L70,80" stroke="#1A1816" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                  
+                  <Path d="M35,45 L35,85 L85,85" stroke="#F4A041" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                  <Path d="M85,85 L80,80 M85,85 L80,90" stroke="#F4A041" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+
+                  <Path d="M55,15 L55,55 M55,55 L50,50 M55,55 L60,50" stroke="#FF5E5B" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                </Svg>
+              </View>
+            </View>
+          </TouchableScale>
+        </FadeInUp>
+
         {/* Insight + Weekly Brief — Problems 7 & 8 */}
         {workoutComplete && (
           <>
@@ -708,6 +792,73 @@ export default function HomeScreen({ navigation }) {
 const BRIEF_NAVY = '#1D2340';
 
 const getStyles = (Colors) => StyleSheet.create({
+  workshopCard: {
+    backgroundColor: '#FAF3F0',
+    borderRadius: Radius.xl,
+    padding: Spacing[4],
+    borderWidth: 1.5,
+    borderColor: '#EFE5E0',
+    marginBottom: Spacing[3],
+  },
+  workshopCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  workshopTextContainer: {
+    flex: 1,
+    paddingRight: Spacing[3],
+  },
+  workshopTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFE5E0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    alignSelf: 'flex-start',
+    marginBottom: Spacing[2],
+  },
+  workshopTagText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 9,
+    color: '#8F857D',
+    textTransform: 'lowercase',
+  },
+  workshopTitle: {
+    fontFamily: Typography.fontFamily.extraBold,
+    fontSize: 18,
+    color: '#3C3530',
+    marginBottom: 4,
+    textTransform: 'lowercase',
+  },
+  workshopSub: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 12,
+    color: '#7C726A',
+    lineHeight: 16,
+    marginBottom: Spacing[3],
+  },
+  workshopCtaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  workshopCta: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 13,
+    color: '#F4A041',
+    textTransform: 'lowercase',
+  },
+  workshopVisual: {
+    width: 80,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: '#EFE5E0',
+  },
   container: { flex: 1, backgroundColor: Colors.appBg },
   stickyHeader: {
     position: 'absolute',

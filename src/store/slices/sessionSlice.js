@@ -14,6 +14,7 @@ export const sessionInitialState = {
   },
   streakDays: 0,
   lastWorkoutDate: null,
+  customFruits: [],
 };
 
 export function sessionReducer(state, action) {
@@ -29,6 +30,16 @@ export function sessionReducer(state, action) {
     }
     case 'SET_CHECKIN':
       return { ...state, checkins: { ...state.checkins, [action.key]: action.value } };
+    case 'SAVE_CUSTOM_FRUIT':
+      return {
+        ...state,
+        customFruits: [action.payload, ...(state.customFruits || [])],
+      };
+    case 'SAVE_CUSTOM_FRUIT_LIST':
+      return {
+        ...state,
+        customFruits: action.payload,
+      };
     case 'DISMISS_CHECKIN':
       return {
         ...state,
@@ -88,6 +99,7 @@ export function sessionReducer(state, action) {
         workoutComplete,
         checkins: persisted.checkins || sessionInitialState.checkins,
         checkinDismissedAt: persisted.checkinDismissedAt || sessionInitialState.checkinDismissedAt,
+        customFruits: persisted.customFruits || sessionInitialState.customFruits,
       };
     }
     case 'RESET':

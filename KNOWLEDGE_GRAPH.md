@@ -173,7 +173,10 @@ cognify/
         │   ├── HomeScreen.js
         │   ├── TrainScreen.js     # Barrel → features/train/screens/TrainScreen
         │   ├── InsightsScreen.js
-        │   └── ProfileScreen.js
+        │   ├── ProfileScreen.js
+        │   ├── AIFruitWorkshopScreen.js
+        │   ├── ArrowEscapeScreen.js
+        │   └── ArrowEscapeDesignerScreen.js
         └── onboarding/
             ├── WelcomeScreen.js
             ├── IntentScreen.js
@@ -263,7 +266,10 @@ RootNavigator (context-driven)
     │   ├── Insights → InsightsScreen
     │   └── Profile  → ProfileScreen
     ├── ActiveSession (modal, no tab bar) → ActiveSessionScreen
-    └── SessionResult (modal, no tab bar) → SessionResultScreen
+    ├── SessionResult (modal, no tab bar) → SessionResultScreen
+    ├── AIFruitWorkshop → AIFruitWorkshopScreen
+    ├── ArrowEscape → ArrowEscapeScreen
+    └── ArrowEscapeDesigner → ArrowEscapeDesignerScreen
 ```
 
 **Important:** `ActiveSession` and `SessionResult` are on the **root AppStackNavigator** above the tab bar — they render full-screen without tabs. Navigating to them uses `navigation.navigate('ActiveSession', { ... })`.
@@ -1099,3 +1105,34 @@ Fires silently on startup once a real Firebase email login is established:
 * **User Identity Boundaries**: Read and Write access is strictly limited to the owner (`request.auth.uid == userId`).
 * **Protected Deletions**: Deleting session histories, rounds, or profiles from the client is prohibited.
 * **Inventory Balance Lock**: Clients are restricted from arbitrarily increasing their owned streak freezes. Rules enforce that clients can only decrement or maintain (`request.resource.data.freezesOwned <= resource.data.freezesOwned`) their balance, fully neutralizing balance-modification hacks from the client.
+
+---
+
+## 22. Games & Sandbox Modes (Fruit Merge & Arrow Escape)
+
+### 1. Fruit Merge (Suika-Style Cozy Physics Game)
+*   **Path**: `src/screens/main/AIFruitWorkshopScreen.js`
+*   **Engine**: 2D rigid-body contacts physics simulator running inside `requestAnimationFrame` with fixed `dt = 1/60s` and substepping.
+*   **Mechanics**:
+    - Tap or drag at the top to drop circular mascot fruits (8 tiers, from cherry up to watermelon).
+    - Touched fruits of the same tier merge into a new single fruit of the next higher tier, generating score points and visual star bursts.
+    - Uses performance precomputations, bounce bias threshold limits (60px/s) to prevent rest jitter, and Baumgarte positional correction to resolve overlaps.
+    - Tier 7 is the custom peach-melon mascot styled to match the home screen icon design.
+    - Alert line at $y = 80$: if fruits cross and stay above for more than $1.8$s, a "sandbox filled" game over modal is triggered.
+
+### 2. Arrow Escape (Slide Logic Puzzle Game)
+*   **Path**: `src/screens/main/ArrowEscapeScreen.js`
+*   **Mechanics**:
+    - The board card renders a gridlock of curved, hooked, and straight colored paths ending in arrowheads.
+    - Tapping a line triggers a slide animation along its arrowhead direction.
+    - If any segment of the moving line collides with other paths (measured via high-performance point-to-segment distance calculations), it shakes for 200ms and slides back, costing the player 1 of their 5 hearts.
+    - Once all lines successfully escape off-screen, the level is cleared. Includes 10 custom levels.
+
+### 3. Arrow Escape Level Designer Studio
+*   **Path**: `src/screens/main/ArrowEscapeDesignerScreen.js`
+*   **Mechanics**:
+    - Snapped canvas board displaying a grid of dot coordinates spaced at `20px` intervals (16x16 grid).
+    - Snaps user touches to coordinates and allows drawing line segments step-by-step.
+    - Includes property configurations for line color, slide directions (left, right, up, down), and arrowhead endpoints.
+    - **Export/Import JSON**: Allows copying the designed level schema JSON to the clipboard or pasting external JSON strings to import boards.
+    - **Test Play Sandbox**: Swaps edit tools to enter instant play-testing mode to play, collide, reset, and debug custom layouts in real-time.
