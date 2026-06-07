@@ -8,6 +8,8 @@ import {
   Animated,
   Dimensions,
   Platform,
+  Share,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Circle, Ellipse, Defs, RadialGradient, Stop, G } from 'react-native-svg';
@@ -18,6 +20,8 @@ import {
   Info,
   HelpCircle,
   Award,
+  Volume2,
+  VolumeX,
 } from 'lucide-react-native';
 import { useThemeColors, Typography, Spacing, Radius, Shadow } from '../../theme';
 import { GameHaptics } from '../../utils/haptics';
@@ -342,14 +346,38 @@ export default function AIFruitWorkshopScreen({ navigation }) {
   const [particles, setParticles] = useState([]);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
-  const [previewFruitTier, setPreviewFruitTier] = useState(1);
+  const [heldFruitTier, setHeldFruitTier] = useState(() => Math.floor(Math.random() * 4) + 1);
+  const [nextFruitTier, setNextFruitTier] = useState(() => Math.floor(Math.random() * 4) + 1);
   const [previewX, setPreviewX] = useState(175); // middle of 350 width
   const [gameOver, setGameOver] = useState(false);
   const [showTutorial, setShowTutorial] = useState(true);
+  const [maxTierAchieved, setMaxTierAchieved] = useState(1);
+  const [discoveredTiers, setDiscoveredTiers] = useState([1]);
+  const [scorePops, setScorePops] = useState([]);
+  const [isMuted, setIsMuted] = useState(false);
+
+  // Game stats
+  const [totalMerges, setTotalMerges] = useState(0);
+  const [maxCombo, setMaxCombo] = useState(0);
+  const [timePlayed, setTimePlayed] = useState(0);
+
+  // Refs for tracking values safely in loop
+  const isMutedRef = useRef(false);
+  const comboCountRef = useRef(0);
+  const lastMergeTimeRef = useRef(0);
+  const startingHighScore = useRef(highScore);
+
+  // Score spring animation value
+  const scoreScale = useRef(new Animated.Value(1)).current;
+
+  // Keep isMutedRef updated
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
 
   // Ref boundaries and physics loop sync
   const boxWidth = 350;
-  const boxHeight = 500;
+  const boxHeight = 540; // Increased height to make the play field dominate
   const isReadyToDrop = useRef(true);
   const gameOverTimer = useRef(0);
   const fruitsRef = useRef([]); // Synchronous ref to prevent React batching/stale updates
@@ -820,9 +848,34 @@ export default function AIFruitWorkshopScreen({ navigation }) {
         // Resolve merges
         if (allMerges.length > 0) {
           let nextFruits = [...currentFruits];
+          
+          // Calculate combo window
+          const now = Date.now();
+          if (now - lastMergeTimeRef.current < 1200) {
+            comboCountRef.current += allMerges.length;
+          } else {
+            comboCountRef.current = allMerges.length;
+          }
+          lastMergeTimeRef.current = now;
+          const combo = comboCountRef.current;
+          
+          if (combo > 1) {
+            setMaxCombo(prev => Math.max(prev, combo));
+          }
+
           allMerges.forEach(m => {
             const nextTier = m.tier + 1;
             const r = getFruitRadius(nextTier);
+            
+            // Update best fruit achieved
+            setMaxTierAchieved(prev => Math.max(prev, nextTier));
+            
+            // Update discovered tiers list
+            setDiscoveredTiers(prev => {
+              if (prev.includes(nextTier)) return prev;
+              return [...prev, nextTier].sort((a, b) => a - b);
+            });
+
             // Average velocities and add small random pop upwards
             const vx = (m.f1.vx + m.f2.vx) / 2 + (Math.random() - 0.5) * 0.5;
             const vy = -3.2; // upward pop
@@ -830,20 +883,46 @@ export default function AIFruitWorkshopScreen({ navigation }) {
 
             nextFruits.push(mergedFruit);
 
+            // Update stats
+            setTotalMerges(prev => prev + 1);
+
             // Update score
+            const gained = nextTier * 10;
             setScore(s => {
-              const gained = nextTier * 10;
               const newScore = s + gained;
-              if (newScore > highScore) setHighScore(newScore);
+              setHighScore(h => Math.max(h, newScore));
               return newScore;
             });
+
+            // Spawn floating score pop
+            const popText = `+${gained}` + (combo > 1 ? ` (x${combo} combo!)` : '');
+            const newPop = {
+              id: Math.random().toString(36).substring(2, 9),
+              x: m.mx,
+              y: m.my,
+              text: popText,
+              alpha: 1,
+              life: 60,
+              scale: combo > 1 ? 1.3 : 1.0,
+              color: combo > 1 ? '#F4A041' : '#FF5E5B',
+            };
+            setScorePops(prev => [...prev, newPop]);
+
+            // Score animation spring scale bounce
+            scoreScale.setValue(1.0);
+            Animated.sequence([
+              Animated.timing(scoreScale, { toValue: 1.15, duration: 60, useNativeDriver: true }),
+              Animated.spring(scoreScale, { toValue: 1.0, friction: 3, useNativeDriver: true })
+            ]).start();
 
             // Burst particles
             const particleColor = FRUIT_TIERS[nextTier - 1]?.color || '#FF7DB4';
             spawnParticles(m.mx, m.my, particleColor);
 
             // Haptics
-            GameHaptics.correct();
+            if (!isMutedRef.current) {
+              GameHaptics.correct();
+            }
           });
           currentFruits = nextFruits;
         }
@@ -860,7 +939,9 @@ export default function AIFruitWorkshopScreen({ navigation }) {
           gameOverTimer.current += 16.67; // approx ms
           if (gameOverTimer.current > 1800) { // 1.8s grace period
             setGameOver(true);
-            GameHaptics.incorrect(); // Game over buzz
+            if (!isMutedRef.current) {
+              GameHaptics.incorrect(); // Game over buzz
+            }
           }
         } else {
           gameOverTimer.current = 0;
@@ -885,6 +966,24 @@ export default function AIFruitWorkshopScreen({ navigation }) {
           .filter(p => p.life > 0 && p.alpha > 0);
       });
 
+      // Update score pops decay
+      setScorePops(prev => {
+        if (prev.length === 0) return prev;
+        return prev
+          .map(pop => ({
+            ...pop,
+            y: pop.y - 1.2, // float up
+            alpha: pop.alpha - 0.02,
+            life: pop.life - 1,
+          }))
+          .filter(pop => pop.life > 0 && pop.alpha > 0);
+      });
+
+      // Update time played
+      if (fruitsRef.current.length > 0) {
+        setTimePlayed(t => t + dt);
+      }
+
       animFrameId = requestAnimationFrame(loop);
     };
 
@@ -895,11 +994,44 @@ export default function AIFruitWorkshopScreen({ navigation }) {
     return () => cancelAnimationFrame(animFrameId);
   }, [gameOver, highScore]);
 
+  // Calculate dynamic landing Y coordinate for the drop guide
+  const getLandingY = () => {
+    let targetY = boxHeight - 16; // floor (524px)
+    fruits.forEach(f => {
+      const dx = Math.abs(previewX - f.x);
+      if (dx < f.r_phys) {
+        const dy = Math.sqrt(f.r_phys * f.r_phys - dx * dx);
+        const topY = f.y - dy;
+        if (topY < targetY) {
+          targetY = topY;
+        }
+      }
+    });
+    return targetY;
+  };
+
+  const landingY = getLandingY();
+
+  // Danger feedback calculation for alert line
+  const getDangerMetrics = () => {
+    let highestY = boxHeight;
+    fruits.forEach(f => {
+      if (f.y - f.r_phys < highestY) highestY = f.y - f.r_phys;
+    });
+    const dangerRatio = Math.max(0, Math.min(1, (160 - highestY) / 80));
+    const alertColor = '#D04030';
+    const alertOpacity = 0.25 + 0.6 * dangerRatio + (dangerRatio > 0.3 ? 0.15 * Math.sin(Date.now() / 150) : 0);
+    const alertStrokeWidth = 1.5 + 2 * dangerRatio;
+    return { dangerRatio, alertColor, alertOpacity, alertStrokeWidth };
+  };
+
+  const { dangerRatio, alertColor, alertOpacity, alertStrokeWidth } = getDangerMetrics();
+
   // Touch handlers
   const handleTouch = (event) => {
     if (gameOver) return;
     const { locationX } = event.nativeEvent;
-    const previewR = getFruitPhysicsRadius(previewFruitTier);
+    const previewR = getFruitPhysicsRadius(heldFruitTier);
     const clampX = Math.max(previewR, Math.min(boxWidth - previewR, locationX));
     setPreviewX(clampX);
   };
@@ -908,19 +1040,31 @@ export default function AIFruitWorkshopScreen({ navigation }) {
     if (gameOver || !isReadyToDrop.current) return;
     isReadyToDrop.current = false;
 
-    const tier = previewFruitTier;
+    const tier = heldFruitTier;
     const r_phys = getFruitPhysicsRadius(tier);
+
+    // Update best fruit achieved
+    setMaxTierAchieved(prev => Math.max(prev, tier));
+
+    // Update discovered tiers list
+    setDiscoveredTiers(prev => {
+      if (prev.includes(tier)) return prev;
+      return [...prev, tier].sort((a, b) => a - b);
+    });
 
     // Initial drop starts dynamic and falls under gravity
     const newFruit = createFruit(tier, previewX, 40, 0, 0);
 
     fruitsRef.current = [...fruitsRef.current, newFruit];
     setFruits(fruitsRef.current);
-    GameHaptics.correct();
+    if (!isMuted) {
+      GameHaptics.correct();
+    }
 
     // Roll next drop preview (tiers 1-4)
-    const nextTier = Math.floor(Math.random() * 4) + 1;
-    setPreviewFruitTier(nextTier);
+    setHeldFruitTier(nextFruitTier);
+    const rolled = Math.floor(Math.random() * 4) + 1;
+    setNextFruitTier(rolled);
     setPreviewX(boxWidth / 2);
 
     setTimeout(() => {
@@ -934,11 +1078,53 @@ export default function AIFruitWorkshopScreen({ navigation }) {
     setParticles([]);
     setScore(0);
     setGameOver(false);
-    setPreviewFruitTier(1);
+    setMaxTierAchieved(1);
+    setDiscoveredTiers([Math.floor(Math.random() * 4) + 1]);
+    setHeldFruitTier(Math.floor(Math.random() * 4) + 1);
+    setNextFruitTier(Math.floor(Math.random() * 4) + 1);
     setPreviewX(boxWidth / 2);
+    setScorePops([]);
+    setTotalMerges(0);
+    setMaxCombo(0);
+    setTimePlayed(0);
+    startingHighScore.current = highScore;
     gameOverTimer.current = 0;
     isReadyToDrop.current = true;
-    GameHaptics.correct();
+    if (!isMuted) {
+      GameHaptics.correct();
+    }
+  };
+
+  const handleResetPress = () => {
+    if (score > 0) {
+      Alert.alert(
+        'restart?',
+        "you'll lose your current progress.",
+        [
+          { text: 'cancel', style: 'cancel' },
+          { text: 'restart', style: 'destructive', onPress: resetSandbox },
+        ],
+        { cancelable: true }
+      );
+    } else {
+      resetSandbox();
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `i scored ${score} points and reached the ${getFruitName(maxTierAchieved)} tier in fruit merge! can you beat my score? 🍊✨`,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
   return (
@@ -948,26 +1134,66 @@ export default function AIFruitWorkshopScreen({ navigation }) {
         <TouchableOpacity
           style={styles.backBtn}
           onPress={() => {
-            GameHaptics.correct();
+            if (!isMuted) GameHaptics.correct();
             navigation.goBack();
           }}
         >
           <ArrowLeft size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: Colors.textPrimary }]}>fruit merge</Text>
-        <TouchableOpacity style={styles.resetHeaderBtn} onPress={resetSandbox}>
-          <RotateCcw size={18} color={Colors.textPrimary} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {typeof __DEV__ !== 'undefined' && __DEV__ ? (
+            <TouchableOpacity
+              style={styles.debugLoseBtn}
+              onPress={() => {
+                if (!isMuted) GameHaptics.incorrect();
+                setGameOver(true);
+              }}
+            >
+              <Text style={styles.debugLoseText}>debug: lose</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity
+            style={styles.muteHeaderBtn}
+            onPress={() => {
+              const newMuted = !isMuted;
+              setIsMuted(newMuted);
+              if (!newMuted) {
+                GameHaptics.correct();
+              }
+            }}
+          >
+            {isMuted ? (
+              <VolumeX size={18} color={Colors.textPrimary} />
+            ) : (
+              <Volume2 size={18} color={Colors.textPrimary} />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.resetHeaderBtn} onPress={handleResetPress}>
+            <RotateCcw size={18} color={Colors.textPrimary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* ── Interactive Gameplay Area ─────────────────────────────────────────── */}
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Score & High Score */}
+        {/* Score & High Score & Next preview row */}
         <View style={styles.statsBar}>
           <View style={styles.statBox}>
             <Text style={styles.statsLabel}>score</Text>
-            <Text style={[styles.statsValue, { color: Colors.textPrimary }]}>{score}</Text>
+            <Animated.Text style={[styles.statsValue, { color: Colors.textPrimary, transform: [{ scale: scoreScale }] }]}>
+              {score}
+            </Animated.Text>
           </View>
+
+          {/* Calm "Next" Preview Bubble */}
+          <View style={styles.nextPreviewContainer}>
+            <Text style={styles.statsLabel}>next</Text>
+            <View style={styles.nextPreviewBubble}>
+              <FruitSvg tier={nextFruitTier} r={14} />
+            </View>
+          </View>
+
           <View style={[styles.statBox, { alignItems: 'flex-end' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Award size={12} color="#F4A041" style={{ marginRight: 4 }} />
@@ -978,10 +1204,12 @@ export default function AIFruitWorkshopScreen({ navigation }) {
         </View>
 
         {/* Physics merge box */}
-        <View style={styles.sandboxBoxOuter}>
-          {/* Overfill Limit Line */}
-          <View style={styles.gameOverLine} />
-          <Text style={styles.gameOverLineText}>alert line</Text>
+        <View style={[styles.sandboxBoxOuter, { height: boxHeight }]}>
+          {/* Overfill Limit Line with dynamic tension colors and pulsing alert line */}
+          <View style={[styles.gameOverLine, { backgroundColor: alertColor, height: alertStrokeWidth, opacity: alertOpacity }]} />
+          <Text style={[styles.gameOverLineText, { color: alertColor, opacity: dangerRatio > 0.1 ? Math.max(0.4, alertOpacity) : 0.45 }]}>
+            alert line
+          </Text>
 
           <View
             style={styles.sandboxBox}
@@ -989,8 +1217,19 @@ export default function AIFruitWorkshopScreen({ navigation }) {
             onTouchMove={handleTouch}
             onTouchEnd={handleTouchEnd}
           >
-            {/* Guide line */}
-            <View style={[styles.dropGuide, { left: previewX }]} />
+            {/* Dynamic drop guide: soft dashed vertical line ending at target landing surface */}
+            {!gameOver && (
+              <View
+                style={[
+                  styles.dropGuide,
+                  {
+                    left: previewX,
+                    top: 40 + getFruitRadius(heldFruitTier),
+                    height: Math.max(0, landingY - (40 + getFruitRadius(heldFruitTier))),
+                  }
+                ]}
+              />
+            )}
 
             {/* Dropping Preview guide */}
             {!gameOver && (
@@ -998,13 +1237,13 @@ export default function AIFruitWorkshopScreen({ navigation }) {
                 style={[
                   styles.previewFruitWrapper,
                   {
-                    left: previewX - getFruitRadius(previewFruitTier),
-                    top: 40 - getFruitRadius(previewFruitTier),
+                    left: previewX - getFruitRadius(heldFruitTier),
+                    top: 40 - getFruitRadius(heldFruitTier),
                     zIndex: 100, // Always render preview guide on top
                   },
                 ]}
               >
-                <FruitSvg tier={previewFruitTier} r={getFruitRadius(previewFruitTier)} />
+                <FruitSvg tier={heldFruitTier} r={getFruitRadius(heldFruitTier)} />
               </View>
             )}
 
@@ -1048,30 +1287,149 @@ export default function AIFruitWorkshopScreen({ navigation }) {
               />
             ))}
 
+            {/* Floating Score Pops and Combo Ticker */}
+            {scorePops.map(p => (
+              <View
+                key={p.id}
+                style={{
+                  position: 'absolute',
+                  left: p.x - 50,
+                  top: p.y - 12,
+                  width: 100,
+                  alignItems: 'center',
+                  opacity: p.alpha,
+                  transform: [{ scale: p.scale }],
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: Typography.fontFamily.extraBold,
+                    fontSize: 11,
+                    color: p.color,
+                    textShadowColor: 'rgba(255,255,255,0.85)',
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 1.5,
+                  }}
+                >
+                  {p.text}
+                </Text>
+              </View>
+            ))}
+
             {/* Visible Floor Bar */}
             <View style={styles.visibleFloor} />
 
-            {/* Game Over Modal Screen */}
+            {/* Redesigned Game Over Screen Modal (Gently transparent scene-of-crime view) */}
             {gameOver && (
               <View style={styles.gameOverOverlay}>
-                <Text style={styles.gameOverTitle}>sandbox filled!</Text>
-                <Text style={styles.gameOverSubtitle}>fruits sat above the limit line. reset to stack again!</Text>
-                <TouchableOpacity style={styles.restartBtn} onPress={resetSandbox}>
-                  <RotateCcw size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-                  <Text style={styles.restartBtnText}>play again</Text>
-                </TouchableOpacity>
+                <Animated.View style={[styles.gameOverCard, Shadow.md]}>
+                  {/* Celebratory sparkle header */}
+                  <Sparkle size={32} color={score > 0 && score >= startingHighScore.current ? '#F4A041' : '#FF5E5B'} style={{ marginBottom: 12 }} />
+                  
+                  <Text style={[styles.gameOverTitle, score > 0 && score >= startingHighScore.current ? { color: '#F4A041' } : null]}>
+                    {score > 0 && score >= startingHighScore.current ? 'new best!' : 'game over'}
+                  </Text>
+                  <Text style={styles.gameOverSubtitle}>
+                    {score > 0 && score >= startingHighScore.current ? 'you set a new sandbox record!' : 'your fruits overflowed the alert line!'}
+                  </Text>
+                  
+                  {/* Detailed Stats Summary Box */}
+                  <View style={styles.gameOverStatsContainer}>
+                    <View style={styles.gameOverStatRow}>
+                      <Text style={styles.gameOverStatLabel}>final score</Text>
+                      <Text style={styles.gameOverStatValue}>{score}</Text>
+                    </View>
+                    <View style={styles.gameOverStatRow}>
+                      <Text style={styles.gameOverStatLabel}>best fruit</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <FruitSvg tier={maxTierAchieved} r={14} />
+                        <Text style={[styles.gameOverStatValue, { fontSize: 13, textTransform: 'lowercase' }]}>
+                          {getFruitName(maxTierAchieved)}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.gameOverStatRow}>
+                      <Text style={styles.gameOverStatLabel}>discovered</Text>
+                      <Text style={[styles.gameOverStatValue, { fontSize: 13 }]}>
+                        {discoveredTiers.length}/8 fruits
+                      </Text>
+                    </View>
+                    <View style={styles.gameOverStatRow}>
+                      <Text style={styles.gameOverStatLabel}>total merges</Text>
+                      <Text style={[styles.gameOverStatValue, { fontSize: 13 }]}>{totalMerges}</Text>
+                    </View>
+                    <View style={styles.gameOverStatRow}>
+                      <Text style={styles.gameOverStatLabel}>max combo</Text>
+                      <Text style={[styles.gameOverStatValue, { fontSize: 13 }]}>{maxCombo > 1 ? `x${maxCombo}` : 'none'}</Text>
+                    </View>
+                    <View style={styles.gameOverStatRow}>
+                      <Text style={styles.gameOverStatLabel}>time played</Text>
+                      <Text style={[styles.gameOverStatValue, { fontSize: 13 }]}>{formatTime(timePlayed)}</Text>
+                    </View>
+                  </View>
+
+                  {/* CTAs */}
+                  <TouchableOpacity style={styles.restartBtn} onPress={resetSandbox}>
+                    <RotateCcw size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
+                    <Text style={styles.restartBtnText}>play again</Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.gameOverSecondaryRow}>
+                    <TouchableOpacity style={styles.secondaryBtn} onPress={handleShare}>
+                      <Text style={styles.secondaryBtnText}>share score</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.secondaryBtn}
+                      onPress={() => {
+                        GameHaptics.correct();
+                        navigation.goBack();
+                      }}
+                    >
+                      <Text style={styles.secondaryBtnText}>home</Text>
+                    </TouchableOpacity>
+                  </View>
+                </Animated.View>
               </View>
             )}
           </View>
         </View>
 
-        {/* ── Instructional banner ────────────────────────────────────────────── */}
-        <View style={[styles.instructionsCard, Shadow.sm]}>
-          <HelpCircle size={15} color="#8F857D" style={{ marginRight: 8 }} />
-          <Text style={styles.instructionsText}>
-            tap or drag at the top to drop fruits. merge identical fruits to pop them into larger sizes!
-          </Text>
+        {/* ── Compact Fruit Evolution Progression Chain Strip (Visible in 1 Shot) ── */}
+        <View style={styles.progressionContainer}>
+          <Text style={styles.progressionTitle}>fruit evolution chain</Text>
+          <View style={styles.progressionRow}>
+            {FRUIT_TIERS.map((tierData, idx) => (
+              <React.Fragment key={tierData.tier}>
+                <View style={styles.progressionSlot}>
+                  <FruitSvg tier={tierData.tier} r={12} />
+                  <Text style={styles.progressionTierText}>{tierData.tier}</Text>
+                </View>
+                {idx < 7 && (
+                  <Text style={styles.progressionArrow}>→</Text>
+                )}
+              </React.Fragment>
+            ))}
+          </View>
         </View>
+
+        {/* ── Collapsible Instructional card ──────────────────────────────────── */}
+        {showTutorial && (
+          <View style={[styles.instructionsCard, Shadow.sm]}>
+            <HelpCircle size={15} color="#5A524C" style={{ marginRight: 8 }} />
+            <Text style={styles.instructionsText}>
+              tap or drag at the top to drop fruits. merge identical fruits to pop them into larger sizes!
+            </Text>
+            <TouchableOpacity
+              style={styles.closeTutorialBtn}
+              onPress={() => {
+                if (!isMuted) GameHaptics.correct();
+                setShowTutorial(false);
+              }}
+            >
+              <Text style={styles.closeTutorialText}>×</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
 
 
@@ -1129,7 +1487,7 @@ const styles = StyleSheet.create({
   statsLabel: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: 9,
-    color: '#8F857D',
+    color: '#5A524C',
     textTransform: 'lowercase',
   },
   statsValue: {
@@ -1178,7 +1536,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1.5,
-    backgroundColor: '#F07060', // brand red/coral
+    backgroundColor: '#D04030', // accessible dark warning red
     opacity: 0.35,
   },
   gameOverLineText: {
@@ -1187,7 +1545,7 @@ const styles = StyleSheet.create({
     right: 8,
     fontFamily: Typography.fontFamily.bold,
     fontSize: 8,
-    color: '#F07060',
+    color: '#D04030',
     opacity: 0.6,
     textTransform: 'lowercase',
   },
@@ -1215,35 +1573,81 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: Typography.fontFamily.medium,
     fontSize: 10.5,
-    color: '#8F857D',
+    color: '#5A524C',
     lineHeight: 14,
   },
 
+  debugLoseBtn: {
+    backgroundColor: '#FF5E5B',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.sm,
+    marginRight: 12,
+  },
+  debugLoseText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 10,
+    color: '#FFFFFF',
+    textTransform: 'lowercase',
+  },
   gameOverOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(250, 246, 240, 0.96)',
+    backgroundColor: 'rgba(250, 246, 240, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing[4],
   },
+  gameOverCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.xl,
+    padding: Spacing[6],
+    width: 290,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#1D2340',
+  },
   gameOverTitle: {
     fontFamily: Typography.fontFamily.extraBold,
-    fontSize: 22,
-    color: '#F07060',
+    fontSize: 24,
+    color: '#FF5E5B',
     textTransform: 'lowercase',
     marginBottom: 4,
   },
   gameOverSubtitle: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: 11,
-    color: '#8F857D',
+    color: '#5A524C',
     textAlign: 'center',
-    lineHeight: 16,
     marginBottom: Spacing[4],
-    paddingHorizontal: Spacing[2],
+  },
+  gameOverStatsContainer: {
+    width: '100%',
+    backgroundColor: '#FAF6F0',
+    borderRadius: Radius.lg,
+    padding: Spacing[3],
+    marginBottom: Spacing[5],
+    borderWidth: 1,
+    borderColor: '#EFE5E0',
+    gap: Spacing[2],
+  },
+  gameOverStatRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  gameOverStatLabel: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 10,
+    color: '#5A524C',
+    textTransform: 'lowercase',
+  },
+  gameOverStatValue: {
+    fontFamily: Typography.fontFamily.extraBold,
+    fontSize: 16,
+    color: '#3C3530',
   },
   restartBtn: {
-    backgroundColor: '#8F857D',
+    backgroundColor: '#5A524C',
     borderRadius: Radius.full,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1255,5 +1659,42 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#FFFFFF',
     textTransform: 'lowercase',
+  },
+  progressionContainer: {
+    width: 350,
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: '#EFE5E0',
+    padding: Spacing[3],
+    marginTop: Spacing[4],
+    alignItems: 'center',
+  },
+  progressionTitle: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 9,
+    color: '#5A524C',
+    textTransform: 'lowercase',
+    marginBottom: Spacing[2],
+  },
+  progressionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  progressionSlot: {
+    alignItems: 'center',
+  },
+  progressionTierText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 8,
+    color: '#5A524C',
+    marginTop: 2,
+  },
+  progressionArrow: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 10,
+    color: '#C7C4C0',
   },
 });

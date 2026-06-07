@@ -502,84 +502,94 @@ export default function HomeScreen({ navigation }) {
         <FadeInUp delay={450} style={styles.section}>
           <SectionHeader title="games" />
           
-          {/* Fruit Merge Card */}
-          <TouchableScale
-            style={[styles.workshopCard, Shadow.sm, { marginBottom: Spacing[3] }]}
-            onPress={() => {
-              GameHaptics.correct();
-              navigation.navigate('AIFruitWorkshop');
-            }}
-          >
-            <View style={styles.workshopCardContent}>
-              <View style={styles.workshopTextContainer}>
+          <View style={styles.gamesGrid}>
+            {/* Fruit Merge Card */}
+            <TouchableScale
+              style={[styles.gameGridCard, Shadow.sm]}
+              onPress={() => {
+                GameHaptics.correct();
+                navigation.navigate('AIFruitWorkshop');
+              }}
+            >
+              <View style={styles.gameCardVisualContainer}>
+                <View style={styles.workshopVisualInner}>
+                  <Svg width="56" height="56" viewBox="0 0 100 100">
+                    {/* Peach / Fruit Body */}
+                    <Circle cx="50" cy="53" r="36" fill="#FAD4C0" />
+                    <Circle cx="44" cy="53" r="36" fill="#FFC0CB" opacity="0.6" />
+                    {/* Leaf */}
+                    <Path d="M48,18 C48,18 53,5 65,10 C65,10 60,23 48,18" fill="#A8D5BA" />
+                    {/* Stem */}
+                    <Path d="M48,18 Q45,23 42,28" stroke="#8B5E3C" strokeWidth="3" fill="none" strokeLinecap="round" />
+                    {/* Cheeks */}
+                    <Circle cx="32" cy="58" r="5" fill="#FF8D8D" opacity="0.5" />
+                    <Circle cx="68" cy="58" r="5" fill="#FF8D8D" opacity="0.5" />
+                    {/* Eyes */}
+                    <Circle cx="40" cy="52" r="3.5" fill="#1A1816" />
+                    <Circle cx="60" cy="52" r="3.5" fill="#1A1816" />
+                    {/* Mouth */}
+                    <Path d="M48,59 Q50,62 52,59" stroke="#1A1816" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                  </Svg>
+                </View>
+              </View>
+              
+              <View style={styles.gameCardMeta}>
                 <View style={styles.workshopTag}>
-                  <Sparkles size={12} color="#8F857D" style={{ marginRight: 4 }} />
+                  <Sparkles size={10} color="#8F857D" style={{ marginRight: 4 }} />
                   <Text style={styles.workshopTagText}>cozy puzzle</Text>
                 </View>
-                <Text style={styles.workshopTitle}>fruit merge</Text>
-                <Text style={styles.workshopSub}>drop and merge cute mascot fruits in this cozy physics puzzle sandbox!</Text>
-                <View style={styles.workshopCtaRow}>
-                  <Text style={styles.workshopCta}>play now</Text>
-                  <ArrowRight size={14} color="#F4A041" style={{ marginLeft: 6 }} />
+                <Text style={styles.gameCardTitle}>fruit merge</Text>
+                <Text style={styles.gameCardSub} numberOfLines={3}>
+                  drop and merge cute mascot fruits in this cozy physics puzzle sandbox!
+                </Text>
+              </View>
+
+              <View style={styles.gameCardCtaRow}>
+                <Text style={styles.workshopCta}>play now</Text>
+                <ArrowRight size={12} color="#F4A041" style={{ marginLeft: 4 }} />
+              </View>
+            </TouchableScale>
+
+            {/* Arrow Escape Card */}
+            <TouchableScale
+              style={[styles.gameGridCard, Shadow.sm]}
+              onPress={() => {
+                GameHaptics.correct();
+                navigation.navigate('ArrowEscape');
+              }}
+            >
+              <View style={styles.gameCardVisualContainer}>
+                <View style={styles.workshopVisualInner}>
+                  <Svg width="56" height="56" viewBox="0 0 100 100">
+                    {/* Interlocking logic arrows visual */}
+                    <Path d="M25,25 L75,25 L75,75" stroke="#1A1816" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                    <Path d="M75,75 L70,70 M75,75 L70,80" stroke="#1A1816" strokeWidth="4" fill="none" strokeLinecap="round" />
+                    
+                    <Path d="M35,45 L35,85 L85,85" stroke="#F4A041" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                    <Path d="M85,85 L80,80 M85,85 L80,90" stroke="#F4A041" strokeWidth="4" fill="none" strokeLinecap="round" />
+
+                    <Path d="M55,15 L55,55 M55,55 L50,50 M55,55 L60,50" stroke="#FF5E5B" strokeWidth="4" fill="none" strokeLinecap="round" />
+                  </Svg>
                 </View>
               </View>
-              <View style={styles.workshopVisual}>
-                <Svg width="72" height="72" viewBox="0 0 100 100">
-                  {/* Peach / Fruit Body */}
-                  <Circle cx="50" cy="53" r="36" fill="#FAD4C0" />
-                  <Circle cx="44" cy="53" r="36" fill="#FFC0CB" opacity="0.6" />
-                  {/* Leaf */}
-                  <Path d="M48,18 C48,18 53,5 65,10 C65,10 60,23 48,18" fill="#A8D5BA" />
-                  {/* Stem */}
-                  <Path d="M48,18 Q45,23 42,28" stroke="#8B5E3C" strokeWidth="3" fill="none" strokeLinecap="round" />
-                  {/* Cheeks */}
-                  <Circle cx="32" cy="58" r="5" fill="#FF8D8D" opacity="0.5" />
-                  <Circle cx="68" cy="58" r="5" fill="#FF8D8D" opacity="0.5" />
-                  {/* Eyes */}
-                  <Circle cx="40" cy="52" r="3.5" fill="#1A1816" />
-                  <Circle cx="60" cy="52" r="3.5" fill="#1A1816" />
-                  {/* Mouth */}
-                  <Path d="M48,59 Q50,62 52,59" stroke="#1A1816" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-                </Svg>
-              </View>
-            </View>
-          </TouchableScale>
 
-          {/* Arrow Escape Card */}
-          <TouchableScale
-            style={[styles.workshopCard, Shadow.sm]}
-            onPress={() => {
-              GameHaptics.correct();
-              navigation.navigate('ArrowEscape');
-            }}
-          >
-            <View style={styles.workshopCardContent}>
-              <View style={styles.workshopTextContainer}>
+              <View style={styles.gameCardMeta}>
                 <View style={styles.workshopTag}>
-                  <Sparkles size={12} color="#8F857D" style={{ marginRight: 4 }} />
+                  <Sparkles size={10} color="#8F857D" style={{ marginRight: 4 }} />
                   <Text style={styles.workshopTagText}>logic puzzle</Text>
                 </View>
-                <Text style={styles.workshopTitle}>arrow escape</Text>
-                <Text style={styles.workshopSub}>slide hooks and twisted lines out of the grid. plan your sequence to avoid collisions!</Text>
-                <View style={styles.workshopCtaRow}>
-                  <Text style={styles.workshopCta}>play now</Text>
-                  <ArrowRight size={14} color="#F4A041" style={{ marginLeft: 6 }} />
-                </View>
+                <Text style={styles.gameCardTitle}>arrow escape</Text>
+                <Text style={styles.gameCardSub} numberOfLines={3}>
+                  slide hooks and twisted lines out of the grid without collisions!
+                </Text>
               </View>
-              <View style={styles.workshopVisual}>
-                <Svg width="72" height="72" viewBox="0 0 100 100">
-                  {/* Interlocking logic arrows visual */}
-                  <Path d="M25,25 L75,25 L75,75" stroke="#1A1816" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                  <Path d="M75,75 L70,70 M75,75 L70,80" stroke="#1A1816" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-                  
-                  <Path d="M35,45 L35,85 L85,85" stroke="#F4A041" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                  <Path d="M85,85 L80,80 M85,85 L80,90" stroke="#F4A041" strokeWidth="3.5" fill="none" strokeLinecap="round" />
 
-                  <Path d="M55,15 L55,55 M55,55 L50,50 M55,55 L60,50" stroke="#FF5E5B" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-                </Svg>
+              <View style={styles.gameCardCtaRow}>
+                <Text style={styles.workshopCta}>play now</Text>
+                <ArrowRight size={12} color="#F4A041" style={{ marginLeft: 4 }} />
               </View>
-            </View>
-          </TouchableScale>
+            </TouchableScale>
+          </View>
         </FadeInUp>
 
         {/* Insight + Weekly Brief — Problems 7 & 8 */}
@@ -792,22 +802,39 @@ export default function HomeScreen({ navigation }) {
 const BRIEF_NAVY = '#1D2340';
 
 const getStyles = (Colors) => StyleSheet.create({
-  workshopCard: {
+  gamesGrid: {
+    flexDirection: 'row',
+    gap: Spacing[4],
+  },
+  gameGridCard: {
+    flex: 1,
     backgroundColor: '#FAF3F0',
     borderRadius: Radius.xl,
     padding: Spacing[4],
     borderWidth: 1.5,
     borderColor: '#EFE5E0',
-    marginBottom: Spacing[3],
-  },
-  workshopCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: 250,
   },
-  workshopTextContainer: {
+  gameCardVisualContainer: {
+    height: 72,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing[2],
+  },
+  workshopVisualInner: {
+    width: 68,
+    height: 68,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: '#EFE5E0',
+  },
+  gameCardMeta: {
     flex: 1,
-    paddingRight: Spacing[3],
+    justifyContent: 'flex-start',
   },
   workshopTag: {
     flexDirection: 'row',
@@ -825,39 +852,30 @@ const getStyles = (Colors) => StyleSheet.create({
     color: '#8F857D',
     textTransform: 'lowercase',
   },
-  workshopTitle: {
+  gameCardTitle: {
     fontFamily: Typography.fontFamily.extraBold,
-    fontSize: 18,
+    fontSize: 16,
     color: '#3C3530',
     marginBottom: 4,
     textTransform: 'lowercase',
   },
-  workshopSub: {
+  gameCardSub: {
     fontFamily: Typography.fontFamily.medium,
-    fontSize: 12,
-    color: '#7C726A',
-    lineHeight: 16,
-    marginBottom: Spacing[3],
+    fontSize: 10,
+    color: '#8F857D',
+    lineHeight: 14,
+    textTransform: 'lowercase',
   },
-  workshopCtaRow: {
+  gameCardCtaRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: Spacing[2],
   },
   workshopCta: {
     fontFamily: Typography.fontFamily.bold,
-    fontSize: 13,
+    fontSize: 12,
     color: '#F4A041',
     textTransform: 'lowercase',
-  },
-  workshopVisual: {
-    width: 80,
-    height: 80,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: '#EFE5E0',
   },
   container: { flex: 1, backgroundColor: Colors.appBg },
   stickyHeader: {

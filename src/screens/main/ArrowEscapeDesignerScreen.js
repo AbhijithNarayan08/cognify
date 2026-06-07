@@ -31,6 +31,90 @@ const DIR_OPTIONS = [
   { label: '↓ down', vector: { x: 0, y: 1 } },
 ];
 
+// ── Snake-Body Flow & Track Parameterization Helpers ─────────────────────────
+function getDist(p1, p2) {
+  return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+}
+
+function prepareTrack(path) {
+  const pts = path.points;
+  let rawTrack = [];
+  if (path.arrowAt === 'start') {
+    rawTrack = [...pts].reverse();
+  } else {
+    rawTrack = [...pts];
+  }
+
+  // Extend track by a long segment off-screen in the slide direction
+  const lastPt = rawTrack[rawTrack.length - 1];
+  const extensionLength = 1200;
+  const extendedPt = {
+    x: lastPt.x + path.dir.x * extensionLength,
+    y: lastPt.y + path.dir.y * extensionLength,
+  };
+  const track = [...rawTrack, extendedPt];
+
+  // Calculate cumulative lengths
+  const lengths = [0];
+  for (let i = 1; i < track.length; i++) {
+    lengths.push(lengths[i - 1] + getDist(track[i - 1], track[i]));
+  }
+
+  // Original path length is the cumulative distance up to the second-to-last point (before extension)
+  const snakeLength = lengths[lengths.length - 2];
+
+  return { track, lengths, snakeLength };
+}
+
+function getPointAtDistance(track, lengths, d) {
+  if (d <= 0) return { ...track[0] };
+  const maxL = lengths[lengths.length - 1];
+  if (d >= maxL) return { ...track[track.length - 1] };
+
+  let idx = 0;
+  for (let i = 0; i < lengths.length - 1; i++) {
+    if (d >= lengths[i] && d <= lengths[i + 1]) {
+      idx = i;
+      break;
+    }
+  }
+
+  const p1 = track[idx];
+  const p2 = track[idx + 1];
+  const segL = lengths[idx + 1] - lengths[idx];
+  if (segL === 0) return { ...p1 };
+
+  const ratio = (d - lengths[idx]) / segL;
+  return {
+    x: p1.x + (p2.x - p1.x) * ratio,
+    y: p1.y + (p2.y - p1.y) * ratio,
+  };
+}
+
+function sliceTrack(track, lengths, d1, d2) {
+  const pts = [];
+  
+  pts.push(getPointAtDistance(track, lengths, d1));
+
+  for (let i = 0; i < track.length; i++) {
+    if (lengths[i] > d1 && lengths[i] < d2) {
+      pts.push({ ...track[i] });
+    }
+  }
+
+  pts.push(getPointAtDistance(track, lengths, d2));
+
+  const filtered = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    const dist = getDist(filtered[filtered.length - 1], pts[i]);
+    if (dist > 0.1) {
+      filtered.push(pts[i]);
+    }
+  }
+
+  return filtered;
+}
+
 // ── Collision Detection Helpers (Mirrored from ArrowEscapeScreen) ─────────────
 function getPointToSegmentDistance(px, py, ax, ay, bx, by) {
   const dx = bx - ax;
@@ -70,17 +154,17 @@ function checkPathCollision(activePath, otherPaths) {
   for (const other of otherPaths) {
     if (other.cleared) continue;
 
-    for (let i = 0; i < activePath.points.length - 1; i++) {
-      const ax = activePath.points[i].x + activePath.offsetX;
-      const ay = activePath.points[i].y + activePath.offsetY;
-      const bx = activePath.points[i + 1].x + activePath.offsetX;
-      const by = activePath.points[i + 1].y + activePath.offsetY;
+    for (let i = 0; i < activePath.currentPoints.length - 1; i++) {
+      const ax = activePath.currentPoints[i].x;
+      const ay = activePath.currentPoints[i].y;
+      const bx = activePath.currentPoints[i + 1].x;
+      const by = activePath.currentPoints[i + 1].y;
 
-      for (let j = 0; j < other.points.length - 1; j++) {
-        const cx = other.points[j].x + other.offsetX;
-        const cy = other.points[j].y + other.offsetY;
-        const dx = other.points[j + 1].x + other.offsetX;
-        const dy = other.points[j + 1].y + other.offsetY;
+      for (let j = 0; j < other.currentPoints.length - 1; j++) {
+        const cx = other.currentPoints[j].x;
+        const cy = other.currentPoints[j].y;
+        const dx = other.currentPoints[j + 1].x;
+        const dy = other.currentPoints[j + 1].y;
 
         const dist = getSegmentsDistance(ax, ay, bx, by, cx, cy, dx, dy);
         if (dist < threshold) {
@@ -94,10 +178,8 @@ function checkPathCollision(activePath, otherPaths) {
 
 function checkIsOffScreen(path) {
   const margin = 50;
-  return path.points.every(pt => {
-    const x = pt.x + path.offsetX;
-    const y = pt.y + path.offsetY;
-    return x < -margin || x > CANVAS_SIZE + margin || y < -margin || y > CANVAS_SIZE + margin;
+  return path.currentPoints.every(pt => {
+    return pt.x < -margin || pt.x > CANVAS_SIZE + margin || pt.y < -margin || pt.y > CANVAS_SIZE + margin;
   });
 }
 
@@ -266,12 +348,20 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
     if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
     isSlidingRef.current = false;
 
-    const initialPlayPaths = boardPaths.map(p => ({
-      ...p,
-      offsetX: 0,
-      offsetY: 0,
-      cleared: false,
-    }));
+    const initialPlayPaths = boardPaths.map(p => {
+      const trackData = prepareTrack(p);
+      return {
+        ...p,
+        offsetX: 0,
+        offsetY: 0,
+        distance: 0,
+        track: trackData.track,
+        lengths: trackData.lengths,
+        snakeLength: trackData.snakeLength,
+        currentPoints: sliceTrack(trackData.track, trackData.lengths, 0, trackData.snakeLength),
+        cleared: false,
+      };
+    });
 
     playPathsRef.current = initialPlayPaths;
     setPlayPaths(initialPlayPaths);
@@ -290,21 +380,20 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
 
     const path = playPathsRef.current[activeIndex];
     const speed = 10;
-    let curOx = 0;
-    let curOy = 0;
+    let curDistance = 0;
 
     const playTick = () => {
-      curOx += path.dir.x * speed;
-      curOy += path.dir.y * speed;
+      curDistance += speed;
 
-      const updatedPath = { ...path, offsetX: curOx, offsetY: curOy };
+      const slicedPts = sliceTrack(path.track, path.lengths, curDistance, curDistance + path.snakeLength);
+      const updatedPath = { ...path, distance: curDistance, currentPoints: slicedPts };
       const otherPaths = playPathsRef.current.filter(p => p.id !== pathId);
 
       // Check collision
       const isCollided = checkPathCollision(updatedPath, otherPaths);
       if (isCollided) {
         GameHaptics.incorrect();
-        triggerPlayShake(pathId, curOx, curOy);
+        triggerPlayShake(pathId, curDistance);
         return;
       }
 
@@ -316,7 +405,7 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
       }
 
       playPathsRef.current = playPathsRef.current.map(p =>
-        p.id === pathId ? { ...p, offsetX: curOx, offsetY: curOy } : p
+        p.id === pathId ? updatedPath : p
       );
       setPlayPaths([...playPathsRef.current]);
 
@@ -326,7 +415,7 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
     animationFrameId.current = requestAnimationFrame(playTick);
   };
 
-  const triggerPlayShake = (pathId, finalOx, finalOy) => {
+  const triggerPlayShake = (pathId, finalDistance) => {
     const idx = playPathsRef.current.findIndex(p => p.id === pathId);
     if (idx === -1) return;
     const path = playPathsRef.current[idx];
@@ -343,7 +432,11 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
     const shakeTick = () => {
       if (frame >= 14) {
         playPathsRef.current = playPathsRef.current.map(p =>
-          p.id === pathId ? { ...p, offsetX: 0, offsetY: 0 } : p
+          p.id === pathId ? {
+            ...p,
+            distance: 0,
+            currentPoints: sliceTrack(p.track, p.lengths, 0, p.snakeLength)
+          } : p
         );
         setPlayPaths([...playPathsRef.current]);
         isSlidingRef.current = false;
@@ -355,11 +448,12 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
       const dy = (frame % 2 === 0 ? 5 : -5) * scale * path.dir.x;
 
       const blend = frame / 14;
-      const currentOx = finalOx * (1 - blend) + dx;
-      const currentOy = finalOy * (1 - blend) + dy;
+      const currentDistance = finalDistance * (1 - blend);
+      const slicedPts = sliceTrack(path.track, path.lengths, currentDistance, currentDistance + path.snakeLength);
+      const shakenPts = slicedPts.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
 
       playPathsRef.current = playPathsRef.current.map(p =>
-        p.id === pathId ? { ...p, offsetX: currentOx, offsetY: currentOy } : p
+        p.id === pathId ? { ...p, distance: currentDistance, currentPoints: shakenPts } : p
       );
       setPlayPaths([...playPathsRef.current]);
 
@@ -372,7 +466,7 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
 
   const triggerPlayCleared = (pathId) => {
     playPathsRef.current = playPathsRef.current.map(p =>
-      p.id === pathId ? { ...p, cleared: true, offsetX: 9999, offsetY: 9999 } : p
+      p.id === pathId ? { ...p, cleared: true, distance: 9999, currentPoints: [] } : p
     );
     setPlayPaths([...playPathsRef.current]);
     isSlidingRef.current = false;
@@ -463,16 +557,46 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
               {(mode === 'editing' ? boardPaths : playPaths).map((path) => {
                 if (path.cleared) return null;
 
-                const arrowPt = path.arrowAt === 'start' ? path.points[0] : path.points[path.points.length - 1];
-                const angleRad = Math.atan2(path.dir.y, path.dir.x);
-                const angleDeg = (angleRad * 180) / Math.PI;
+                if (mode === 'editing') {
+                  const arrowPt = path.arrowAt === 'start' ? path.points[0] : path.points[path.points.length - 1];
+                  const angleRad = Math.atan2(path.dir.y, path.dir.x);
+                  const angleDeg = (angleRad * 180) / Math.PI;
 
-                return (
-                  <G key={path.id}>
-                    {/* Double-layered tap targets for playtesting */}
-                    {mode === 'play_testing' && (
+                  return (
+                    <G key={path.id}>
                       <Path
-                        d={getPathData(path.points, path.offsetX, path.offsetY)}
+                        d={getPathData(path.points)}
+                        stroke={path.color}
+                        strokeWidth={6}
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      
+                      <G transform={`translate(${arrowPt.x}, ${arrowPt.y}) rotate(${angleDeg})`}>
+                        <Path
+                          d="M -8 -6 L 2 0 L -8 6"
+                          stroke={path.color}
+                          strokeWidth={4.5}
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </G>
+                    </G>
+                  );
+                } else {
+                  if (!path.currentPoints || path.currentPoints.length === 0) return null;
+                  const headPt = path.currentPoints[path.currentPoints.length - 1];
+                  const prevPt = path.currentPoints[path.currentPoints.length - 2] || headPt;
+                  const angleRad = Math.atan2(headPt.y - prevPt.y, headPt.x - prevPt.x);
+                  const angleDeg = (angleRad * 180) / Math.PI;
+
+                  return (
+                    <G key={path.id} onPress={() => handlePlayPathTap(path.id)}>
+                      {/* Double-layered tap targets for playtesting */}
+                      <Path
+                        d={getPathData(path.currentPoints)}
                         stroke="transparent"
                         strokeWidth={24}
                         fill="none"
@@ -480,29 +604,30 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
                         strokeLinejoin="round"
                         onPress={() => handlePlayPathTap(path.id)}
                       />
-                    )}
 
-                    <Path
-                      d={getPathData(path.points, path.offsetX, path.offsetY)}
-                      stroke={path.color}
-                      strokeWidth={6}
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    
-                    <G transform={`translate(${arrowPt.x + (path.offsetX || 0)}, ${arrowPt.y + (path.offsetY || 0)}) rotate(${angleDeg})`}>
                       <Path
-                        d="M -8 -6 L 2 0 L -8 6"
+                        d={getPathData(path.currentPoints)}
                         stroke={path.color}
-                        strokeWidth={4.5}
+                        strokeWidth={6}
                         fill="none"
                         strokeLinecap="round"
                         strokeLinejoin="round"
+                        onPress={() => handlePlayPathTap(path.id)}
                       />
+                      
+                      <G transform={`translate(${headPt.x}, ${headPt.y}) rotate(${angleDeg})`} onPress={() => handlePlayPathTap(path.id)}>
+                        <Path
+                          d="M -8 -6 L 2 0 L -8 6"
+                          stroke={path.color}
+                          strokeWidth={4.5}
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </G>
                     </G>
-                  </G>
-                );
+                  );
+                }
               })}
 
               {/* Draw active line points currently plotting */}
