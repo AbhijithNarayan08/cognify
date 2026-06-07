@@ -1324,56 +1324,60 @@ export default function AIFruitWorkshopScreen({ navigation }) {
               <View style={styles.gameOverOverlay}>
                 <Animated.View style={[styles.gameOverCard, Shadow.md]}>
                   {/* Celebratory sparkle header */}
-                  <Sparkle size={32} color={score > 0 && score >= startingHighScore.current ? '#F4A041' : '#FF5E5B'} style={{ marginBottom: 12 }} />
-                  
-                  <Text style={[styles.gameOverTitle, score > 0 && score >= startingHighScore.current ? { color: '#F4A041' } : null]}>
-                    {score > 0 && score >= startingHighScore.current ? 'new best!' : 'game over'}
-                  </Text>
+                  <View style={styles.gameOverHeader}>
+                    <Sparkle size={24} color={score > 0 && score >= startingHighScore.current ? '#F4A041' : '#D04030'} />
+                    <Text style={[styles.gameOverTitle, score > 0 && score >= startingHighScore.current ? { color: '#F4A041' } : null]}>
+                      {score > 0 && score >= startingHighScore.current ? 'new best!' : 'game over'}
+                    </Text>
+                  </View>
                   <Text style={styles.gameOverSubtitle}>
                     {score > 0 && score >= startingHighScore.current ? 'you set a new sandbox record!' : 'your fruits overflowed the alert line!'}
                   </Text>
-                  
-                  {/* Detailed Stats Summary Box */}
-                  <View style={styles.gameOverStatsContainer}>
-                    <View style={styles.gameOverStatRow}>
-                      <Text style={styles.gameOverStatLabel}>final score</Text>
-                      <Text style={styles.gameOverStatValue}>{score}</Text>
+
+                  {/* Giant Hero Score Display */}
+                  <View style={styles.heroScoreContainer}>
+                    <Text style={styles.heroScoreLabel}>score</Text>
+                    <Text style={styles.heroScoreValue}>{score}</Text>
+                  </View>
+
+                  {/* Best Fruit Merged Badge */}
+                  <View style={styles.bestFruitBadge}>
+                    <View style={styles.bestFruitIconWrapper}>
+                      <FruitSvg tier={maxTierAchieved} r={24} />
                     </View>
-                    <View style={styles.gameOverStatRow}>
-                      <Text style={styles.gameOverStatLabel}>best fruit</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <FruitSvg tier={maxTierAchieved} r={14} />
-                        <Text style={[styles.gameOverStatValue, { fontSize: 13, textTransform: 'lowercase' }]}>
-                          {getFruitName(maxTierAchieved)}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.gameOverStatRow}>
-                      <Text style={styles.gameOverStatLabel}>discovered</Text>
-                      <Text style={[styles.gameOverStatValue, { fontSize: 13 }]}>
-                        {discoveredTiers.length}/8 fruits
-                      </Text>
-                    </View>
-                    <View style={styles.gameOverStatRow}>
-                      <Text style={styles.gameOverStatLabel}>total merges</Text>
-                      <Text style={[styles.gameOverStatValue, { fontSize: 13 }]}>{totalMerges}</Text>
-                    </View>
-                    <View style={styles.gameOverStatRow}>
-                      <Text style={styles.gameOverStatLabel}>max combo</Text>
-                      <Text style={[styles.gameOverStatValue, { fontSize: 13 }]}>{maxCombo > 1 ? `x${maxCombo}` : 'none'}</Text>
-                    </View>
-                    <View style={styles.gameOverStatRow}>
-                      <Text style={styles.gameOverStatLabel}>time played</Text>
-                      <Text style={[styles.gameOverStatValue, { fontSize: 13 }]}>{formatTime(timePlayed)}</Text>
+                    <View style={styles.bestFruitMeta}>
+                      <Text style={styles.bestFruitLabel}>best merged</Text>
+                      <Text style={styles.bestFruitValue}>{getFruitName(maxTierAchieved)}</Text>
                     </View>
                   </View>
 
-                  {/* CTAs */}
+                  {/* 2x2 Grid of Secondary Stats */}
+                  <View style={styles.statsGrid}>
+                    <View style={styles.statsGridCell}>
+                      <Text style={styles.gridStatLabel}>discovered</Text>
+                      <Text style={styles.gridStatValue}>{discoveredTiers.length}/8</Text>
+                    </View>
+                    <View style={styles.statsGridCell}>
+                      <Text style={styles.gridStatLabel}>total merges</Text>
+                      <Text style={styles.gridStatValue}>{totalMerges}</Text>
+                    </View>
+                    <View style={styles.statsGridCell}>
+                      <Text style={styles.gridStatLabel}>max combo</Text>
+                      <Text style={styles.gridStatValue}>{maxCombo > 1 ? `x${maxCombo}` : 'none'}</Text>
+                    </View>
+                    <View style={styles.statsGridCell}>
+                      <Text style={styles.gridStatLabel}>time played</Text>
+                      <Text style={styles.gridStatValue}>{formatTime(timePlayed)}</Text>
+                    </View>
+                  </View>
+
+                  {/* Primary CTA: Play Again */}
                   <TouchableOpacity style={styles.restartBtn} onPress={resetSandbox}>
                     <RotateCcw size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
                     <Text style={styles.restartBtnText}>play again</Text>
                   </TouchableOpacity>
 
+                  {/* Secondary CTAs: Share and Home */}
                   <View style={styles.gameOverSecondaryRow}>
                     <TouchableOpacity style={styles.secondaryBtn} onPress={handleShare}>
                       <Text style={styles.secondaryBtnText}>share score</Text>
@@ -1620,44 +1624,142 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: Spacing[4],
   },
-  gameOverStatsContainer: {
-    width: '100%',
+  gameOverHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  heroScoreContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#FAF6F0',
     borderRadius: Radius.lg,
-    padding: Spacing[3],
-    marginBottom: Spacing[5],
-    borderWidth: 1,
+    width: '100%',
+    paddingVertical: Spacing[3],
+    marginBottom: Spacing[3],
+    borderWidth: 1.5,
     borderColor: '#EFE5E0',
-    gap: Spacing[2],
   },
-  gameOverStatRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  gameOverStatLabel: {
+  heroScoreLabel: {
     fontFamily: Typography.fontFamily.bold,
-    fontSize: 10,
+    fontSize: 9,
     color: '#5A524C',
     textTransform: 'lowercase',
+    letterSpacing: 0.5,
   },
-  gameOverStatValue: {
+  heroScoreValue: {
+    fontFamily: Typography.fontFamily.extraBold,
+    fontSize: 38,
+    color: '#1D2340', // rich navy text
+    lineHeight: 44,
+  },
+  bestFruitBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF9F5', // very soft warm tint
+    borderRadius: Radius.lg,
+    width: '100%',
+    paddingHorizontal: Spacing[4],
+    paddingVertical: Spacing[3],
+    marginBottom: Spacing[3],
+    borderWidth: 1.5,
+    borderColor: '#FAD4C0',
+    gap: 12,
+  },
+  bestFruitIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EFE5E0',
+  },
+  bestFruitMeta: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  bestFruitLabel: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 9,
+    color: '#8F857D',
+    textTransform: 'lowercase',
+  },
+  bestFruitValue: {
     fontFamily: Typography.fontFamily.extraBold,
     fontSize: 16,
     color: '#3C3530',
+    textTransform: 'lowercase',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 8,
+    marginBottom: Spacing[4],
+  },
+  statsGridCell: {
+    width: '48%', // fits side-by-side
+    backgroundColor: '#FAF6F0',
+    borderRadius: Radius.md,
+    padding: Spacing[2],
+    borderWidth: 1,
+    borderColor: '#EFE5E0',
+    alignItems: 'center',
+  },
+  gridStatLabel: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 8,
+    color: '#8F857D',
+    textTransform: 'lowercase',
+    textAlign: 'center',
+  },
+  gridStatValue: {
+    fontFamily: Typography.fontFamily.extraBold,
+    fontSize: 13,
+    color: '#3C3530',
+    marginTop: 2,
   },
   restartBtn: {
     backgroundColor: '#5A524C',
     borderRadius: Radius.full,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing[4],
-    paddingVertical: 10,
+    justifyContent: 'center',
+    width: '100%',
+    paddingVertical: Spacing[3],
+    marginBottom: 8,
+    ...Shadow.sm,
   },
   restartBtnText: {
     fontFamily: Typography.fontFamily.bold,
-    fontSize: 11,
+    fontSize: 12,
     color: '#FFFFFF',
+    textTransform: 'lowercase',
+  },
+  gameOverSecondaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 8,
+  },
+  secondaryBtn: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.full,
+    borderWidth: 1.5,
+    borderColor: '#EFE5E0',
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryBtnText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 11,
+    color: '#5A524C',
     textTransform: 'lowercase',
   },
   progressionContainer: {
