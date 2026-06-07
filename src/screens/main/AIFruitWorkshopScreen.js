@@ -1140,7 +1140,7 @@ export default function AIFruitWorkshopScreen({ navigation }) {
         >
           <ArrowLeft size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: Colors.textPrimary }]}>fruit merge</Text>
+        <Text style={[styles.headerTitle, { color: Colors.textPrimary }]}>Fruit Merge</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {typeof __DEV__ !== 'undefined' && __DEV__ ? (
             <TouchableOpacity
@@ -1318,89 +1318,12 @@ export default function AIFruitWorkshopScreen({ navigation }) {
 
             {/* Visible Floor Bar */}
             <View style={styles.visibleFloor} />
-
-            {/* Redesigned Game Over Screen Modal (Gently transparent scene-of-crime view) */}
-            {gameOver && (
-              <View style={styles.gameOverOverlay}>
-                <Animated.View style={[styles.gameOverCard, Shadow.md]}>
-                  {/* Celebratory sparkle header */}
-                  <View style={styles.gameOverHeader}>
-                    <Sparkle size={24} color={score > 0 && score >= startingHighScore.current ? '#F4A041' : '#D04030'} />
-                    <Text style={[styles.gameOverTitle, score > 0 && score >= startingHighScore.current ? { color: '#F4A041' } : null]}>
-                      {score > 0 && score >= startingHighScore.current ? 'new best!' : 'game over'}
-                    </Text>
-                  </View>
-                  <Text style={styles.gameOverSubtitle}>
-                    {score > 0 && score >= startingHighScore.current ? 'you set a new sandbox record!' : 'your fruits overflowed the alert line!'}
-                  </Text>
-
-                  {/* Giant Hero Score Display */}
-                  <View style={styles.heroScoreContainer}>
-                    <Text style={styles.heroScoreLabel}>score</Text>
-                    <Text style={styles.heroScoreValue}>{score}</Text>
-                  </View>
-
-                  {/* Best Fruit Merged Badge */}
-                  <View style={styles.bestFruitBadge}>
-                    <View style={styles.bestFruitIconWrapper}>
-                      <FruitSvg tier={maxTierAchieved} r={24} />
-                    </View>
-                    <View style={styles.bestFruitMeta}>
-                      <Text style={styles.bestFruitLabel}>best merged</Text>
-                      <Text style={styles.bestFruitValue}>{getFruitName(maxTierAchieved)}</Text>
-                    </View>
-                  </View>
-
-                  {/* 2x2 Grid of Secondary Stats */}
-                  <View style={styles.statsGrid}>
-                    <View style={styles.statsGridCell}>
-                      <Text style={styles.gridStatLabel}>discovered</Text>
-                      <Text style={styles.gridStatValue}>{discoveredTiers.length}/8</Text>
-                    </View>
-                    <View style={styles.statsGridCell}>
-                      <Text style={styles.gridStatLabel}>total merges</Text>
-                      <Text style={styles.gridStatValue}>{totalMerges}</Text>
-                    </View>
-                    <View style={styles.statsGridCell}>
-                      <Text style={styles.gridStatLabel}>max combo</Text>
-                      <Text style={styles.gridStatValue}>{maxCombo > 1 ? `x${maxCombo}` : 'none'}</Text>
-                    </View>
-                    <View style={styles.statsGridCell}>
-                      <Text style={styles.gridStatLabel}>time played</Text>
-                      <Text style={styles.gridStatValue}>{formatTime(timePlayed)}</Text>
-                    </View>
-                  </View>
-
-                  {/* Primary CTA: Play Again */}
-                  <TouchableOpacity style={styles.restartBtn} onPress={resetSandbox}>
-                    <RotateCcw size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.restartBtnText}>play again</Text>
-                  </TouchableOpacity>
-
-                  {/* Secondary CTAs: Share and Home */}
-                  <View style={styles.gameOverSecondaryRow}>
-                    <TouchableOpacity style={styles.secondaryBtn} onPress={handleShare}>
-                      <Text style={styles.secondaryBtnText}>share score</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.secondaryBtn}
-                      onPress={() => {
-                        GameHaptics.correct();
-                        navigation.goBack();
-                      }}
-                    >
-                      <Text style={styles.secondaryBtnText}>home</Text>
-                    </TouchableOpacity>
-                  </View>
-                </Animated.View>
-              </View>
-            )}
           </View>
         </View>
 
         {/* ── Compact Fruit Evolution Progression Chain Strip (Visible in 1 Shot) ── */}
         <View style={styles.progressionContainer}>
-          <Text style={styles.progressionTitle}>fruit evolution chain</Text>
+          <Text style={styles.progressionTitle}>Fruit Evolution Chain</Text>
           <View style={styles.progressionRow}>
             {FRUIT_TIERS.map((tierData, idx) => (
               <React.Fragment key={tierData.tier}>
@@ -1435,10 +1358,85 @@ export default function AIFruitWorkshopScreen({ navigation }) {
           </View>
         )}
 
-
-
         <View style={{ height: Spacing[10] }} />
       </ScrollView>
+
+      {/* Redesigned Game Over Screen Modal (Positioned at root for full-screen overlay) */}
+      {gameOver && (
+        <View style={styles.gameOverOverlay}>
+          <Animated.View style={[styles.gameOverCard, Shadow.md]}>
+            {/* Celebratory sparkle header */}
+            <View style={styles.gameOverHeader}>
+              <Sparkle size={24} color={score > 0 && score >= startingHighScore.current ? '#F4A041' : '#D04030'} />
+              <Text style={[styles.gameOverTitle, score > 0 && score >= startingHighScore.current ? { color: '#F4A041' } : null]}>
+                {score > 0 && score >= startingHighScore.current ? 'New Best!' : 'Game Over'}
+              </Text>
+            </View>
+            <Text style={styles.gameOverSubtitle}>
+              {score > 0 && score >= startingHighScore.current ? 'You set a new sandbox record!' : 'Your fruits overflowed the alert line!'}
+            </Text>
+
+            {/* Giant Hero Score Display */}
+            <View style={styles.heroScoreContainer}>
+              <Text style={styles.heroScoreLabel}>Score</Text>
+              <Text style={styles.heroScoreValue}>{score}</Text>
+            </View>
+
+            {/* Best Fruit Merged Badge */}
+            <View style={styles.bestFruitBadge}>
+              <View style={styles.bestFruitIconWrapper}>
+                <FruitSvg tier={maxTierAchieved} r={24} />
+              </View>
+              <View style={styles.bestFruitMeta}>
+                <Text style={styles.bestFruitLabel}>Best Merged</Text>
+                <Text style={styles.bestFruitValue}>{getFruitName(maxTierAchieved)}</Text>
+              </View>
+            </View>
+
+            {/* 2x2 Grid of Secondary Stats */}
+            <View style={styles.statsGrid}>
+              <View style={styles.statsGridCell}>
+                <Text style={styles.gridStatLabel}>Discovered</Text>
+                <Text style={styles.gridStatValue}>{discoveredTiers.length}/8</Text>
+              </View>
+              <View style={styles.statsGridCell}>
+                <Text style={styles.gridStatLabel}>Total Merges</Text>
+                <Text style={styles.gridStatValue}>{totalMerges}</Text>
+              </View>
+              <View style={styles.statsGridCell}>
+                <Text style={styles.gridStatLabel}>Max Combo</Text>
+                <Text style={styles.gridStatValue}>{maxCombo > 1 ? `x${maxCombo}` : 'None'}</Text>
+              </View>
+              <View style={styles.statsGridCell}>
+                <Text style={styles.gridStatLabel}>Time Played</Text>
+                <Text style={styles.gridStatValue}>{formatTime(timePlayed)}</Text>
+              </View>
+            </View>
+
+            {/* Primary CTA: Play Again */}
+            <TouchableOpacity style={styles.restartBtn} onPress={resetSandbox}>
+              <RotateCcw size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={styles.restartBtnText}>Play Again</Text>
+            </TouchableOpacity>
+
+            {/* Secondary CTAs: Share and Home */}
+            <View style={styles.gameOverSecondaryRow}>
+              <TouchableOpacity style={styles.secondaryBtn} onPress={handleShare}>
+                <Text style={styles.secondaryBtnText}>Share Score</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.secondaryBtn}
+                onPress={() => {
+                  GameHaptics.correct();
+                  navigation.goBack();
+                }}
+              >
+                <Text style={styles.secondaryBtnText}>Home</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      )}
     </View>
   );
 }
@@ -1596,19 +1594,19 @@ const styles = StyleSheet.create({
   },
   gameOverOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(250, 246, 240, 0.95)',
+    backgroundColor: 'rgba(29, 27, 25, 0.65)', // dark warm translucent background matching HomeScreen modal
     justifyContent: 'center',
     alignItems: 'center',
-    padding: Spacing[4],
+    padding: Spacing[6],
+    zIndex: 999,
+    elevation: 10,
   },
   gameOverCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: Radius.xl,
     padding: Spacing[6],
-    width: 290,
+    width: 320, // wider, spacious card matching other screens
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#1D2340',
   },
   gameOverTitle: {
     fontFamily: Typography.fontFamily.extraBold,
@@ -1638,8 +1636,6 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: Spacing[3],
     marginBottom: Spacing[3],
-    borderWidth: 1.5,
-    borderColor: '#EFE5E0',
   },
   heroScoreLabel: {
     fontFamily: Typography.fontFamily.bold,
@@ -1663,8 +1659,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing[4],
     paddingVertical: Spacing[3],
     marginBottom: Spacing[3],
-    borderWidth: 1.5,
-    borderColor: '#FAD4C0',
     gap: 12,
   },
   bestFruitIconWrapper: {
@@ -1674,8 +1668,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#EFE5E0',
   },
   bestFruitMeta: {
     flex: 1,
@@ -1706,8 +1698,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAF6F0',
     borderRadius: Radius.md,
     padding: Spacing[2],
-    borderWidth: 1,
-    borderColor: '#EFE5E0',
     alignItems: 'center',
   },
   gridStatLabel: {
