@@ -1,6 +1,6 @@
 # Cognify — Complete Project Knowledge Graph
 > **For any LLM or developer joining this project.** Read this top to bottom once and you will have full context to make changes anywhere in the codebase.
-> Last updated: 2026-05-31
+> Last updated: 2026-06-07
 
 ---
 
@@ -1136,3 +1136,22 @@ Fires silently on startup once a real Firebase email login is established:
     - Includes property configurations for line color, slide directions (left, right, up, down), and arrowhead endpoints.
     - **Export/Import JSON**: Allows copying the designed level schema JSON to the clipboard or pasting external JSON strings to import boards.
     - **Test Play Sandbox**: Swaps edit tools to enter instant play-testing mode to play, collide, reset, and debug custom layouts in real-time.
+
+---
+
+## 23. CI/CD Pipeline & Automated Verification System
+
+### GitHub Actions CI/CD Pipeline
+*   **Path**: `.github/workflows/verify-pr.yml`
+*   **Execution Strategy**: Restructured into three parallel, isolated jobs to optimize validation speed and clean log feedback:
+    1.  `lint`: Scans files using ESLint (`npm run lint`) to maintain code styling rules and catch typos.
+    2.  `test`: Runs Jest unit tests (`npm run test`) to verify translation lookups and score calculation helper logic.
+    3.  `validate-build`: Executes integration checks: npx expo-doctor validation, translation compilation (`npm run strings`), staging sync checks, web exports (`npx expo export -p web`), and insights validations (`node scripts/verifyInsights.js`).
+*   **Caching Optimization**: Enabled global npm package caching (`cache: 'npm'`) under `actions/setup-node` in all parallel jobs, reducing dependencies installation overhead.
+*   **Concurrency Controls**: Added concurrency groups to automatically abort outdated workflow runs when new commits are pushed to the same pull request or branch.
+
+### Local Verification & Environment Setup
+*   **ESLint Configuration (`.eslintrc.json` & `.eslintignore`)**: Added `parserOptions` to instruct the parser not to load the project's root `babel.config.js` config file during lint runs, resolving parser crashes with the `babel-plugin-syntax-hermes-parser` dependency.
+*   **Babel configuration (`babel.config.js`)**: Configured correctly to rely on `babel-preset-expo@54.0.11` for parsing Flow's `as` type assertion casting syntax, avoiding duplicate parsing override conflicts.
+*   **Jest Test Harness (`jest-expo` & `jest` presets)**: Upgraded `jest-expo` to `54.0.17` to align with the core Expo SDK version and resolve UIManager initialization crashes in React Native mock frameworks.
+*   **Untracked Native Folders**: Explicitly untracked `ios/Podfile` and completely ignored generated native directories `ios/` and `android/` inside `.gitignore`. This keeps the remote repository clean and ensures the `expo-doctor` check does not throw native sync mismatches on clean CI agents.
