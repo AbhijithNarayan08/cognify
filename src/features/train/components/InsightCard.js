@@ -2,19 +2,25 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Brain, ThumbsUp, ThumbsDown, Check } from 'lucide-react-native';
-import { getInsightCopy } from '../games/patternFoldAnalytics';
 import { Typography, Spacing, Radius, Shadow } from '../../../theme';
+import { t } from '../../../constants/useStrings';
 
 export default function InsightCard({ patternId, Colors }) {
   const [feedback, setFeedback] = useState(null); // 'helpful' | 'unhelpful' | null
-  const insightText = getInsightCopy(patternId);
+  
+  const toCamelCase = (str) => {
+    return str.toLowerCase().replace(/_([a-z])/g, (m, g) => g.toUpperCase());
+  };
+  
+  const insightKey = `patternFold.insight.${toCamelCase(patternId)}`;
+  const insightText = t(insightKey);
 
   return (
     <View style={[styles.card, Shadow.sm, { backgroundColor: Colors.surface }]}>
       {/* Title */}
       <View style={styles.header}>
         <Brain size={20} color={Colors.domain.spatial.main} />
-        <Text style={[styles.title, { color: Colors.textSecondary }]}>cognitive pattern detected</Text>
+        <Text style={[styles.title, { color: Colors.textSecondary }]}>{t('patternFold.insight.title')}</Text>
       </View>
 
       {/* Insight Copy */}
@@ -25,7 +31,7 @@ export default function InsightCard({ patternId, Colors }) {
       <View style={styles.feedbackRow}>
         {feedback === null ? (
           <>
-            <Text style={[styles.feedbackPrompt, { color: Colors.textMuted }]}>Was this insight accurate?</Text>
+            <Text style={[styles.feedbackPrompt, { color: Colors.textMuted }]}>{t('patternFold.insight.feedbackPrompt')}</Text>
             <View style={styles.actions}>
               <TouchableOpacity
                 style={styles.feedbackBtn}
@@ -46,7 +52,7 @@ export default function InsightCard({ patternId, Colors }) {
         ) : (
           <View style={styles.confirmation}>
             <Check size={16} color="#3DC27A" />
-            <Text style={styles.confirmationText}>Thank you for your cognitive feedback!</Text>
+            <Text style={styles.confirmationText}>{t('patternFold.insight.feedbackConfirm')}</Text>
           </View>
         )}
       </View>

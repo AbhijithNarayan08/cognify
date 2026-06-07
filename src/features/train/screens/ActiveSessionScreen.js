@@ -66,10 +66,10 @@ function getZScore(p) {
 }
 
 
-const getDifficultyLabel = (level) => {
-  if (level <= 1) return 'Beginner';
-  if (level <= 3) return 'Intermediate';
-  return 'Advanced';
+const getDifficultyLabelKey = (level) => {
+  if (level <= 1) return 'train.activeSession.difficulty.beginner';
+  if (level <= 3) return 'train.activeSession.difficulty.intermediate';
+  return 'train.activeSession.difficulty.advanced';
 };
 
 function StreakBadgeWithAnimation({ multiplier, domainColor }) {
@@ -1247,12 +1247,12 @@ export function ActiveSessionScreen({ navigation, route }) {
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.tipTitle, { color: '#D89E00' }]}>💡 speed tip</Text>
+                <Text style={[styles.tipTitle, { color: '#D89E00' }]}>{t('train.activeSession.speedTipTitle')}</Text>
                 <Text style={[styles.tipBody, { color: Colors.textSecondary }]}>
-                  your score is based on speed — respond the moment you recognise the shape.
+                  {t('train.activeSession.speedTipBody')}
                 </Text>
                 <Text style={[styles.tipDismiss, { color: Colors.textTertiary }]}>
-                  tap to dismiss
+                  {t('train.activeSession.tapToDismiss')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -1266,12 +1266,12 @@ export function ActiveSessionScreen({ navigation, route }) {
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.tipTitle, { color: '#A662C6' }]}>💡 vigilance tip</Text>
+                <Text style={[styles.tipTitle, { color: '#A662C6' }]}>{t('train.activeSession.vigilanceTipTitle')}</Text>
                 <Text style={[styles.tipBody, { color: Colors.textSecondary }]}>
-                  tap as fast as you can when you see the Star, but stay calm and ignore all other shapes to avoid false alarm penalties.
+                  {t('train.activeSession.vigilanceTipBody')}
                 </Text>
                 <Text style={[styles.tipDismiss, { color: Colors.textTertiary }]}>
-                  tap to dismiss
+                  {t('train.activeSession.tapToDismiss')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -1282,12 +1282,12 @@ export function ActiveSessionScreen({ navigation, route }) {
             <View style={styles.metadataRow}>
               <View style={styles.metadataItem}>
                 <Clock size={14} color={Colors.textMuted} style={styles.metadataIcon} />
-                <Text style={styles.metadataText}>60s session</Text>
+                <Text style={styles.metadataText}>{t('train.activeSession.60sSession')}</Text>
               </View>
               <Text style={styles.metadataSeparator}>·</Text>
               <View style={styles.metadataItem}>
                 <BarChart2 size={14} color={Colors.textMuted} style={styles.metadataIcon} />
-                <Text style={styles.metadataText}>{getDifficultyLabel(currentLevel)}</Text>
+                <Text style={styles.metadataText}>{t(getDifficultyLabelKey(currentLevel))}</Text>
               </View>
             </View>
 
@@ -1434,25 +1434,23 @@ export function ActiveSessionScreen({ navigation, route }) {
                   {runningScore}
                 </Text>
                 <Text style={[styles.pausedSnapshotLabel, { color: Colors.textSecondary }]}>
-                  score
+                  {t('train.activeSession.score')}
                 </Text>
               </View>
-
               <View style={[styles.pausedSnapshotCard, { backgroundColor: Colors.surfaceAlt }]}>
                 <Text style={[styles.pausedSnapshotValue, { color: Colors.textPrimary }]}>
                   {roundsCompleted}
                 </Text>
                 <Text style={[styles.pausedSnapshotLabel, { color: Colors.textSecondary }]}>
-                  rounds
+                  {t('train.activeSession.rounds')}
                 </Text>
               </View>
-
               <View style={[styles.pausedSnapshotCard, { backgroundColor: Colors.surfaceAlt }]}>
                 <Text style={[styles.pausedSnapshotValue, { color: Colors.textPrimary }]}>
                   {streakCount === 0 ? '—' : `${streakCount}`}
                 </Text>
                 <Text style={[styles.pausedSnapshotLabel, { color: Colors.textSecondary }]}>
-                  streak
+                  {t('train.activeSession.streak')}
                 </Text>
               </View>
             </View>
@@ -1467,7 +1465,7 @@ export function ActiveSessionScreen({ navigation, route }) {
               </Text>
             ) : (
               <Text style={[styles.pauseCountLabel, { color: '#FFC000', fontFamily: Typography.fontFamily.semiBold }]}>
-                last pause — pausing again won't work
+                {t('train.activesession.lastPause')}
               </Text>
             )}
 
@@ -1582,7 +1580,6 @@ const getStyles = (Colors) => StyleSheet.create({
   domainPillText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.label,
-    textTransform: 'lowercase',
   },
   exerciseName: {
     fontFamily: Typography.fontFamily.bold,
@@ -1625,7 +1622,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontSize: Typography.size.body,
     color: Colors.textSecondary,
     flex: 1,
-    textTransform: 'lowercase',
   },
   bottomZone: {
     width: '100%',
@@ -1650,7 +1646,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
     color: Colors.textSecondary,
-    textTransform: 'lowercase',
   },
   metadataSeparator: {
     fontFamily: Typography.fontFamily.bold,
@@ -1689,7 +1684,7 @@ const getStyles = (Colors) => StyleSheet.create({
   // Playing Phase
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing[6], paddingVertical: Spacing[4] },
   domainChip: { borderRadius: Radius.sm, paddingHorizontal: Spacing[3], paddingVertical: Spacing[1] },
-  domainChipText: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.caption, textTransform: 'lowercase' },
+  domainChipText: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.caption },
   scoreContainer: { alignItems: 'flex-end', gap: 2 },
   playArea: { flex: 1, width: '100%' },
   pauseTrigger: {
@@ -1747,19 +1742,16 @@ const getStyles = (Colors) => StyleSheet.create({
   tipTitle: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.body,
-    textTransform: 'lowercase',
   },
   tipBody: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.body,
     lineHeight: 20,
-    textTransform: 'lowercase',
   },
   tipDismiss: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.caption,
     textAlign: 'right',
-    textTransform: 'lowercase',
     marginTop: Spacing[1],
   },
   leftHeaderZone: {
@@ -1830,7 +1822,6 @@ const getStyles = (Colors) => StyleSheet.create({
   pausedGameTitle: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.h3,
-    textTransform: 'lowercase',
     textAlign: 'center',
   },
   pausedMiddleZone: {
@@ -1843,7 +1834,6 @@ const getStyles = (Colors) => StyleSheet.create({
   pausedTitleMain: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.display,
-    textTransform: 'lowercase',
     textAlign: 'center',
   },
   pausedSnapshotGrid: {
@@ -1868,7 +1858,6 @@ const getStyles = (Colors) => StyleSheet.create({
   pausedSnapshotLabel: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
     marginTop: 2,
   },
   pausedBottomZone: {
@@ -1879,7 +1868,6 @@ const getStyles = (Colors) => StyleSheet.create({
   pauseCountLabel: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
     marginBottom: Spacing[1],
   },
   pausedResumeBtn: {
@@ -1894,7 +1882,6 @@ const getStyles = (Colors) => StyleSheet.create({
   pausedResumeText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.body,
-    textTransform: 'lowercase',
   },
   pausedExitBtn: {
     paddingVertical: Spacing[2],
@@ -1904,6 +1891,5 @@ const getStyles = (Colors) => StyleSheet.create({
   pausedExitText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.body,
-    textTransform: 'lowercase',
   },
 });

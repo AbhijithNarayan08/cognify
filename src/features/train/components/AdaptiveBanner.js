@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { TrendingUp, TrendingDown } from 'lucide-react-native';
 import { Typography, Spacing, Radius, Shadow } from '../../../theme';
+import { t } from '../../../constants/useStrings';
 
 export default function AdaptiveBanner({ suggestion, onAccept, onDismiss, Colors }) {
   if (!suggestion) return null;
@@ -20,9 +21,13 @@ export default function AdaptiveBanner({ suggestion, onAccept, onDismiss, Colors
         </View>
         <View style={styles.textContainer}>
           <Text style={styles.bannerTitle}>
-            {isUp ? 'difficulty level up!' : 'difficulty adjustment'}
+            {isUp ? t('patternFold.adaptive.levelUp') : t('patternFold.adaptive.adjustment')}
           </Text>
-          <Text style={styles.bannerReason}>{suggestion.reason}</Text>
+          <Text style={styles.bannerReason}>
+            {suggestion.direction === 'UP'
+              ? t('patternFold.recommendation.upReason')
+              : t('patternFold.recommendation.downReason')}
+          </Text>
         </View>
       </View>
 
@@ -32,7 +37,7 @@ export default function AdaptiveBanner({ suggestion, onAccept, onDismiss, Colors
           onPress={onDismiss}
           activeOpacity={0.8}
         >
-          <Text style={[styles.btnText, styles.secondaryBtnText]}>Not Yet</Text>
+          <Text style={[styles.btnText, styles.secondaryBtnText]}>{t('patternFold.adaptive.notYet')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -40,7 +45,7 @@ export default function AdaptiveBanner({ suggestion, onAccept, onDismiss, Colors
           onPress={onAccept}
           activeOpacity={0.85}
         >
-          <Text style={[styles.btnText, styles.primaryBtnText]}>Let's Go</Text>
+          <Text style={[styles.btnText, styles.primaryBtnText]}>{t('patternFold.adaptive.letsGo')}</Text>
         </TouchableOpacity>
       </View>
     </View>

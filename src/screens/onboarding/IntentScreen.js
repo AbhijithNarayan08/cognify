@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Animated, Dimensions, StatusBar, ScrollView } f
 import * as Haptics from 'expo-haptics';
 import { ArrowRight } from 'lucide-react-native';
 import { useThemeColors, Typography, Spacing, Radius, Shadow } from '../../theme';
+import { t } from '../../constants/useStrings';
 import { TouchableScale, FadeInUp } from '../../components/Motion';
 import {
   DynamicLighthouse,
@@ -33,92 +34,92 @@ export default function IntentScreen({ route, navigation }) {
     switch (taskIndex) {
       case 0:
         return {
-          title: 'lighthouse watch',
-          subhead: 'sustained attention',
+          title: t('exercise.lighthouse-watch.name'),
+          subhead: t('onboarding.intent.subhead.attention'),
           color: Colors.domain?.attention?.main || '#3DAB7F',
           cardBg: '#1D2340',
           Mascot: DynamicLighthouse,
-          briefTitle: 'what your brain is doing',
-          briefText: "you're sharpening your visual radar, training your brain to lock onto high-value targets while muting the background noise of distractions.",
+          briefTitle: t('onboarding.intent.briefTitle'),
+          briefText: t('onboarding.intent.lighthouse-watch.briefText'),
           bullets: [
-            { bold: 'target: ', text: 'tap ONLY when you see the glowing green star.' },
-            { bold: 'focus: ', text: 'avoid clicking shapes of other colors.' },
-            { bold: 'calibration: ', text: 'accuracy and speed combine to build your focus score.' }
+            { bold: t('onboarding.intent.lighthouse-watch.bullet.1.bold'), text: t('onboarding.intent.lighthouse-watch.bullet.1.text') },
+            { bold: t('onboarding.intent.lighthouse-watch.bullet.2.bold'), text: t('onboarding.intent.lighthouse-watch.bullet.2.text') },
+            { bold: t('onboarding.intent.lighthouse-watch.bullet.3.bold'), text: t('onboarding.intent.lighthouse-watch.bullet.3.text') }
           ]
         };
       case 1:
         return {
-          title: 'signal chain',
-          subhead: 'working memory',
+          title: t('exercise.signal-chain.name'),
+          subhead: t('onboarding.intent.subhead.memory'),
           color: Colors.domain?.memory?.main || '#0073E6',
           cardBg: '#0F1A30',
           Mascot: DynamicChainLink,
-          briefTitle: 'what your brain is doing',
-          briefText: "you're stretching your short-term recall capacity, linking spatial nodes in sequential order to build a stronger mental scratchpad.",
+          briefTitle: t('onboarding.intent.briefTitle'),
+          briefText: t('onboarding.intent.signal-chain.briefText'),
           bullets: [
-            { bold: 'pattern: ', text: 'watch carefully as the nodes pulse in a specific sequence.' },
-            { bold: 'recall: ', text: 'tap the nodes in the exact same sequence you just saw.' },
-            { bold: 'challenge: ', text: 'the sequence grows longer with each successful round.' }
+            { bold: t('onboarding.intent.signal-chain.bullet.1.bold'), text: t('onboarding.intent.signal-chain.bullet.1.text') },
+            { bold: t('onboarding.intent.signal-chain.bullet.2.bold'), text: t('onboarding.intent.signal-chain.bullet.2.text') },
+            { bold: t('onboarding.intent.signal-chain.bullet.3.bold'), text: t('onboarding.intent.signal-chain.bullet.3.text') }
           ]
         };
       case 2:
         return {
-          title: 'flash sort',
-          subhead: 'processing speed',
+          title: t('exercise.flash-sort.name'),
+          subhead: t('onboarding.intent.subhead.speed'),
           color: Colors.domain?.speed?.main || '#FFC000',
           cardBg: '#2A2005',
           Mascot: DynamicFlash,
-          briefTitle: 'what your brain is doing',
-          briefText: "you're accelerating your visual-motor processing speed, training your brain to make lightning-fast sorting decisions under pressure.",
+          briefTitle: t('onboarding.intent.briefTitle'),
+          briefText: t('onboarding.intent.flash-sort.briefText'),
           bullets: [
-            { bold: 'sort: ', text: 'tap left for circles and right for squares as they appear.' },
-            { bold: 'speed: ', text: 'react as fast as possible to maximize your speed bonus.' },
-            { bold: 'distraction: ', text: 'ignore changing colors and background stripes.' }
+            { bold: t('onboarding.intent.flash-sort.bullet.1.bold'), text: t('onboarding.intent.flash-sort.bullet.1.text') },
+            { bold: t('onboarding.intent.flash-sort.bullet.2.bold'), text: t('onboarding.intent.flash-sort.bullet.2.text') },
+            { bold: t('onboarding.intent.flash-sort.bullet.3.bold'), text: t('onboarding.intent.flash-sort.bullet.3.text') }
           ]
         };
       case 3:
         return {
-          title: 'context switch',
-          subhead: 'executive function',
+          title: t('exercise.context-switch.name'),
+          subhead: t('onboarding.intent.subhead.executive'),
           color: Colors.domain?.executive?.main || '#A662C6',
           cardBg: '#21102B',
           Mascot: DynamicBrain,
-          briefTitle: 'what your brain is doing',
-          briefText: "you're conditioning your cognitive flexibility, training your brain to switch rapidly and smoothly between different classification rules.",
+          briefTitle: t('onboarding.intent.briefTitle'),
+          briefText: t('onboarding.intent.context-switch.briefText'),
           bullets: [
-            { bold: 'rule 1: ', text: 'when the border is blue, classify the central shape.' },
-            { bold: 'rule 2: ', text: 'when the border is red, classify the shape\'s fill color.' },
-            { bold: 'agility: ', text: 'adapt quickly as the borders change to minimize switch cost.' }
+            { bold: t('onboarding.intent.context-switch.bullet.1.bold'), text: t('onboarding.intent.context-switch.bullet.1.text') },
+            { bold: t('onboarding.intent.context-switch.bullet.2.bold'), text: t('onboarding.intent.context-switch.bullet.2.text') },
+            { bold: t('onboarding.intent.context-switch.bullet.3.bold'), text: t('onboarding.intent.context-switch.bullet.3.text') }
           ]
         };
       case 4:
         return {
-          title: 'word weave',
-          subhead: 'verbal reasoning',
+          title: t('exercise.word-weave.name'),
+          subhead: t('onboarding.intent.subhead.verbal'),
           color: Colors.domain?.verbal?.main || '#FF7A00',
           cardBg: '#2E1300',
           Mascot: DynamicWordWeave,
-          briefTitle: 'what your brain is doing',
-          briefText: "you're sharpening your semantic mapping and lexical retrieval, identifying relational patterns between pairs of words.",
+          briefTitle: t('onboarding.intent.briefTitle'),
+          briefText: t('onboarding.intent.word-weave.briefText'),
           bullets: [
-            { bold: 'analogy: ', text: 'identify the relationship between the first pair of words.' },
-            { bold: 'solve: ', text: 'select the word that completes the second pair in the same way.' },
-            { bold: 'vocabulary: ', text: 'think logically to build your verbal reasoning score.' }
+            { bold: t('onboarding.intent.word-weave.bullet.1.bold'), text: t('onboarding.intent.word-weave.bullet.1.text') },
+            { bold: t('onboarding.intent.word-weave.bullet.2.bold'), text: t('onboarding.intent.word-weave.bullet.2.text') },
+            { bold: t('onboarding.intent.word-weave.bullet.3.bold'), text: t('onboarding.intent.word-weave.bullet.3.text') }
           ]
         };
       case 5:
         return {
-          title: 'pattern fold',
-          subhead: 'spatial cognition',
+          title: t('exercise.pattern-fold.name'),
+          subhead: t('onboarding.intent.subhead.spatial'),
           color: Colors.domain?.spatial?.main || '#FF7DB4',
           cardBg: '#2E0F1E',
           Mascot: DynamicSun,
-          briefTitle: 'what your brain is doing',
-          briefText: "you're training your mental rotation and spatial projection, visualizing how 2D nets fold into 3D objects from different perspectives.",
+          briefTitle: t('onboarding.intent.briefTitle'),
+          briefText: t('onboarding.intent.pattern-fold.briefText'),
           bullets: [
-            { bold: 'visualize: ', text: 'look at the target block grid pattern on the left.' },
-            { bold: 'rotate: ', text: 'mentally rotate the pattern to identify the matching choice.' },
-            { bold: 'chirality: ', text: 'watch out for tricky flipped mirror distractors.' }
+            { bold: t('onboarding.intent.pattern-fold.bullet.1.bold'), text: t('onboarding.intent.pattern-fold.bullet.1.text') },
+            { bold: t('onboarding.intent.pattern-fold.bullet.2.bold'), text: t('onboarding.intent.pattern-fold.bullet.2.text') },
+            { bold: t('onboarding.intent.pattern-fold.bullet.3.bold'), text: t('onboarding.intent.pattern-fold.bullet.3.text') }
           ]
         };
       default:
@@ -177,15 +178,15 @@ export default function IntentScreen({ route, navigation }) {
 
         {/* Action zone */}
         <FadeInUp delay={700} distance={20} style={styles.actionZone}>
-          <Text style={styles.timeNote}>~30 seconds per session</Text>
+          <Text style={styles.timeNote}>{t('onboarding.intent.timeNote')}</Text>
           
           <TouchableScale style={[styles.playButton, { backgroundColor: taskDetails.color }]} onPress={handlePlay}>
-            <Text style={styles.playButtonText}>start training</Text>
+            <Text style={styles.playButtonText}>{t('onboarding.intent.start')}</Text>
             <ArrowRight size={18} color={Colors.textInverse} style={{ marginLeft: 6 }} />
           </TouchableScale>
 
           <TouchableScale style={styles.skipButton} onPress={handleSkip}>
-            <Text style={styles.skipText}>skip for now</Text>
+            <Text style={styles.skipText}>{t('onboarding.intent.skip')}</Text>
           </TouchableScale>
         </FadeInUp>
       </ScrollViewContainer>
@@ -219,13 +220,11 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.h1,
     color: Colors.textPrimary,
-    textTransform: 'lowercase',
     lineHeight: 36,
   },
   subhead: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
     marginTop: 2,
     letterSpacing: 0.5,
   },
@@ -247,14 +246,12 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.label,
     color: Colors.textPrimary,
-    textTransform: 'lowercase',
   },
   briefText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.body,
     color: Colors.textSecondary,
     lineHeight: 24,
-    textTransform: 'lowercase',
   },
   bulletsList: {
     gap: Spacing[3],
@@ -276,7 +273,6 @@ const getStyles = (Colors) => StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 22,
     flex: 1,
-    textTransform: 'lowercase',
   },
   bulletBold: {
     fontFamily: Typography.fontFamily.bold,
@@ -291,7 +287,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.caption,
     color: Colors.textMuted,
-    textTransform: 'lowercase',
   },
   playButton: {
     borderRadius: Radius.full,
@@ -305,7 +300,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.body,
     color: Colors.textInverse,
-    textTransform: 'lowercase',
   },
   skipButton: {
     paddingVertical: Spacing[2],
@@ -314,6 +308,5 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.body,
     color: Colors.textMuted,
-    textTransform: 'lowercase',
   },
 });

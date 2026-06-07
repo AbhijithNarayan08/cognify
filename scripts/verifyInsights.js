@@ -99,12 +99,31 @@ console.log(`  Reason: ${worstDomain[1] < 0 ? `dipped ${Math.abs(worstDomain[1])
 
 // Overall data quality checks
 console.log(`\n=== DATA QUALITY CHECKS ===`);
-console.log(`✅ Data points >= 14: ${scoreHistory.length >= 14}`);
-console.log(`✅ All items have domains: ${scoreHistory.every(h => h.domains && h.domains.memory)}`);
-console.log(`✅ All items have sleep: ${scoreHistory.every(h => h.sleep !== undefined)}`);
-console.log(`✅ All items have trained: ${scoreHistory.every(h => h.trained !== undefined)}`);
-console.log(`✅ Score delta is non-zero: ${delta !== 0}`);
-console.log(`✅ Sleep correlation gap > 20: ${(avgHighSleep - avgLowSleep) > 20}`);
-console.log(`✅ Domain improvements differ: ${new Set(Object.values(domainImprovement)).size > 1}`);
-console.log(`✅ Training days in week2 >= 3: ${week2Data.filter(h => h.trained).length >= 3}`);
-console.log(`\n=== ALL CHECKS PASSED ===\n`);
+
+const checks = [
+  { name: 'Data points >= 14', pass: scoreHistory.length >= 14 },
+  { name: 'All items have domains', pass: scoreHistory.every(h => h.domains && h.domains.memory) },
+  { name: 'All items have sleep', pass: scoreHistory.every(h => h.sleep !== undefined) },
+  { name: 'All items have trained', pass: scoreHistory.every(h => h.trained !== undefined) },
+  { name: 'Score delta is non-zero', pass: delta !== 0 },
+  { name: 'Sleep correlation gap > 20', pass: (avgHighSleep - avgLowSleep) > 20 },
+  { name: 'Domain improvements differ', pass: new Set(Object.values(domainImprovement)).size > 1 },
+  { name: 'Training days in week2 >= 3', pass: week2Data.filter(h => h.trained).length >= 3 },
+];
+
+let hasFailure = false;
+checks.forEach((check) => {
+  if (check.pass) {
+    console.log(`✅ ${check.name}: passed`);
+  } else {
+    console.log(`❌ ${check.name}: FAILED`);
+    hasFailure = true;
+  }
+});
+
+if (hasFailure) {
+  console.error('\n❌ VERIFICATION FAILED: One or more data quality checks failed.\n');
+  process.exit(1);
+} else {
+  console.log(`\n=== ALL CHECKS PASSED ===\n`);
+}

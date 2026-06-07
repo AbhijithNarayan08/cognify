@@ -11,6 +11,7 @@ import FlashSortFeedback from './FlashSortFeedback';
 import { Spacing, Typography } from '../../../../theme';
 import { FLASH_SORT } from '../../../../constants/gameConfig';
 import { GameHaptics } from '../../../../utils/haptics';
+import { t } from '../../../../constants/useStrings';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -342,7 +343,7 @@ export default function FlashSort({ level, isActive, onRoundComplete, Colors, mu
             <Svg width={18} height={18} viewBox="0 0 18 18">
               <Circle cx={9} cy={9} r={8} fill={hintColor} opacity={0.9} />
             </Svg>
-            <Text style={[styles.hintLabel, { color: hintColor }]}>circle</Text>
+            <Text style={[styles.hintLabel, { color: hintColor }]}>{t('train.flashSort.circle')}</Text>
           </View>
         </Animated.View>
 
@@ -353,7 +354,7 @@ export default function FlashSort({ level, isActive, onRoundComplete, Colors, mu
         <Animated.View style={[styles.zonePanel, styles.zonePanelRight, { backgroundColor: rightZoneTint }]}>
           {/* Square hint anchored to bottom-right */}
           <View style={styles.hintBottomRight}>
-            <Text style={[styles.hintLabel, { color: hintColor }]}>square</Text>
+            <Text style={[styles.hintLabel, { color: hintColor }]}>{t('train.flashSort.square')}</Text>
             <Svg width={18} height={18} viewBox="0 0 18 18">
               <Rect x={1} y={1} width={16} height={16} rx={3} ry={3} fill={hintColor} opacity={0.9} />
             </Svg>
@@ -364,11 +365,11 @@ export default function FlashSort({ level, isActive, onRoundComplete, Colors, mu
       {/* Top zone: round counter + streak — sits above split panels */}
       <View style={styles.topZone} pointerEvents="none">
         <Text style={[styles.roundText, { color: Colors.textSecondary }]}>
-          round {roundData.length + 1}
+          {t('train.flashSort.round', { count: roundData.length + 1 })}
         </Text>
         {streakCount > 0 && (
           <Text style={[styles.streakText, { color: '#FFC000' }]}>
-            {streakCount} correct in a row
+            {t('train.flashSort.correctStreak', { count: streakCount })}
           </Text>
         )}
       </View>
@@ -380,7 +381,9 @@ export default function FlashSort({ level, isActive, onRoundComplete, Colors, mu
             styles.levelChangeText,
             levelChange === 'up' ? { color: '#3DC27A' } : { color: Colors.textTertiary }
           ]}>
-            {level === 5 && levelChange === 'up' ? '▲ hard mode' : (levelChange === 'up' ? '▲ distractors increasing.' : 'adjusting difficulty')}
+            {level === 5 && levelChange === 'up' 
+              ? t('train.flashSort.hardMode') 
+              : (levelChange === 'up' ? t('train.flashSort.distractorsIncreasing') : t('train.flashSort.adjustingDifficulty'))}
           </Text>
         </View>
       )}
@@ -426,7 +429,7 @@ export default function FlashSort({ level, isActive, onRoundComplete, Colors, mu
           {lastReactionTime !== null && (roundPhase === 'feedback' || roundPhase === 'isi') && (
             <Animated.View style={[styles.ghostContainer, { opacity: ghostOpacity }]}>
               <Text style={[styles.ghostText, { color: Colors.textTertiary }]}>
-                {lastReactionTime}ms
+                {t('train.flashSort.reactionTime', { rt: lastReactionTime })}
               </Text>
             </Animated.View>
           )}
@@ -486,7 +489,6 @@ const styles = StyleSheet.create({
   hintLabel: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
   },
 
   // Stimulus layer floats above the split panels
@@ -508,12 +510,10 @@ const styles = StyleSheet.create({
   roundText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
   },
   streakText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
     marginTop: 4,
   },
 
@@ -527,7 +527,6 @@ const styles = StyleSheet.create({
   ghostText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
   },
 
   // Level change notification
@@ -542,7 +541,6 @@ const styles = StyleSheet.create({
   levelChangeText: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
     textAlign: 'center',
   },
 

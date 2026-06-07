@@ -27,16 +27,16 @@ export default function NotificationOptInScreen({ navigation, route }) {
   const handleEnable = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
-      "enable reminders",
-      "would you like to allow Cognify to send you daily notifications to keep your streak active?",
+      t('onboarding.notifications.alert.title'),
+      t('onboarding.notifications.alert.body'),
       [
         {
-          text: "skip for now",
+          text: t('onboarding.notifications.skip'),
           onPress: handleComplete,
           style: "cancel"
         },
         {
-          text: "allow",
+          text: t('onboarding.notifications.alert.allow'),
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             handleComplete();
@@ -60,20 +60,20 @@ export default function NotificationOptInScreen({ navigation, route }) {
       {/* Content Area */}
       <View style={styles.content}>
         <FadeInUp delay={400} distance={20}>
-          <Text style={styles.headline}>protect your training streak.</Text>
+          <Text style={styles.headline}>{t('onboarding.notifications.headline')}</Text>
           <Text style={styles.body}>
-            we'll send one quiet, daily nudge to keep your cognitive habits on track. no spam, ever.
+            {t('onboarding.notifications.body')}
           </Text>
         </FadeInUp>
 
         {/* Action Buttons */}
         <FadeInUp delay={600} distance={20} style={styles.actions}>
           <TouchableScale style={styles.primaryButton} onPress={handleEnable}>
-            <Text style={styles.primaryText}>enable reminders</Text>
+            <Text style={styles.primaryText}>{t('onboarding.notifications.enable')}</Text>
           </TouchableScale>
 
           <TouchableScale style={styles.secondaryButton} onPress={handleComplete}>
-            <Text style={styles.secondaryText}>skip for now</Text>
+            <Text style={styles.secondaryText}>{t('onboarding.notifications.skip')}</Text>
           </TouchableScale>
         </FadeInUp>
       </View>
@@ -105,7 +105,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.h1,
     color: '#FFFFFF',
-    textTransform: 'lowercase',
     textAlign: 'center',
     marginBottom: Spacing[3],
     lineHeight: 38,
@@ -134,7 +133,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.body,
     color: '#FFFFFF',
-    textTransform: 'lowercase',
   },
   secondaryButton: {
     backgroundColor: 'transparent',
@@ -146,6 +144,5 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.body,
     color: '#8899AA',
-    textTransform: 'lowercase',
   },
 });

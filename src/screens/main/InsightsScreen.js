@@ -563,7 +563,7 @@ function WeeklyBriefBarChart({ week2Data, Colors }) {
                 fill={isTrained ? Colors.textPrimary : Colors.textMuted}
                 textAnchor="middle"
               >
-                {['m', 't', 'w', 't', 'f', 's', 's'][i]}
+                {['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}
               </SvgText>
             </G>
           );
@@ -679,7 +679,6 @@ function SleepCorrelationChart({ avgHighSleep, avgLowSleep, Colors }) {
           fontFamily: Typography.fontFamily.bold,
           color: Colors.textSecondary,
           textAlign: 'center',
-          textTransform: 'lowercase',
         }}>
           {t('insights.sleep.high')}
         </Text>
@@ -711,7 +710,6 @@ function SleepCorrelationChart({ avgHighSleep, avgLowSleep, Colors }) {
           fontFamily: Typography.fontFamily.bold,
           color: Colors.textSecondary,
           textAlign: 'center',
-          textTransform: 'lowercase',
         }}>
           {t('insights.sleep.low')}
         </Text>
@@ -775,47 +773,49 @@ function CorrelationPlayground({ history, correlations, calibrationComplete, Col
   const [selectedDomain, setSelectedDomain] = useState('memory');
 
   const habitOptions = [
-    { id: 'sleep', label: 'Sleep' },
-    { id: 'mood', label: 'Mood' },
-    { id: 'activity', label: 'Activity' },
+    { id: 'sleep', labelKey: 'insights.habit.sleep' },
+    { id: 'mood', labelKey: 'insights.habit.mood' },
+    { id: 'activity', labelKey: 'insights.habit.activity' },
   ];
 
   const domainObj = DOMAINS.find(d => d.id === selectedDomain) || DOMAINS[0];
+  const domainLabel = domainObj.label;
+  const habitLabel = t(`insights.habit.${selectedHabit}`);
 
-  // Resolve active Pearson correlation value
+  // Resolve Pearson correlation coefficient
   const r = correlations[selectedHabit]?.[selectedDomain] || 0;
 
   // Resolve correlation strength tier & plain-language translations
-  let tierLabel = 'Resilient';
+  let tierLabel = t('insights.playground.tier.resilient');
   let tierColor = '#8E8A86'; // neutral grey
-  let tierDescription = 'Stable Baseline';
-  let headline = `${domainObj.label} is highly resilient to ${selectedHabit}`;
-  let coachMessage = `Your ${domainObj.label} scores are highly stable and resilient regardless of changes in your logged ${selectedHabit}. This indicates a strong, consistent baseline. Continue tracking to watch long-term trends!`;
+  let tierDescription = t('insights.playground.desc.resilient');
+  let headline = t('insights.playground.headline.resilient', { domain: domainLabel, habit: habitLabel });
+  let coachMessage = t('insights.playground.coach.resilient', { domain: domainLabel, habit: habitLabel });
 
   if (r >= 0.6) {
-    tierLabel = 'Strong Positive';
+    tierLabel = t('insights.playground.tier.strongPositive');
     tierColor = Colors.positive || '#3DC27A';
-    tierDescription = 'Superpower Relationship';
-    headline = `${habitOptions.find(h => h.id === selectedHabit).label} heavily elevates your ${domainObj.label}`;
-    coachMessage = `Your data indicates a strong positive correlation between ${selectedHabit} and ${domainObj.label}. On days you log better ${selectedHabit}, your performance in the ${domainObj.label} domain scales up immediately. Keep this habit optimized!`;
+    tierDescription = t('insights.playground.desc.superpower');
+    headline = t('insights.playground.headline.strongPositive', { domain: domainLabel, habit: habitLabel });
+    coachMessage = t('insights.playground.coach.strongPositive', { domain: domainLabel, habit: habitLabel });
   } else if (r >= 0.3) {
-    tierLabel = 'Moderate Positive';
+    tierLabel = t('insights.playground.tier.moderatePositive');
     tierColor = '#FF9900';
-    tierDescription = 'Booster Relationship';
-    headline = `${habitOptions.find(h => h.id === selectedHabit).label} moderately boosts your ${domainObj.label}`;
-    coachMessage = `Better ${selectedHabit} results in a moderate boost to your ${domainObj.label} score. Improving this lifestyle habit will give you a clear cognitive edge in your sessions!`;
+    tierDescription = t('insights.playground.desc.booster');
+    headline = t('insights.playground.headline.moderatePositive', { domain: domainLabel, habit: habitLabel });
+    coachMessage = t('insights.playground.coach.moderatePositive', { domain: domainLabel, habit: habitLabel });
   } else if (r <= -0.6) {
-    tierLabel = 'Strong Negative';
+    tierLabel = t('insights.playground.tier.strongNegative');
     tierColor = Colors.coral || '#FF7DB4';
-    tierDescription = 'Disruptor Relationship';
-    headline = `Poor ${selectedHabit} heavily impacts your ${domainObj.label}`;
-    coachMessage = `There is a significant negative correlation here. Lack of quality ${selectedHabit} heavily penalizes your ${domainObj.label} performance. Make sure to prioritize rest and recovery!`;
+    tierDescription = t('insights.playground.desc.disruptor');
+    headline = t('insights.playground.headline.strongNegative', { domain: domainLabel, habit: habitLabel });
+    coachMessage = t('insights.playground.coach.strongNegative', { domain: domainLabel, habit: habitLabel });
   } else if (r <= -0.3) {
-    tierLabel = 'Moderate Negative';
+    tierLabel = t('insights.playground.tier.moderateNegative');
     tierColor = '#D84315';
-    tierDescription = 'Disruptor Relationship';
-    headline = `${habitOptions.find(h => h.id === selectedHabit).label} fatigue moderately dips your ${domainObj.label}`;
-    coachMessage = `Your data shows a moderate decline in ${domainObj.label} on days with poor ${selectedHabit}. Try setting a reminder to check in and manage your lifestyle habits!`;
+    tierDescription = t('insights.playground.desc.disruptor');
+    headline = t('insights.playground.headline.moderateNegative', { domain: domainLabel, habit: habitLabel });
+    coachMessage = t('insights.playground.coach.moderateNegative', { domain: domainLabel, habit: habitLabel });
   }
 
   // Extraction of data arrays
@@ -842,11 +842,11 @@ function CorrelationPlayground({ history, correlations, calibrationComplete, Col
     <View style={styles.playgroundContainer}>
       {/* Selector Card */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Habit Explorer</Text>
-        <Text style={styles.cardSub}>Pair lifestyle habits with cognitive domains to explore trends</Text>
+        <Text style={styles.cardTitle}>{t('insights.habitExplorer.title')}</Text>
+        <Text style={styles.cardSub}>{t('insights.habitExplorer.sub')}</Text>
 
         {/* Habit Selector */}
-        <Text style={styles.playgroundSectionLabel}>Choose Habit</Text>
+        <Text style={styles.playgroundSectionLabel}>{t('insights.habitExplorer.chooseHabit')}</Text>
         <View style={styles.playgroundPillRow}>
           {habitOptions.map(h => (
             <TouchableOpacity
@@ -863,14 +863,14 @@ function CorrelationPlayground({ history, correlations, calibrationComplete, Col
                   selectedHabit === h.id && { color: '#E65100', fontFamily: Typography.fontFamily.bold }
                 ]}
               >
-                {h.label}
+                {t(h.labelKey)}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Cognitive Domain Selector */}
-        <Text style={styles.playgroundSectionLabel}>Choose Domain</Text>
+        <Text style={styles.playgroundSectionLabel}>{t('insights.habitExplorer.chooseDomain')}</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -969,8 +969,8 @@ function CorrelationPlayground({ history, correlations, calibrationComplete, Col
           
           {/* Timeline X-labels */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: paddingX, marginTop: 4 }}>
-            <Text style={{ fontFamily: Typography.fontFamily.regular, fontSize: 9, color: Colors.textMuted }}>30d ago</Text>
-            <Text style={{ fontFamily: Typography.fontFamily.regular, fontSize: 9, color: Colors.textMuted }}>today</Text>
+            <Text style={{ fontFamily: Typography.fontFamily.regular, fontSize: 9, color: Colors.textMuted }}>{t('insights.time.30d')}</Text>
+            <Text style={{ fontFamily: Typography.fontFamily.regular, fontSize: 9, color: Colors.textMuted }}>{t('insights.time.today')}</Text>
           </View>
         </View>
 
@@ -978,18 +978,18 @@ function CorrelationPlayground({ history, correlations, calibrationComplete, Col
         <View style={styles.playgroundLegend}>
           <View style={styles.playgroundLegendItem}>
             <View style={[styles.playgroundDot, { backgroundColor: domainObj.color.main }]} />
-            <Text style={styles.playgroundLegendText}>{domainObj.label} score</Text>
+            <Text style={styles.playgroundLegendText}>{t('insights.playground.legend.domainScore', { domain: domainObj.label })}</Text>
           </View>
           <View style={styles.playgroundLegendItem}>
             <View style={[styles.playgroundDot, { backgroundColor: '#FFB300' }]} />
-            <Text style={styles.playgroundLegendText}>{habitOptions.find(h => h.id === selectedHabit).label} rating</Text>
+            <Text style={styles.playgroundLegendText}>{t('insights.playground.legend.habitRating', { habit: t(habitOptions.find(h => h.id === selectedHabit).labelKey) })}</Text>
           </View>
         </View>
       </View>
 
       {/* Dynamic Cream Coach's Analysis Card */}
       <View style={styles.coachCard}>
-        <Text style={styles.coachCardTitle}>Coach's Analysis</Text>
+        <Text style={styles.coachCardTitle}>{t('insights.coachAnalysis')}</Text>
         <Text style={styles.coachCardBody}>{coachMessage}</Text>
       </View>
     </View>
@@ -1118,7 +1118,7 @@ export default function InsightsScreen({ navigation, route }) {
     // Week Range formatting
     const formatDate = (dateStr) => {
       const d = new Date(dateStr + 'T00:00:00');
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toLowerCase();
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
     const startDate = week2Data[0]?.date || new Date().toISOString().split('T')[0];
     const endDate = week2Data[week2Data.length - 1]?.date || new Date().toISOString().split('T')[0];
@@ -1189,7 +1189,7 @@ export default function InsightsScreen({ navigation, route }) {
             const isTabActive = activeTab === (tab === 'weekly brief' ? 'brief' : tab);
             let tabLabel = t('insights.overview');
             if (tab === 'weekly brief') tabLabel = t('home.weeklyBrief');
-            if (tab === 'playground') tabLabel = "Playground";
+            if (tab === 'playground') tabLabel = t('insights.playground');
 
             return (
               <TouchableOpacity
@@ -1288,7 +1288,6 @@ export default function InsightsScreen({ navigation, route }) {
                   color: Colors.textMuted,
                   textAlign: 'center',
                   marginTop: Spacing[4],
-                  textTransform: 'lowercase',
                 }}>
                   {t('insights.sixCognitiveDomains')}
                 </Text>
@@ -1312,7 +1311,6 @@ export default function InsightsScreen({ navigation, route }) {
                         fontFamily: Typography.fontFamily.medium,
                         fontSize: 11,
                         color: Colors.textSecondary,
-                        textTransform: 'lowercase',
                       }}>
                         {domain.label} · {activeDomainScores[domain.id]}
                       </Text>
@@ -1387,7 +1385,7 @@ export default function InsightsScreen({ navigation, route }) {
               <View style={styles.scoreHeaderRow}>
                 <View>
                   <Text style={styles.scoreNum}>{weeklyInsights.avgScore}</Text>
-                  <Text style={styles.scoreLabel}>week score average</Text>
+                  <Text style={styles.scoreLabel}>{t('insights.weekScoreAverage')}</Text>
                 </View>
                 <View style={[
                   styles.percentileBadge,
@@ -1397,11 +1395,11 @@ export default function InsightsScreen({ navigation, route }) {
                     styles.percentileText,
                     { color: weeklyInsights.isBaseline ? Colors.textSecondary : (weeklyInsights.deltaVal >= 0 ? Colors.positive : Colors.coral) }
                   ]}>
-                    {weeklyInsights.isBaseline ? 'baseline' : (weeklyInsights.deltaVal >= 0 ? `+${weeklyInsights.deltaVal}` : `${weeklyInsights.deltaVal}`)}
+                    {weeklyInsights.isBaseline ? t('insights.baseline') : (weeklyInsights.deltaVal >= 0 ? `+${weeklyInsights.deltaVal}` : `${weeklyInsights.deltaVal}`)}
                   </Text>
                 </View>
               </View>
-              <Text style={[styles.cardSub, { marginTop: 4, textTransform: 'lowercase' }]}>
+              <Text style={[styles.cardSub, { marginTop: 4 }]}>
                 {weeklyInsights.deltaText}
               </Text>
               
@@ -1443,7 +1441,7 @@ export default function InsightsScreen({ navigation, route }) {
                       <View style={styles.calloutTextContainer}>
                         <Text style={[styles.calloutLabel, { color: Colors.coral }]}>{t('insights.needsAttention')}</Text>
                         <Text style={[styles.calloutValue, { color: Colors.textPrimary }]}>
-                          {weeklyInsights.needsAttention.domain.label} ({weeklyInsights.needsAttention.imp < 0 ? t('insights.contributionPoints', { contribution: weeklyInsights.needsAttention.imp }) : 'not trained'})
+                          {weeklyInsights.needsAttention.domain.label} ({weeklyInsights.needsAttention.imp < 0 ? t('insights.contributionPoints', { contribution: weeklyInsights.needsAttention.imp }) : t('insights.notTrained')})
                         </Text>
                       </View>
                     </View>
@@ -1540,7 +1538,7 @@ const getStyles = (Colors) => StyleSheet.create({
     backgroundColor: Colors.surfaceAlt,
   },
   tabActive: { backgroundColor: Colors.brandPrimary },
-  tabText: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.caption, color: Colors.textSecondary, textTransform: 'lowercase' },
+  tabText: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.caption, color: Colors.textSecondary },
   tabTextActive: { color: Colors.textInverse },
   content: { paddingHorizontal: Spacing[6] },
   card: {
@@ -1549,26 +1547,26 @@ const getStyles = (Colors) => StyleSheet.create({
   },
   scoreHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing[4] },
   scoreNum: { fontFamily: Typography.fontFamily.extraBold, fontSize: 48, color: Colors.textPrimary, lineHeight: 54 },
-  scoreLabel: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.caption, color: Colors.textMuted, textTransform: 'lowercase' },
+  scoreLabel: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.caption, color: Colors.textMuted },
   percentileBadge: { backgroundColor: Colors.brandLight, borderRadius: Radius.sm, paddingHorizontal: Spacing[3], paddingVertical: Spacing[1] },
   percentileText: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.caption, color: Colors.brandPrimary },
-  cardTitle: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.h3, color: Colors.textPrimary, textTransform: 'lowercase', marginBottom: Spacing[1] },
+  cardTitle: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.h3, color: Colors.textPrimary, marginBottom: Spacing[1] },
   cardSub: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.caption, color: Colors.textMuted, marginBottom: Spacing[4] },
   domainList: { marginTop: Spacing[4], gap: Spacing[3] },
   domainListRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing[3] },
   domainDot: { width: 8, height: 8, borderRadius: 4 },
-  domainListName: { width: 60, fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.caption, color: Colors.textSecondary, textTransform: 'lowercase' },
+  domainListName: { width: 60, fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.caption, color: Colors.textSecondary },
   domainListBar: { flex: 1, height: 5, backgroundColor: Colors.border, borderRadius: 3, overflow: 'hidden' },
   domainListFill: { height: 5, borderRadius: 3 },
   domainListScore: { width: 36, fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.caption, textAlign: 'right' },
   reportCard: {
     backgroundColor: Colors.surface, borderRadius: Radius.xl, padding: Spacing[6], marginBottom: Spacing[4],
   },
-  reportLabel: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.caption, color: Colors.textMuted, textTransform: 'lowercase', marginBottom: 2 },
-  reportTitle: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.h3, color: Colors.textPrimary, textTransform: 'lowercase' },
+  reportLabel: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.caption, color: Colors.textMuted, marginBottom: 2 },
+  reportTitle: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.h3, color: Colors.textPrimary },
   reportNote: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.caption, color: Colors.textMuted, marginTop: Spacing[1] },
   reportBadge: { marginTop: Spacing[3], backgroundColor: Colors.surfaceAlt, borderRadius: Radius.full, paddingHorizontal: Spacing[3], paddingVertical: 3, alignSelf: 'flex-start' },
-  reportBadgeText: { fontFamily: Typography.fontFamily.medium, fontSize: 10, color: Colors.textMuted, textTransform: 'lowercase' },
+  reportBadgeText: { fontFamily: Typography.fontFamily.medium, fontSize: 10, color: Colors.textMuted },
   
   // Segment Selector
   paramSelectorRow: {
@@ -1587,7 +1585,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: 11,
     color: Colors.textSecondary,
-    textTransform: 'lowercase',
   },
 
   // Contribution list
@@ -1617,7 +1614,6 @@ const getStyles = (Colors) => StyleSheet.create({
   contributionName: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: 12,
-    textTransform: 'lowercase',
     flexShrink: 1,
   },
   contributionRight: {
@@ -1629,17 +1625,15 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     fontSize: 11,
     color: Colors.textSecondary,
-    textTransform: 'lowercase',
   },
   contributionPoints: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: 11,
-    textTransform: 'lowercase',
   },
 
   // Redesigned Brief Styles
   briefContainer: { paddingBottom: Spacing[6] },
-  briefDate: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.body, color: Colors.brandPrimary, textTransform: 'lowercase', marginTop: Spacing[2] },
+  briefDate: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.body, color: Colors.brandPrimary, marginTop: Spacing[2] },
   briefHeadline: { fontFamily: Typography.fontFamily.extraBold, fontSize: Typography.size.h1, color: Colors.textPrimary, marginBottom: 0 },
   briefHeaderRow: {
     flexDirection: 'row',
@@ -1671,12 +1665,10 @@ const getStyles = (Colors) => StyleSheet.create({
   calloutLabel: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
   },
   calloutValue: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.label,
-    textTransform: 'lowercase',
     marginTop: 2,
   },
   nudgeContainer: {
@@ -1691,7 +1683,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.label,
     color: Colors.textPrimary,
-    textTransform: 'lowercase',
     marginBottom: 4,
   },
   nudgeText: {
@@ -1699,7 +1690,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontSize: Typography.size.caption,
     color: Colors.textSecondary,
     textAlign: 'center',
-    textTransform: 'lowercase',
     lineHeight: 18,
   },
   focusCard: {
@@ -1718,18 +1708,15 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.caption,
     color: Colors.textMuted,
-    textTransform: 'lowercase',
   },
   focusDomainName: {
     fontFamily: Typography.fontFamily.extraBold,
     fontSize: Typography.size.h3,
-    textTransform: 'lowercase',
   },
   focusReason: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.body,
     color: Colors.textPrimary,
-    textTransform: 'lowercase',
     lineHeight: 22,
     marginBottom: Spacing[5],
   },
@@ -1745,7 +1732,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.label,
     color: Colors.textInverse,
-    textTransform: 'lowercase',
   },
 
   // Sparkline Grid
@@ -1789,7 +1775,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 12,
     color: Colors.textSecondary,
-    textTransform: 'lowercase',
   },
   briefGridScoreRow: {
     flexDirection: 'row',
@@ -1856,7 +1841,6 @@ const getStyles = (Colors) => StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: Spacing[3],
     marginBottom: Spacing[2],
-    textTransform: 'lowercase',
   },
   playgroundPillRow: {
     flexDirection: 'row',
@@ -1889,7 +1873,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: 11,
     color: Colors.textMuted,
-    textTransform: 'lowercase',
   },
   playgroundLegend: {
     flexDirection: 'row',
@@ -1911,7 +1894,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     fontSize: 11,
     color: Colors.textSecondary,
-    textTransform: 'lowercase',
   },
   coachCard: {
     backgroundColor: '#FAF7F0',

@@ -10,10 +10,10 @@ import { TouchableScale, FadeInUp } from '../../components/Motion';
 const { width, height } = Dimensions.get('window');
 
 const GOALS = [
-  { id: 'sharpen', label: 'stay sharp', desc: 'keep your edge in work and life', Icon: Zap },
-  { id: 'focus', label: 'build focus', desc: 'train deeper, longer concentration', Icon: Target },
-  { id: 'protect', label: 'protect memory', desc: 'invest in your long-term brain health', Icon: Shield },
-  { id: 'curious', label: 'just curious', desc: 'explore cognitive training', Icon: Search },
+  { id: 'sharpen', labelKey: 'onboarding.quickProfile.goal.sharpen', descKey: 'onboarding.quickProfile.goal.sharpen.desc', Icon: Zap },
+  { id: 'focus', labelKey: 'onboarding.quickProfile.goal.focus', descKey: 'onboarding.quickProfile.goal.focus.desc', Icon: Target },
+  { id: 'protect', labelKey: 'onboarding.quickProfile.goal.protect', descKey: 'onboarding.quickProfile.goal.protect.desc', Icon: Shield },
+  { id: 'curious', labelKey: 'onboarding.quickProfile.goal.curious', descKey: 'onboarding.quickProfile.goal.curious.desc', Icon: Search },
 ];
 
 export default function QuickProfileScreen({ navigation, route }) {
@@ -50,16 +50,16 @@ export default function QuickProfileScreen({ navigation, route }) {
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <FadeInUp delay={100} distance={20}>
-            <Text style={styles.headline}>make it yours.</Text>
-            <Text style={styles.subhead}>set up your training profile to personalize your daily cognitive workout.</Text>
+            <Text style={styles.headline}>{t('onboarding.quickProfile.headline')}</Text>
+            <Text style={styles.subhead}>{t('onboarding.quickProfile.subtitle')}</Text>
           </FadeInUp>
 
           {/* Name Field */}
           <FadeInUp delay={250} distance={20} style={styles.section}>
-            <Text style={styles.sectionLabel}>your name</Text>
+            <Text style={styles.sectionLabel}>{t('onboarding.quickProfile.nameLabel')}</Text>
             <TextInput
               style={[styles.inputCard, Shadow.sm]}
-              placeholder="e.g. Alex"
+              placeholder={t('onboarding.quickProfile.placeholderName')}
               placeholderTextColor={Colors.textMuted}
               value={name}
               onChangeText={setName}
@@ -71,7 +71,7 @@ export default function QuickProfileScreen({ navigation, route }) {
 
           {/* Goal Selector */}
           <FadeInUp delay={400} distance={20} style={styles.section}>
-            <Text style={styles.sectionLabel}>your focus goal</Text>
+            <Text style={styles.sectionLabel}>{t('onboarding.quickProfile.goalLabel')}</Text>
             <View style={styles.grid}>
               {GOALS.map((goal) => {
                 const isSelected = selectedGoal === goal.id;
@@ -95,10 +95,10 @@ export default function QuickProfileScreen({ navigation, route }) {
                       style={{ marginBottom: 4 }} 
                     />
                     <Text style={[styles.goalLabel, isSelected && { color: Colors.brandPrimary }]}>
-                      {goal.label}
+                      {t(goal.labelKey)}
                     </Text>
                     <Text style={styles.goalDesc}>
-                      {goal.desc}
+                      {t(goal.descKey)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -119,7 +119,7 @@ export default function QuickProfileScreen({ navigation, route }) {
                 <Square color={Colors.textMuted} size={22} />
               )}
               <Text style={styles.checkboxText}>
-                i agree to the terms of service and daily habit calibration.
+                {t('onboarding.quickProfile.termsAgreement')}
               </Text>
             </TouchableOpacity>
           </FadeInUp>
@@ -131,7 +131,7 @@ export default function QuickProfileScreen({ navigation, route }) {
               onPress={handleContinue}
               disabled={!isFormValid}
             >
-              <Text style={styles.primaryButtonText}>save & continue</Text>
+              <Text style={styles.primaryButtonText}>{t('onboarding.quickProfile.saveAndContinue')}</Text>
             </TouchableScale>
           </FadeInUp>
         </ScrollView>
@@ -155,7 +155,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.h1,
     color: Colors.textPrimary,
-    textTransform: 'lowercase',
     lineHeight: 36,
   },
   subhead: {
@@ -164,7 +163,6 @@ const getStyles = (Colors) => StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 24,
     marginTop: 6,
-    textTransform: 'lowercase',
   },
   section: {
     gap: Spacing[3],
@@ -207,14 +205,12 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.label,
     color: Colors.textPrimary,
-    textTransform: 'lowercase',
   },
   goalDesc: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: 11,
     color: Colors.textMuted,
     lineHeight: 15,
-    textTransform: 'lowercase',
   },
   checkboxRow: {
     flexDirection: 'row',
@@ -229,7 +225,6 @@ const getStyles = (Colors) => StyleSheet.create({
     marginLeft: Spacing[3],
     lineHeight: 18,
     flex: 1,
-    textTransform: 'lowercase',
   },
   actionZone: {
     width: '100%',
@@ -246,7 +241,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.body,
     color: '#FFFFFF',
-    textTransform: 'lowercase',
   },
   buttonDisabled: {
     backgroundColor: '#A0AEC0',

@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import { ArrowLeft, RotateCcw, HelpCircle, Heart, Award, Copy, Check } from 'lucide-react-native';
 import { useThemeColors, Typography, Spacing, Radius, Shadow } from '../../theme';
+import { t } from '../../constants/useStrings';
 import { GameHaptics } from '../../utils/haptics';
 
 // ── Screen and Canvas Dimensions ─────────────────────────────────────────────
@@ -25,10 +26,10 @@ const GRID_STEP = 20;
 // Colors mapping for paths color picker
 const PATH_COLORS = ['#4A90E2', '#F4A041', '#FF5E5B', '#3DAB7F', '#A662C6'];
 const DIR_OPTIONS = [
-  { label: '← left', vector: { x: -1, y: 0 } },
-  { label: '→ right', vector: { x: 1, y: 0 } },
-  { label: '↑ up', vector: { x: 0, y: -1 } },
-  { label: '↓ down', vector: { x: 0, y: 1 } },
+  { label: '← Left', key: 'games.arrowEscape.designer.dir.left', vector: { x: -1, y: 0 } },
+  { label: '→ Right', key: 'games.arrowEscape.designer.dir.right', vector: { x: 1, y: 0 } },
+  { label: '↑ Up', key: 'games.arrowEscape.designer.dir.up', vector: { x: 0, y: -1 } },
+  { label: '↓ Down', key: 'games.arrowEscape.designer.dir.down', vector: { x: 0, y: 1 } },
 ];
 
 // ── Snake-Body Flow & Track Parameterization Helpers ─────────────────────────
@@ -321,14 +322,17 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
       GameHaptics.correct();
     } catch (err) {
       GameHaptics.incorrect();
-      Alert.alert('import failed', err.message);
+      Alert.alert(t('games.arrowEscape.designer.alert.importFailedTitle'), err.message);
     }
   };
 
   // ── Play Testing Mode Handlers ──────────────────────────────────────────────
   const startPlayTesting = () => {
     if (boardPaths.length === 0) {
-      Alert.alert('empty board', 'please draw and save at least one path first!');
+      Alert.alert(
+        t('games.arrowEscape.designer.alert.emptyBoardTitle'),
+        t('games.arrowEscape.designer.alert.emptyBoardMsg')
+      );
       return;
     }
 
@@ -508,7 +512,7 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
 
         <View style={styles.headerTitleContainer}>
           <Text style={[styles.headerTitle, { color: '#4A90E2' }]}>
-            {mode === 'editing' ? 'level designer' : 'play-testing'}
+            {mode === 'editing' ? t('games.arrowEscape.designer.modeEditing') : t('games.arrowEscape.designer.modePlaytesting')}
           </Text>
           {mode === 'play_testing' && (
             <View style={styles.heartsRow}>
@@ -528,11 +532,11 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
         <View style={{ width: 84, alignItems: 'flex-end', justifyContent: 'center' }}>
           {mode === 'editing' ? (
             <TouchableOpacity style={styles.playBtn} onPress={startPlayTesting}>
-              <Text style={styles.playBtnText}>play</Text>
+              <Text style={styles.playBtnText}>{t('games.arrowEscape.designer.playBtn')}</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={[styles.playBtn, { backgroundColor: '#FF5E5B' }]} onPress={stopPlayTesting}>
-              <Text style={styles.playBtnText}>exit</Text>
+              <Text style={styles.playBtnText}>{t('games.arrowEscape.designer.exitBtn')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -659,10 +663,10 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
             {mode === 'play_testing' && playState === 'won' && (
               <View style={styles.overlay}>
                 <Award size={48} color="#4A90E2" style={{ marginBottom: 12 }} />
-                <Text style={styles.overlayTitle}>test success!</Text>
-                <Text style={styles.overlaySub}>your custom level was cleared without blocks.</Text>
+                <Text style={styles.overlayTitle}>{t('games.arrowEscape.designer.successTitle')}</Text>
+                <Text style={styles.overlaySub}>{t('games.arrowEscape.designer.successSub')}</Text>
                 <TouchableOpacity style={styles.overlayBtn} onPress={loadPlayState}>
-                  <Text style={styles.overlayBtnText}>play again</Text>
+                  <Text style={styles.overlayBtnText}>{t('games.arrowEscape.designer.playAgain')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -670,10 +674,10 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
             {mode === 'play_testing' && playState === 'failed' && (
               <View style={styles.overlay}>
                 <Heart size={48} color="#FF5E5B" fill="#FF5E5B" style={{ marginBottom: 12 }} />
-                <Text style={styles.overlayTitle}>test failed!</Text>
-                <Text style={styles.overlaySub}>lines collided on slide. reload to retry.</Text>
+                <Text style={styles.overlayTitle}>{t('games.arrowEscape.designer.failedTitle')}</Text>
+                <Text style={styles.overlaySub}>{t('games.arrowEscape.designer.failedSub')}</Text>
                 <TouchableOpacity style={[styles.overlayBtn, { backgroundColor: '#FF5E5B' }]} onPress={loadPlayState}>
-                  <Text style={styles.overlayBtnText}>try again</Text>
+                  <Text style={styles.overlayBtnText}>{t('games.arrowEscape.designer.tryAgain')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -685,10 +689,10 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
           <View style={styles.panel}>
             {/* Draw Path config panel */}
             <View style={styles.panelSection}>
-              <Text style={styles.sectionTitle}>1. draw path properties</Text>
+              <Text style={styles.sectionTitle}>{t('games.arrowEscape.designer.drawSection')}</Text>
               
               {/* Color Picker row */}
-              <Text style={styles.label}>color:</Text>
+              <Text style={styles.label}>{t('games.arrowEscape.designer.colorLabel')}</Text>
               <View style={styles.row}>
                 {PATH_COLORS.map(c => (
                   <TouchableOpacity
@@ -703,36 +707,36 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
               </View>
 
               {/* Direction selector */}
-              <Text style={styles.label}>slide direction:</Text>
+              <Text style={styles.label}>{t('games.arrowEscape.designer.directionLabel')}</Text>
               <View style={styles.row}>
                 {DIR_OPTIONS.map(opt => (
                   <TouchableOpacity
-                    key={opt.label}
+                    key={opt.key}
                     style={[
                       styles.dirBtn,
-                      selectedDir.label === opt.label ? { backgroundColor: '#EFE5E0' } : null
+                      selectedDir.key === opt.key ? { backgroundColor: '#EFE5E0' } : null
                     ]}
                     onPress={() => setSelectedDir(opt)}
                   >
-                    <Text style={styles.dirBtnText}>{opt.label}</Text>
+                    <Text style={styles.dirBtnText}>{t(opt.key)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
               {/* Arrow At start / end toggle */}
-              <Text style={styles.label}>arrow head position:</Text>
+              <Text style={styles.label}>{t('games.arrowEscape.designer.arrowHeadLabel')}</Text>
               <View style={styles.row}>
                 <TouchableOpacity
                   style={[styles.arrowAtBtn, arrowAt === 'end' ? { backgroundColor: '#EFE5E0' } : null]}
                   onPress={() => setArrowAt('end')}
                 >
-                  <Text style={styles.arrowAtText}>path end (normal)</Text>
+                  <Text style={styles.arrowAtText}>{t('games.arrowEscape.designer.pathEnd')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.arrowAtBtn, arrowAt === 'start' ? { backgroundColor: '#EFE5E0' } : null]}
                   onPress={() => setArrowAt('start')}
                 >
-                  <Text style={styles.arrowAtText}>path start</Text>
+                  <Text style={styles.arrowAtText}>{t('games.arrowEscape.designer.pathStart')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -742,7 +746,7 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
                   style={[styles.actionBtn, { flex: 1, marginRight: Spacing[2] }]}
                   onPress={clearDrawing}
                 >
-                  <Text style={styles.actionBtnText}>clear points</Text>
+                  <Text style={styles.actionBtnText}>{t('games.arrowEscape.designer.clearPoints')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
@@ -753,7 +757,7 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
                   onPress={addPath}
                 >
                   <Text style={[styles.actionBtnText, currentPoints.length >= 2 ? { color: '#FFFFFF' } : null]}>
-                    save path ({currentPoints.length} pts)
+                    {t('games.arrowEscape.designer.savePath')} ({currentPoints.length} Pts)
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -761,21 +765,21 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
 
             {/* Level utility controls */}
             <View style={styles.panelSection}>
-              <Text style={styles.sectionTitle}>2. board utilities</Text>
+              <Text style={styles.sectionTitle}>{t('games.arrowEscape.designer.utilSection')}</Text>
               <View style={styles.row}>
                 <TouchableOpacity style={[styles.utilBtn, { flex: 1 }]} onPress={deleteLastPath}>
-                  <Text style={styles.utilBtnText}>delete last path</Text>
+                  <Text style={styles.utilBtnText}>{t('games.arrowEscape.designer.deletePath')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.utilBtn, { flex: 1 }]} onPress={clearBoard}>
-                  <Text style={styles.utilBtnText}>clear board</Text>
+                  <Text style={styles.utilBtnText}>{t('games.arrowEscape.designer.clearBoard')}</Text>
                 </TouchableOpacity>
               </View>
               <View style={[styles.row, { marginTop: Spacing[3] }]}>
                 <TouchableOpacity style={[styles.utilBtn, { flex: 1 }]} onPress={exportLevelData}>
-                  <Text style={styles.utilBtnText}>export json</Text>
+                  <Text style={styles.utilBtnText}>{t('games.arrowEscape.designer.exportJson')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.utilBtn, { flex: 1 }]} onPress={importLevelData}>
-                  <Text style={styles.utilBtnText}>import json</Text>
+                  <Text style={styles.utilBtnText}>{t('games.arrowEscape.designer.importJson')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -789,8 +793,8 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
       <Modal visible={isExportVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, Shadow.md]}>
-            <Text style={styles.modalTitle}>export level configuration</Text>
-            <Text style={styles.modalSub}>copy this json string to share or save your custom level design.</Text>
+            <Text style={styles.modalTitle}>{t('games.arrowEscape.designer.exportTitle')}</Text>
+            <Text style={styles.modalSub}>{t('games.arrowEscape.designer.exportSub')}</Text>
             
             <ScrollView style={styles.jsonTextScroll} contentContainerStyle={{ padding: 10 }}>
               <TextInput
@@ -803,11 +807,11 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
 
             <View style={styles.modalBtnRow}>
               <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setIsExportVisible(false)}>
-                <Text style={styles.modalCloseText}>close</Text>
+                <Text style={styles.modalCloseText}>{t('games.arrowEscape.designer.close')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalActionBtn} onPress={handleCopyJson}>
                 {copied ? <Check size={14} color="#FFFFFF" style={{ marginRight: 4 }} /> : <Copy size={14} color="#FFFFFF" style={{ marginRight: 4 }} />}
-                <Text style={[styles.modalActionText, { color: '#FFFFFF' }]}>{copied ? 'copied!' : 'copy json'}</Text>
+                <Text style={[styles.modalActionText, { color: '#FFFFFF' }]}>{copied ? t('games.arrowEscape.designer.copied') : t('games.arrowEscape.designer.copyJson')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -817,8 +821,8 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
       <Modal visible={isImportVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, Shadow.md]}>
-            <Text style={styles.modalTitle}>import level configuration</Text>
-            <Text style={styles.modalSub}>paste a valid arrow-escape level json array string below.</Text>
+            <Text style={styles.modalTitle}>{t('games.arrowEscape.designer.importTitle')}</Text>
+            <Text style={styles.modalSub}>{t('games.arrowEscape.designer.importSub')}</Text>
             
             <TextInput
               multiline
@@ -832,14 +836,14 @@ export default function ArrowEscapeDesignerScreen({ navigation }) {
 
             <View style={styles.modalBtnRow}>
               <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setIsImportVisible(false)}>
-                <Text style={styles.modalCloseText}>cancel</Text>
+                <Text style={styles.modalCloseText}>{t('games.arrowEscape.designer.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalActionBtn, { backgroundColor: importJsonText ? '#4A90E2' : '#C7C4C0' }]}
                 disabled={!importJsonText}
                 onPress={processImport}
               >
-                <Text style={[styles.modalActionText, importJsonText ? { color: '#FFFFFF' } : null]}>load board</Text>
+                <Text style={[styles.modalActionText, importJsonText ? { color: '#FFFFFF' } : null]}>{t('games.arrowEscape.designer.loadBoard')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -879,7 +883,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: Typography.fontFamily.extraBold,
     fontSize: 18,
-    textTransform: 'lowercase',
   },
   heartsRow: {
     flexDirection: 'row',
@@ -897,7 +900,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 11,
     color: '#FFFFFF',
-    textTransform: 'lowercase',
   },
   scrollContent: {
     alignItems: 'center',
@@ -934,7 +936,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.extraBold,
     fontSize: 12,
     color: '#3C3530',
-    textTransform: 'lowercase',
     marginBottom: Spacing[3],
     borderBottomWidth: 1,
     borderBottomColor: '#FAF6F0',
@@ -944,7 +945,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 9,
     color: '#8F857D',
-    textTransform: 'lowercase',
     marginTop: Spacing[2],
     marginBottom: 4,
   },
@@ -972,7 +972,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 9,
     color: '#3C3530',
-    textTransform: 'lowercase',
   },
   arrowAtBtn: {
     paddingHorizontal: 10,
@@ -986,7 +985,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 9,
     color: '#3C3530',
-    textTransform: 'lowercase',
   },
   actionBtn: {
     paddingVertical: 10,
@@ -1001,7 +999,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 10,
     color: '#8F857D',
-    textTransform: 'lowercase',
   },
   utilBtn: {
     paddingVertical: 10,
@@ -1016,7 +1013,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 10.5,
     color: '#3C3530',
-    textTransform: 'lowercase',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -1029,7 +1025,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.extraBold,
     fontSize: 22,
     color: '#3C3530',
-    textTransform: 'lowercase',
     marginBottom: 4,
   },
   overlaySub: {
@@ -1052,7 +1047,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 12,
     color: '#FFFFFF',
-    textTransform: 'lowercase',
   },
   modalOverlay: {
     flex: 1,
@@ -1074,7 +1068,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.extraBold,
     fontSize: 15,
     color: '#3C3530',
-    textTransform: 'lowercase',
     marginBottom: 4,
   },
   modalSub: {
@@ -1127,7 +1120,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 11,
     color: '#8F857D',
-    textTransform: 'lowercase',
   },
   modalActionBtn: {
     paddingVertical: 9,
@@ -1142,6 +1134,5 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 11,
     color: '#FFFFFF',
-    textTransform: 'lowercase',
   },
 });

@@ -8,6 +8,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Award, Target, Flame, Zap, ArrowRight, CornerDownLeft } from 'lucide-react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 
+const toCamelCase = (str) => {
+  return str.toLowerCase().replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+};
+
 function getZScore(p) {
   const clampP = Math.max(0.001, Math.min(0.999, p));
   const t = Math.sqrt(-2.0 * Math.log(clampP < 0.5 ? clampP : 1.0 - clampP));
@@ -182,22 +186,22 @@ export default function SessionResultScreen({ navigation, route }) {
 
   // Score comparison colour logic
   let scoreColor = Colors.textMuted;
-  let scoreDeltaText = 'first session';
+  let scoreDeltaText = t('train.results.delta.firstSession');
   
   if (prevScore !== null && prevScore !== undefined) {
     const delta = score - prevScore;
     if (delta > 0) {
       scoreColor = Colors.positive;
-      scoreDeltaText = `+${delta} from last session`;
+      scoreDeltaText = t('train.results.delta.positive', { delta });
     } else if (delta < 0) {
       scoreColor = Colors.coral;
-      scoreDeltaText = `${delta} from last session`;
+      scoreDeltaText = t('train.results.delta.negative', { delta });
     } else {
       scoreColor = Colors.textMuted;
-      scoreDeltaText = 'equal to last session';
+      scoreDeltaText = t('train.results.delta.equal');
     }
   } else {
-    scoreDeltaText = t('train.activeSession.firstSession') || 'your first session';
+    scoreDeltaText = t('train.results.delta.firstSession');
   }
 
   const handlePrimaryCTA = () => {
@@ -302,11 +306,11 @@ export default function SessionResultScreen({ navigation, route }) {
   };
 
   const getReactionTimeBenchmark = (meanRt) => {
-    if (meanRt <= 250) return "excellent — elite response speed";
-    if (meanRt <= 350) return "great — well above average";
-    if (meanRt <= 450) return "good — above average";
-    if (meanRt <= 600) return "average response speed";
-    return "keep training — speed improves quickly";
+    if (meanRt <= 250) return t('train.results.benchmark.elite');
+    if (meanRt <= 350) return t('train.results.benchmark.great');
+    if (meanRt <= 450) return t('train.results.benchmark.good');
+    if (meanRt <= 600) return t('train.results.benchmark.average');
+    return t('train.results.benchmark.train');
   };
 
   if (exercise?.id === 'pattern-fold') {
@@ -329,19 +333,19 @@ export default function SessionResultScreen({ navigation, route }) {
   if (exercise?.id === 'flash-sort') {
     const currentMean = gameSpecificMetrics.meanReactionTime || 0;
     
-    let rtDeltaText = 'your first flash sort session';
+    let rtDeltaText = t('train.results.rtDelta.firstSession');
     let rtDeltaColor = Colors.textMuted;
     if (prevMeanRT !== null && prevMeanRT !== undefined) {
       const rtDelta = currentMean - prevMeanRT;
       if (rtDelta < 0) {
         rtDeltaColor = Colors.positive;
-        rtDeltaText = `−${Math.abs(rtDelta)}ms from last session`;
+        rtDeltaText = t('train.results.rtDelta.negative', { rtDelta: Math.abs(rtDelta) });
       } else if (rtDelta > 0) {
         rtDeltaColor = Colors.coral;
-        rtDeltaText = `+${Math.abs(rtDelta)}ms from last session`;
+        rtDeltaText = t('train.results.rtDelta.positive', { rtDelta: Math.abs(rtDelta) });
       } else {
         rtDeltaColor = Colors.textMuted;
-        rtDeltaText = `equal to last session`;
+        rtDeltaText = t('train.results.rtDelta.equal');
       }
     }
 
@@ -355,7 +359,7 @@ export default function SessionResultScreen({ navigation, route }) {
           </View>
           <Text style={styles.exerciseName}>{exercise?.name}</Text>
           {gameSpecificMetrics.sessionEndedEarly && (
-            <Text style={styles.earlyExitNote}>session ended early.</Text>
+            <Text style={styles.earlyExitNote}>{t('train.results.sessionEndedEarly')}</Text>
           )}
         </View>
 
@@ -366,7 +370,7 @@ export default function SessionResultScreen({ navigation, route }) {
             <Text style={[styles.largeStatVal, { color: domain?.color.main }]}>
               {currentMean}ms
             </Text>
-            <Text style={styles.largeStatLabel}>avg reaction time</Text>
+            <Text style={styles.largeStatLabel}>{t('train.results.meanReactionTime')}</Text>
             <Text style={[styles.largeStatDelta, { color: rtDeltaColor }]}>{rtDeltaText}</Text>
           </View>
 
@@ -375,10 +379,10 @@ export default function SessionResultScreen({ navigation, route }) {
             <Text style={[styles.largeStatVal, { color: Colors.brandPrimary || '#F4A041' }]}>
               {gameSpecificMetrics.fastestRT || 0}ms
             </Text>
-            <Text style={styles.largeStatLabel}>fastest response</Text>
+            <Text style={styles.largeStatLabel}>{t('train.results.fastestResponse')}</Text>
             {isNewPersonalBestRT && (
               <View style={[styles.pbBadge, { backgroundColor: Colors.brandPrimary || '#F4A041' }]}>
-                <Text style={styles.pbBadgeText}>personal best</Text>
+                <Text style={styles.pbBadgeText}>{t('onboarding.intent.pb')}</Text>
               </View>
             )}
           </View>
@@ -397,7 +401,7 @@ export default function SessionResultScreen({ navigation, route }) {
           ]}>
             <Award size={24} color={Colors.brandPrimary || '#F4A041'} />
             <Text style={[styles.pbCalloutText, { color: Colors.brandPrimary || '#F4A041' }]}>
-              new personal best reaction time — {gameSpecificMetrics.fastestRT || 0}ms!
+              {t('train.results.pbCalloutRT', { rt: gameSpecificMetrics.fastestRT || 0 })}
             </Text>
           </Animated.View>
         )}
@@ -405,7 +409,7 @@ export default function SessionResultScreen({ navigation, route }) {
         {/* Contextual Benchmark Callout */}
         <View style={[styles.pbCalloutCard, Shadow.sm, { backgroundColor: Colors.surface, borderColor: Colors.border, borderWidth: 1 }]}>
           <Text style={[styles.pbCalloutText, { color: Colors.textSecondary, fontFamily: Typography.fontFamily.medium }]}>
-            your {currentMean}ms average is <Text style={{ color: domain?.color.main, fontFamily: Typography.fontFamily.bold }}>{benchmarkLabel}</Text>
+            {t('train.results.benchmarkCallout', { rt: currentMean, benchmark: benchmarkLabel })}
           </Text>
         </View>
 
@@ -415,13 +419,13 @@ export default function SessionResultScreen({ navigation, route }) {
             {/* Stat 3: Accuracy */}
             <View style={[styles.gridCard, Shadow.sm]}>
               <Text style={styles.gridCardVal}>{accuracy}%</Text>
-              <Text style={styles.gridCardLabel}>accuracy</Text>
+              <Text style={styles.gridCardLabel}>{t('train.results.accuracy')}</Text>
             </View>
 
             {/* Stat 4: Rounds completed */}
             <View style={[styles.gridCard, Shadow.sm]}>
-              <Text style={styles.gridCardVal}>{roundsCompleted} rounds</Text>
-              <Text style={styles.gridCardLabel}>rounds played</Text>
+              <Text style={styles.gridCardVal}>{roundsCompleted} {t('train.activeSession.rounds').toLowerCase()}</Text>
+              <Text style={styles.gridCardLabel}>{t('train.results.roundsCompleted')}</Text>
             </View>
           </View>
 
@@ -429,13 +433,13 @@ export default function SessionResultScreen({ navigation, route }) {
             {/* Stat 5: Difficulty reached */}
             <View style={[styles.gridCard, Shadow.sm]}>
               <Text style={[styles.gridCardVal, { fontSize: 15 }]}>{gameSpecificMetrics.difficultyReached || 'easy'}</Text>
-              <Text style={styles.gridCardLabel}>difficulty reached</Text>
+              <Text style={styles.gridCardLabel}>{t('train.results.difficultyReached')}</Text>
             </View>
 
             {/* Stat 6: Longest streak */}
             <View style={[styles.gridCard, Shadow.sm]}>
-              <Text style={styles.gridCardVal}>{longestStreak} in a row</Text>
-              <Text style={styles.gridCardLabel}>best streak</Text>
+              <Text style={styles.gridCardVal}>{t('train.results.streakInRow', { streak: longestStreak })}</Text>
+              <Text style={styles.gridCardLabel}>{t('train.results.bestStreak')}</Text>
             </View>
           </View>
         </View>
@@ -443,7 +447,7 @@ export default function SessionResultScreen({ navigation, route }) {
         {/* Raw Score Indicator Card */}
         <View style={[styles.pbCalloutCard, Shadow.sm, { backgroundColor: Colors.surface, borderColor: Colors.border, borderWidth: 1, justifyContent: 'center' }]}>
           <Text style={{ fontFamily: Typography.fontFamily.medium, color: Colors.textSecondary }}>
-            session score: <Text style={{ color: domain?.color.main, fontFamily: Typography.fontFamily.bold }}>{score.toLocaleString()} pts</Text>
+            {t('train.results.sessionScoreLabel', { score: score.toLocaleString() })}
           </Text>
         </View>
 
@@ -668,7 +672,7 @@ export default function SessionResultScreen({ navigation, route }) {
           </View>
           <Text style={styles.exerciseName}>{exercise?.name}</Text>
           {gameSpecificMetrics.sessionEndedEarly && (
-            <Text style={styles.earlyExitNote}>session ended early.</Text>
+            <Text style={styles.earlyExitNote}>{t('train.results.sessionEndedEarly')}</Text>
           )}
         </View>
 
@@ -679,7 +683,7 @@ export default function SessionResultScreen({ navigation, route }) {
             <Text style={[styles.largeStatVal, { color: domain?.color.main }]}>
               {score.toLocaleString()}
             </Text>
-            <Text style={styles.largeStatLabel}>session score</Text>
+            <Text style={styles.largeStatLabel}>{t('train.results.sessionScore')}</Text>
             <Text style={[styles.largeStatDelta, { color: scoreColor }]}>{scoreDeltaText}</Text>
           </View>
 
@@ -688,7 +692,7 @@ export default function SessionResultScreen({ navigation, route }) {
             <Text style={[styles.largeStatVal, { color: '#A662C6' }]}>
               {dPrime.toFixed(2)}
             </Text>
-            <Text style={styles.largeStatLabel}>vigilance index (d')</Text>
+            <Text style={styles.largeStatLabel}>{t('train.results.vigilanceIndex')}</Text>
           </View>
         </View>
 
@@ -697,31 +701,31 @@ export default function SessionResultScreen({ navigation, route }) {
           <View style={[styles.adaptiveBanner, { backgroundColor: Colors.surface, borderColor: adaptivePrompt === 'up' ? '#3DAB7F' : '#E24B4A' }]}>
             <View style={styles.adaptiveHeader}>
               <Text style={[styles.adaptiveTitle, { color: adaptivePrompt === 'up' ? '#3DAB7F' : '#E24B4A' }]}>
-                {adaptivePrompt === 'up' ? '🚀 level up suggestion' : '📉 level recommended'}
+                {adaptivePrompt === 'up' ? t('train.results.adaptive.levelUp') : t('train.results.adaptive.levelDown')}
               </Text>
-              <Text style={{ fontSize: 10, color: Colors.textMuted }}>adaptive</Text>
+              <Text style={{ fontSize: 10, color: Colors.textMuted }}>{t('train.results.adaptiveLabel')}</Text>
             </View>
             <Text style={styles.adaptiveDesc}>
               {adaptivePrompt === 'up' 
-                ? `you've mastered level ${targetLevel - 1}! let's advance to level ${targetLevel} for higher target vigilance constraints.`
-                : `level ${targetLevel + 1} proved challenging. let's return to level ${targetLevel} to reinforce your precision.`}
+                ? t('train.results.adaptive.descUp', { prevLevel: targetLevel - 1, nextLevel: targetLevel })
+                : t('train.results.adaptive.descDown', { prevLevel: targetLevel + 1, nextLevel: targetLevel })}
             </Text>
             
             {levelUpdated ? (
-              <Text style={[styles.adaptiveSuccessText, { color: '#3DAB7F' }]}>✓ level successfully updated to level {targetLevel}!</Text>
+              <Text style={[styles.adaptiveSuccessText, { color: '#3DAB7F' }]}>{t('train.results.adaptive.success', { level: targetLevel })}</Text>
             ) : (
               <View style={styles.adaptiveActions}>
                 <TouchableOpacity
                   style={[styles.adaptiveBtnGo, { backgroundColor: adaptivePrompt === 'up' ? '#3DAB7F' : '#E24B4A' }]}
                   onPress={handleApplyAdaptiveLevel}
                 >
-                  <Text style={[styles.adaptiveBtnGoText, { color: Colors.textInverse }]}>let's go</Text>
+                  <Text style={[styles.adaptiveBtnGoText, { color: Colors.textInverse }]}>{t('train.results.adaptive.go')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.adaptiveBtnNo, { borderColor: Colors.border }]}
                   onPress={() => setLevelUpdated(true)}
                 >
-                  <Text style={[styles.adaptiveBtnNoText, { color: Colors.textSecondary }]}>not yet</Text>
+                  <Text style={[styles.adaptiveBtnNoText, { color: Colors.textSecondary }]}>{t('train.results.adaptive.no')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -731,18 +735,18 @@ export default function SessionResultScreen({ navigation, route }) {
         {/* Contextual Cognitive Insight Card */}
         <View style={[styles.pbCalloutCard, Shadow.sm, { backgroundColor: Colors.surface, borderColor: patternColor, borderLeftWidth: 4 }]}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.pbCalloutText, { color: patternColor, textTransform: 'lowercase' }]}>
-              focus pattern: {patternTitle}
+            <Text style={[styles.pbCalloutText, { color: patternColor }]}>
+              {t('train.results.pattern.label', { pattern: t('train.results.pattern.title.' + toCamelCase(detectedPattern)) })}
             </Text>
             <Text style={{ fontSize: Typography.size.caption, color: Colors.textSecondary, marginTop: 4 }}>
-              {patternDesc}
+              {t('train.results.pattern.desc.' + toCamelCase(detectedPattern))}
             </Text>
           </View>
         </View>
 
         {/* 15-Second Quartile Heatmap */}
         <View style={{ width: '100%', marginVertical: Spacing[2] }}>
-          <Text style={styles.heatmapSectionTitle}>session precision heatmap</Text>
+          <Text style={styles.heatmapSectionTitle}>{t('train.results.heatmapTitle')}</Text>
           <View style={styles.heatmapRow}>
             {quartiles.map((q, idx) => {
               const errors = q.misses + q.falseAlarms;
@@ -775,7 +779,7 @@ export default function SessionResultScreen({ navigation, route }) {
 
         {/* 7-Session D-Prime Trend Chart */}
         <View style={[styles.trendCard, Shadow.sm]}>
-          <Text style={styles.trendTitle}>sustained vigilance trend (d')</Text>
+          <Text style={styles.trendTitle}>{t('train.results.trendTitle')}</Text>
           {renderSparkline()}
         </View>
 
@@ -785,13 +789,13 @@ export default function SessionResultScreen({ navigation, route }) {
             {/* Hit Rate */}
             <View style={[styles.gridCard, Shadow.sm]}>
               <Text style={styles.gridCardVal}>{hitRate}%</Text>
-              <Text style={styles.gridCardLabel}>hit rate</Text>
+              <Text style={styles.gridCardLabel}>{t('train.results.hitRate')}</Text>
             </View>
 
             {/* False Alarm Rate */}
             <View style={[styles.gridCard, Shadow.sm]}>
               <Text style={styles.gridCardVal}>{FArate}%</Text>
-              <Text style={styles.gridCardLabel}>false alarm rate</Text>
+              <Text style={styles.gridCardLabel}>{t('train.results.falseAlarmRate')}</Text>
             </View>
           </View>
 
@@ -799,13 +803,13 @@ export default function SessionResultScreen({ navigation, route }) {
             {/* Misses */}
             <View style={[styles.gridCard, Shadow.sm]}>
               <Text style={styles.gridCardVal}>{misses}</Text>
-              <Text style={styles.gridCardLabel}>total misses</Text>
+              <Text style={styles.gridCardLabel}>{t('train.results.totalMisses')}</Text>
             </View>
 
             {/* Total Rounds */}
             <View style={[styles.gridCard, Shadow.sm]}>
               <Text style={styles.gridCardVal}>{roundsCompleted}</Text>
-              <Text style={styles.gridCardLabel}>total stimuli</Text>
+              <Text style={styles.gridCardLabel}>{t('train.results.totalStimuli')}</Text>
             </View>
           </View>
         </View>
@@ -1023,7 +1027,7 @@ export default function SessionResultScreen({ navigation, route }) {
           </View>
           <Text style={styles.exerciseName}>{exercise?.name}</Text>
           {gameSpecificMetrics.sessionEndedEarly && (
-            <Text style={styles.earlyExitNote}>session ended early.</Text>
+            <Text style={styles.earlyExitNote}>{t('train.results.sessionEndedEarly')}</Text>
           )}
         </View>
 
@@ -1034,7 +1038,7 @@ export default function SessionResultScreen({ navigation, route }) {
             <Text style={[styles.largeStatVal, { color: domain?.color.main }]}>
               {score.toLocaleString()}
             </Text>
-            <Text style={styles.largeStatLabel}>session score</Text>
+            <Text style={styles.largeStatLabel}>{t('train.results.sessionScore')}</Text>
             <Text style={[styles.largeStatDelta, { color: scoreColor }]}>{scoreDeltaText}</Text>
           </View>
 
@@ -1043,7 +1047,7 @@ export default function SessionResultScreen({ navigation, route }) {
             <Text style={[styles.largeStatVal, { color: '#A662C6' }]}>
               {switchCostMs}ms
             </Text>
-            <Text style={styles.largeStatLabel}>switch cost (rt delta)</Text>
+            <Text style={styles.largeStatLabel}>{t('train.results.switchCostRTDelta')}</Text>
             <Text style={[styles.largeStatDelta, { color: switchCostColor }]}>{switchCostDeltaText}</Text>
           </View>
         </View>
@@ -1053,31 +1057,31 @@ export default function SessionResultScreen({ navigation, route }) {
           <View style={[styles.adaptiveBanner, { backgroundColor: Colors.surface, borderColor: adaptivePrompt === 'up' ? '#3DAB7F' : '#E24B4A' }]}>
             <View style={styles.adaptiveHeader}>
               <Text style={[styles.adaptiveTitle, { color: adaptivePrompt === 'up' ? '#3DAB7F' : '#E24B4A' }]}>
-                {adaptivePrompt === 'up' ? '🚀 level up suggestion' : '📉 level recommended'}
+                {adaptivePrompt === 'up' ? t('train.results.adaptive.levelUp') : t('train.results.adaptive.levelDown')}
               </Text>
-              <Text style={{ fontSize: 10, color: Colors.textMuted }}>adaptive</Text>
+              <Text style={{ fontSize: 10, color: Colors.textMuted }}>{t('train.results.adaptiveLabel')}</Text>
             </View>
             <Text style={styles.adaptiveDesc}>
               {adaptivePrompt === 'up' 
-                ? `you've mastered level ${targetLevel - 1}! let's advance to level ${targetLevel} for faster rule set-shifting constraints.`
-                : `level ${targetLevel + 1} proved challenging. let's return to level ${targetLevel} to reinforce your precision.`}
+                ? t('train.results.adaptive.descUp', { prevLevel: targetLevel - 1, nextLevel: targetLevel })
+                : t('train.results.adaptive.descDown', { prevLevel: targetLevel + 1, nextLevel: targetLevel })}
             </Text>
             
             {levelUpdated ? (
-              <Text style={[styles.adaptiveSuccessText, { color: '#3DAB7F' }]}>✓ level successfully updated to level {targetLevel}!</Text>
+              <Text style={[styles.adaptiveSuccessText, { color: '#3DAB7F' }]}>{t('train.results.adaptive.success', { level: targetLevel })}</Text>
             ) : (
               <View style={styles.adaptiveActions}>
                 <TouchableOpacity
                   style={[styles.adaptiveBtnGo, { backgroundColor: adaptivePrompt === 'up' ? '#3DAB7F' : '#E24B4A' }]}
                   onPress={handleApplyAdaptiveLevel}
                 >
-                  <Text style={[styles.adaptiveBtnGoText, { color: Colors.textInverse }]}>let's go</Text>
+                  <Text style={[styles.adaptiveBtnGoText, { color: Colors.textInverse }]}>{t('train.results.adaptive.go')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.adaptiveBtnNo, { borderColor: Colors.border }]}
                   onPress={() => setLevelUpdated(true)}
                 >
-                  <Text style={[styles.adaptiveBtnNoText, { color: Colors.textSecondary }]}>not yet</Text>
+                  <Text style={[styles.adaptiveBtnNoText, { color: Colors.textSecondary }]}>{t('train.results.adaptive.no')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -1088,29 +1092,29 @@ export default function SessionResultScreen({ navigation, route }) {
         <View style={styles.largeStatsRow}>
           <View style={[styles.largeStatCard, Shadow.sm, { minHeight: 70, padding: 12 }]}>
             <Text style={{ fontFamily: Typography.fontFamily.bold, fontSize: 20, color: '#3DAB7F' }}>{switchAccuracy}%</Text>
-            <Text style={{ fontSize: 10, color: Colors.textSecondary }}>switch accuracy</Text>
+            <Text style={{ fontSize: 10, color: Colors.textSecondary }}>{t('train.results.switchAccuracy')}</Text>
           </View>
           <View style={[styles.largeStatCard, Shadow.sm, { minHeight: 70, padding: 12 }]}>
             <Text style={{ fontFamily: Typography.fontFamily.bold, fontSize: 20, color: '#0073E6' }}>{stayAccuracy}%</Text>
-            <Text style={{ fontSize: 10, color: Colors.textSecondary }}>stay accuracy</Text>
+            <Text style={{ fontSize: 10, color: Colors.textSecondary }}>{t('train.results.stayAccuracy')}</Text>
           </View>
         </View>
 
         {/* Contextual Cognitive Insight Card */}
         <View style={[styles.pbCalloutCard, Shadow.sm, { backgroundColor: Colors.surface, borderColor: patternColor, borderLeftWidth: 4 }]}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.pbCalloutText, { color: patternColor, textTransform: 'lowercase' }]}>
-              set-shifting pattern: {patternTitle}
+            <Text style={[styles.pbCalloutText, { color: patternColor }]}>
+              {t('train.results.pattern.label.cs', { pattern: detectedPattern === 'WEAK_RULE' ? t('train.results.pattern.title.weakRule', { rule: weakRule.rule.toUpperCase() }) : t('train.results.pattern.title.' + toCamelCase(detectedPattern)) })}
             </Text>
             <Text style={{ fontSize: Typography.size.caption, color: Colors.textSecondary, marginTop: 4 }}>
-              {patternDesc}
+              {detectedPattern === 'WEAK_RULE' ? t('train.results.pattern.desc.weakRule', { rule: weakRule.rule.toUpperCase() }) : t('train.results.pattern.desc.' + toCamelCase(detectedPattern))}
             </Text>
           </View>
         </View>
 
         {/* Rule Breakdown Strip */}
         <View style={{ width: '100%', marginVertical: Spacing[2] }}>
-          <Text style={styles.heatmapSectionTitle}>classification rule breakdown</Text>
+          <Text style={styles.heatmapSectionTitle}>{t('train.results.classificationBreakdown')}</Text>
           <View style={styles.heatmapRow}>
             {Object.entries(ruleStats).map(([rule, s]) => {
               const ruleAcc = s.attempts > 0 ? Math.round((s.correct / s.attempts) * 100) : 100;
@@ -1126,7 +1130,7 @@ export default function SessionResultScreen({ navigation, route }) {
                 <View key={rule} style={[styles.heatmapBlock, { backgroundColor: bg, borderColor: border }]}>
                   <Text style={styles.heatmapBlockTitle}>{rule}</Text>
                   <Text style={styles.heatmapBlockVal}>{ruleAcc}%</Text>
-                  <Text style={[styles.heatmapBlockSub, { color: textCol }]}>{s.attempts} trials</Text>
+                  <Text style={[styles.heatmapBlockSub, { color: textCol }]}>{t('train.results.trials', { count: s.attempts })}</Text>
                 </View>
               );
             })}
@@ -1135,7 +1139,7 @@ export default function SessionResultScreen({ navigation, route }) {
 
         {/* 7-Session D-Prime Trend Chart */}
         <View style={[styles.trendCard, Shadow.sm]}>
-          <Text style={styles.trendTitle}>set-shifting cost trend (switch cost)</Text>
+          <Text style={styles.trendTitle}>{t('train.results.csTrendTitle')}</Text>
           {renderCSSparkline()}
         </View>
 
@@ -1373,7 +1377,7 @@ const getStyles = (Colors) => StyleSheet.create({
   
   header: { alignItems: 'center', gap: Spacing[2] },
   domainChip: { borderRadius: Radius.full, paddingHorizontal: Spacing[4], paddingVertical: Spacing[1] },
-  domainChipText: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.caption, textTransform: 'lowercase' },
+  domainChipText: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.caption },
   exerciseName: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.h1, color: Colors.textPrimary },
 
   scoreCard: {
@@ -1385,7 +1389,7 @@ const getStyles = (Colors) => StyleSheet.create({
     gap: Spacing[2],
   },
   scoreNum: { fontFamily: Typography.fontFamily.extraBold, fontSize: 64, lineHeight: 72 },
-  scoreDelta: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.body, textTransform: 'lowercase' },
+  scoreDelta: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.body },
 
   metricsList: {
     backgroundColor: Colors.surface,
@@ -1405,7 +1409,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontSize: Typography.size.body,
     color: Colors.textSecondary,
     marginLeft: Spacing[3],
-    textTransform: 'lowercase',
   },
   metricValue: {
     fontFamily: Typography.fontFamily.bold,
@@ -1446,7 +1449,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.body,
     color: Colors.textInverse,
-    textTransform: 'lowercase',
   },
   secondaryButton: {
     alignItems: 'center',
@@ -1457,14 +1459,12 @@ const getStyles = (Colors) => StyleSheet.create({
   secondaryButtonText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.body,
-    textTransform: 'lowercase',
   },
   earlyExitNote: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.caption,
     color: Colors.coral || '#FF3B30',
     marginTop: Spacing[1],
-    textTransform: 'lowercase',
     textAlign: 'center',
   },
   largeStatsRow: {
@@ -1488,13 +1488,11 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.caption,
     color: Colors.textSecondary,
-    textTransform: 'lowercase',
     marginTop: 2,
   },
   largeStatDelta: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
     marginTop: 4,
   },
   pbBadge: {
@@ -1508,7 +1506,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 10,
     color: Colors.textInverse,
-    textTransform: 'lowercase',
   },
   pbCalloutCard: {
     flexDirection: 'row',
@@ -1522,7 +1519,6 @@ const getStyles = (Colors) => StyleSheet.create({
   pbCalloutText: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.body,
-    textTransform: 'lowercase',
     flex: 1,
   },
   statsGrid: {
@@ -1544,13 +1540,11 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 18,
     color: Colors.textPrimary,
-    textTransform: 'lowercase',
   },
   gridCardLabel: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
     color: Colors.textSecondary,
-    textTransform: 'lowercase',
     marginTop: 2,
   },
 
@@ -1561,7 +1555,6 @@ const getStyles = (Colors) => StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: Spacing[4],
     marginBottom: Spacing[2],
-    textTransform: 'lowercase',
   },
   heatmapRow: {
     flexDirection: 'row',
@@ -1609,7 +1602,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.caption,
     color: Colors.textSecondary,
-    textTransform: 'lowercase',
     marginBottom: Spacing[3],
   },
   trendEmptyText: {

@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Typography, Spacing, Radius, Shadow } from '../../../theme';
+import { t } from '../../../constants/useStrings';
 
 export default function FoilBreakdownCard({ foilBreakdown, Colors }) {
   const mirrorProgress = useRef(new Animated.Value(0)).current;
@@ -36,18 +37,18 @@ export default function FoilBreakdownCard({ foilBreakdown, Colors }) {
 
   return (
     <View style={[styles.card, Shadow.sm, { backgroundColor: Colors.surface }]}>
-      <Text style={[styles.cardTitle, { color: Colors.textSecondary }]}>diagnostic error profile</Text>
+      <Text style={[styles.cardTitle, { color: Colors.textSecondary }]}>{t('patternFold.foilBreakdown.title')}</Text>
 
       {totalErrors === 0 ? (
         <Text style={[styles.emptyText, { color: Colors.textMuted }]}>
-          zero errors! Perfect spatial precision achieved this session.
+          {t('patternFold.foilBreakdown.empty')}
         </Text>
       ) : (
         <View style={styles.rows}>
           {/* Row 1: Mirror Traps */}
           <View style={styles.row}>
             <View style={styles.rowHeader}>
-              <Text style={styles.foilLabel}>mirror traps (chiral flips)</Text>
+              <Text style={styles.foilLabel}>{t('patternFold.foilBreakdown.mirrorLabel')}</Text>
               <Text style={[styles.foilPct, { color: Colors.domain.spatial.main }]}>{mirrorPct}%</Text>
             </View>
             <View style={styles.barTrack}>
@@ -69,7 +70,7 @@ export default function FoilBreakdownCard({ foilBreakdown, Colors }) {
           {/* Row 2: Angle Foils */}
           <View style={styles.row}>
             <View style={styles.rowHeader}>
-              <Text style={styles.foilLabel}>angle foils (incorrect rotation)</Text>
+              <Text style={styles.foilLabel}>{t('patternFold.foilBreakdown.angleLabel')}</Text>
               <Text style={[styles.foilPct, { color: '#0073E6' }]}>{anglePct}%</Text>
             </View>
             <View style={styles.barTrack}>
@@ -91,7 +92,7 @@ export default function FoilBreakdownCard({ foilBreakdown, Colors }) {
           {/* Row 3: Chirality Foils */}
           <View style={styles.row}>
             <View style={styles.rowHeader}>
-              <Text style={styles.foilLabel}>wrong block structures</Text>
+              <Text style={styles.foilLabel}>{t('patternFold.foilBreakdown.chiralLabel')}</Text>
               <Text style={[styles.foilPct, { color: '#F4A041' }]}>{chiralityPct}%</Text>
             </View>
             <View style={styles.barTrack}>

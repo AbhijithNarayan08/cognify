@@ -50,7 +50,7 @@ const getRowStyles = (Colors) => StyleSheet.create({
   left: { flex: 1, marginRight: Spacing[3] },
   label: {
     fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.body,
-    color: Colors.textPrimary, textTransform: 'lowercase',
+    color: Colors.textPrimary,
   },
   sub: {
     fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.caption,
@@ -166,7 +166,7 @@ export default function ProfileScreen({ navigation }) {
                   activeOpacity={0.8}
                 >
                   <View style={[styles.domainHighlightDot, { backgroundColor: d.color.main }]} />
-                  <Text style={[styles.domainHighlightName, { color: d.color.main }]}>{d.label}</Text>
+                  <Text style={[styles.domainHighlightName, { color: d.color.main }]}>{d.label ? d.label.charAt(0).toUpperCase() + d.label.slice(1) : ''}</Text>
                   {domainScores && (
                     <Text style={[styles.domainHighlightScore, { color: d.color.main }]}>
                       {domainScores[d.id] || 0}
@@ -268,15 +268,15 @@ const getStyles = (Colors) => StyleSheet.create({
   statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: Spacing[5] },
   statItem: { alignItems: 'center', gap: 4, flex: 1 },
   statNum: { fontFamily: Typography.fontFamily.extraBold, fontSize: Typography.size.h1, color: Colors.textInverse, textAlign: 'center' },
-  statLabel: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.caption, color: 'rgba(255,255,255,0.7)', textTransform: 'lowercase', textAlign: 'center' },
+  statLabel: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.caption, color: 'rgba(255,255,255,0.7)', textAlign: 'center' },
   statDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', height: 36, alignSelf: 'center' },
   domainHighlights: { gap: Spacing[2] },
-  domainHighlightsLabel: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.caption, color: 'rgba(255,255,255,0.6)', textTransform: 'lowercase' },
+  domainHighlightsLabel: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.caption, color: 'rgba(255,255,255,0.6)' },
   domainHighlightsRow: { flexDirection: 'row', gap: Spacing[2] },
   domainHighlight: { flex: 1, borderRadius: Radius.md, padding: Spacing[3], gap: 2 },
   domainHighlightDot: { width: 6, height: 6, borderRadius: 3 },
-  domainHighlightName: { fontFamily: Typography.fontFamily.medium, fontSize: 10, textTransform: 'lowercase' },
+  domainHighlightName: { fontFamily: Typography.fontFamily.medium, fontSize: 10 },
   domainHighlightScore: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.label },
   resetBtn: { alignSelf: 'center', paddingVertical: Spacing[3], paddingHorizontal: Spacing[5], marginBottom: Spacing[4] },
-  resetBtnText: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.caption, color: Colors.textMuted, textTransform: 'lowercase' },
+  resetBtnText: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.caption, color: Colors.textMuted },
 });

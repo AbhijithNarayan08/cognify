@@ -52,6 +52,6 @@ const getStyles = (Colors) => StyleSheet.create({
   stimulusBox: { width: 140, height: 140, borderRadius: Radius.xl, alignItems: 'center', justifyContent: 'center', ...Shadow.md },
   responseRow: { flexDirection: 'row', gap: Spacing[4], width: '100%', paddingHorizontal: Spacing[6] },
   responseBtn: { flex: 1, borderRadius: Radius.full, paddingVertical: 18, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', ...Shadow.sm },
-  responseBtnText: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.label, color: Colors.textInverse, textTransform: 'lowercase' },
+  responseBtnText: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.label, color: Colors.textInverse },
   trialCounter: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.caption, color: Colors.textMuted },
 });

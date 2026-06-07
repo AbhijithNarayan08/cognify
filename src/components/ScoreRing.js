@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Animated, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { useThemeColors, Typography, Motion } from '../theme';
+import { t } from '../constants/useStrings';
 
 const RING_SIZE = 180;
 const STROKE_WIDTH = 12;
@@ -89,13 +90,13 @@ export default function ScoreRing({ score = 0, delta = null, size = RING_SIZE, a
 
       <View style={styles.innerContent}>
         <Text style={styles.scoreText}>{displayScore}</Text>
-        <Text style={styles.scoreLabel}>score</Text>
+        <Text style={styles.scoreLabel}>{t('home.scoreRing.score')}</Text>
         {delta !== null && (
           <Text style={[
             styles.deltaText,
             { color: delta >= 0 ? Colors.coral : Colors.warning }
           ]}>
-            {delta >= 0 ? `+${delta}` : delta} today
+            {t('home.scoreRing.deltaToday', { delta: delta >= 0 ? `+${delta}` : delta })}
           </Text>
         )}
       </View>
@@ -125,7 +126,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontSize: Typography.size.caption,
     color: Colors.textMuted,
     letterSpacing: 1,
-    textTransform: 'lowercase',
   },
   deltaText: {
     fontFamily: Typography.fontFamily.medium,

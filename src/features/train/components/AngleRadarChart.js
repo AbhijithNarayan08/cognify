@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Polygon, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../../theme';
+import { t } from '../../../constants/useStrings';
 
 export default function AngleRadarChart({ history = [], Colors }) {
   // Compute average angle accuracies from history
@@ -84,7 +85,7 @@ export default function AngleRadarChart({ history = [], Colors }) {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: Colors.textSecondary }]}>spatial asymmetry radar</Text>
+      <Text style={[styles.title, { color: Colors.textSecondary }]}>{t('patternFold.radar.title')}</Text>
       
       <View style={styles.chartWrapper}>
         <Svg width="100%" height={170} viewBox="0 0 200 170">
@@ -156,7 +157,7 @@ export default function AngleRadarChart({ history = [], Colors }) {
         {!hasData && (
           <View style={styles.overlay}>
             <Text style={[styles.overlayText, { color: Colors.textSecondary }]}>
-              Play 3 sessions to construct radar
+              {t('patternFold.radar.overlay')}
             </Text>
           </View>
         )}

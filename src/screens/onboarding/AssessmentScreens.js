@@ -451,7 +451,7 @@ export function AssessmentScreen({ route, navigation }) {
         </View>
         
         {/* Countdown Timer Display */}
-        <Text style={aStyles.timerText}>{timeLeft}s left</Text>
+        <Text style={aStyles.timerText}>{t('onboarding.assessment.timeLeft', { time: timeLeft })}</Text>
         
         <Text style={aStyles.taskCount}>{t('onboarding.assessment.taskProgress', { current: taskIndex + 1, total: ASSESSMENT_TASKS.length })}</Text>
       </View>

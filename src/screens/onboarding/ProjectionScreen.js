@@ -119,7 +119,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.h1,
     color: Colors.textPrimary,
-    textTransform: 'lowercase',
     lineHeight: 38,
     marginBottom: Spacing[2],
     textAlign: 'center',
@@ -159,7 +158,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
     color: Colors.textSecondary,
-    textTransform: 'lowercase',
   },
   captionContainer: {
     marginBottom: Spacing[8],
@@ -188,6 +186,5 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.body,
     color: Colors.textInverse,
-    textTransform: 'lowercase',
   },
 });

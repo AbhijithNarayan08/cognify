@@ -1,16 +1,20 @@
-name: Verify PR Build & Strings
+name: Verify Pull Request
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  verify:
-    name: Verify Build Integrity
+  lint:
+    name: Lint Check
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -23,6 +27,47 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Jest Tests
+        run: npm run test
+
+  validate-build:
+    name: Build & Configuration Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Validate Expo Configuration
+        run: npx expo doctor
 
       - name: Compile Translation Catalogs
         run: npm run strings

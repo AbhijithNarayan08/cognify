@@ -137,7 +137,7 @@ export function SequenceRecallGame({ trialIdx, feedback, onAnswer, Colors }) {
 
 const getStyles = (Colors) => StyleSheet.create({
   container: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', gap: Spacing[6] },
-  title: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.body, color: Colors.textSecondary, textTransform: 'lowercase' },
+  title: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.body, color: Colors.textSecondary },
   orbsContainer: { flexDirection: 'row', gap: Spacing[6], alignItems: 'center', justifyContent: 'center', minHeight: 160 },
   orb: { width: 80, height: 80, borderRadius: 40 },
   statusBox: { minHeight: 30, justifyContent: 'center' },

@@ -16,6 +16,7 @@ import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { Spacing, Radius, Typography } from '../../theme';
+import { t } from '../../constants/useStrings';
 import { TouchableScale } from '../../components/Motion';
 
 const { width } = Dimensions.get('window');
@@ -140,7 +141,7 @@ export default function LoginForm({
       }
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setAuthError(err.message || 'Apple sign-in failed.');
+      setAuthError(err.message || t('auth.error.appleFailed'));
     } finally {
       setLoading(false);
     }
@@ -156,7 +157,7 @@ export default function LoginForm({
       }
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setAuthError(err.message || 'Google sign-in failed.');
+      setAuthError(err.message || t('auth.error.googleFailed'));
     } finally {
       setLoading(false);
     }
@@ -165,12 +166,12 @@ export default function LoginForm({
   const handleEmailSubmit = async () => {
     if (!email.trim() || !email.includes('@')) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setEmailError('please enter a valid email address');
+      setEmailError(t('auth.error.invalidEmail'));
       return;
     }
     if (!password || password.length < 6) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setAuthError('password must be at least 6 characters');
+      setAuthError(t('auth.error.shortPassword'));
       return;
     }
 
@@ -185,18 +186,18 @@ export default function LoginForm({
       }
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      let errMsg = err.message || 'an error occurred. please try again.';
+      let errMsg = err.message || t('auth.error.general');
       // Custom mapping for Firebase Auth error codes
       if (err.code === 'auth/wrong-password') {
-        errMsg = 'incorrect password. please try again.';
+        errMsg = t('auth.error.wrongPassword');
       } else if (err.code === 'auth/user-not-found') {
-        errMsg = 'no account found for this email address.';
+        errMsg = t('auth.error.userNotFound');
       } else if (err.code === 'auth/email-already-in-use') {
-        errMsg = 'this email address is already registered.';
+        errMsg = t('auth.error.emailInUse');
       } else if (err.code === 'auth/weak-password') {
-        errMsg = 'password is too weak. use at least 6 characters.';
+        errMsg = t('auth.error.weakPassword');
       } else if (err.code === 'auth/invalid-email') {
-        errMsg = 'invalid email address format.';
+        errMsg = t('auth.error.invalidEmailFormat');
       }
       setAuthError(errMsg);
     } finally {
@@ -258,8 +259,8 @@ export default function LoginForm({
         {/* ======================================================== */}
         <Animated.View style={entryStyle}>
           {/* Header & Subtitle */}
-          <Text style={styles.title}>welcome to cognify</Text>
-          <Text style={styles.subtitle}>train your mind. every day.</Text>
+          <Text style={styles.title}>{t('auth.login.title')}</Text>
+          <Text style={styles.subtitle}>{t('auth.login.subtitle')}</Text>
 
           {/* Custom Interactive Checkbox */}
           <TouchableOpacity
@@ -285,13 +286,13 @@ export default function LoginForm({
               )}
             </View>
             <Text style={styles.checkboxText}>
-              I agree to Cognify's{' '}
+              {t('auth.terms.agreePrefix')}
               <Text style={styles.checkboxLink} onPress={onTermsPress}>
-                Terms & Conditions
-              </Text>{' '}
-              and acknowledge the{' '}
+                {t('auth.terms.termsLink')}
+              </Text>
+              {t('auth.terms.andAcknowledge')}
               <Text style={styles.checkboxLink} onPress={onPrivacyPress}>
-                Privacy Policy
+                {t('auth.terms.privacyLink')}
               </Text>.
             </Text>
           </TouchableOpacity>
@@ -301,14 +302,14 @@ export default function LoginForm({
             style={styles.createAccountBtn}
             onPress={handleCreateAccountPress}
           >
-            <Text style={styles.createAccountBtnText}>create an account</Text>
+            <Text style={styles.createAccountBtnText}>{t('auth.login.createAccount')}</Text>
           </TouchableScale>
 
           <TouchableScale
             style={styles.loginBtn}
             onPress={handleLogInPress}
           >
-            <Text style={styles.loginBtnText}>log in</Text>
+            <Text style={styles.loginBtnText}>{t('auth.login.logIn')}</Text>
           </TouchableScale>
         </Animated.View>
 
@@ -324,10 +325,10 @@ export default function LoginForm({
               transitionTo('entry');
             }}
           >
-            <Text style={styles.backBtnText}>← back to options</Text>
+            <Text style={styles.backBtnText}>{t('auth.login.backToOptions')}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.ssoTitle}>choose account</Text>
+          <Text style={styles.ssoTitle}>{t('auth.login.chooseAccount')}</Text>
 
           {/* Apple SSO Button */}
           <TouchableScale
@@ -342,7 +343,7 @@ export default function LoginForm({
                   fill="#2D3139"
                 />
               </Svg>
-              <Text style={styles.ssoButtonText}>continue with Apple</Text>
+              <Text style={styles.ssoButtonText}>{t('auth.login.continueWithApple')}</Text>
             </View>
           </TouchableScale>
 
@@ -359,7 +360,7 @@ export default function LoginForm({
                   fill="#4285F4"
                 />
               </Svg>
-              <Text style={styles.ssoButtonText}>continue with Google</Text>
+              <Text style={styles.ssoButtonText}>{t('auth.login.continueWithGoogle')}</Text>
             </View>
           </TouchableScale>
 
@@ -372,7 +373,7 @@ export default function LoginForm({
               transitionTo('email');
             }}
           >
-            <Text style={styles.emailSignupLinkText}>or sign up with email</Text>
+            <Text style={styles.emailSignupLinkText}>{t('auth.login.orSignUpWithEmail')}</Text>
           </TouchableOpacity>
         </Animated.View>
 
@@ -388,10 +389,10 @@ export default function LoginForm({
               transitionTo('entry');
             }}
           >
-            <Text style={styles.backBtnText}>← back to options</Text>
+            <Text style={styles.backBtnText}>{t('auth.login.backToOptions')}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.ssoTitle}>{isSignUp ? 'create account' : 'email login'}</Text>
+          <Text style={styles.ssoTitle}>{isSignUp ? t('auth.login.createAccountTitle') : t('auth.login.emailLoginTitle')}</Text>
 
           {/* Email Text Input */}
           <View style={styles.inputWrapper}>
@@ -401,7 +402,7 @@ export default function LoginForm({
                 inputFocused && styles.inputFocused,
                 emailError && styles.inputError
               ]}
-              placeholder="enter your email address"
+              placeholder={t('auth.login.emailPlaceholder')}
               placeholderTextColor="#8A8E94"
               keyboardType="email-address"
               autoCapitalize="none"
@@ -427,7 +428,7 @@ export default function LoginForm({
                   passFocused && styles.inputFocused,
                   authError && styles.inputError
                 ]}
-                placeholder="enter your password"
+                placeholder={t('auth.login.passwordPlaceholder')}
                 placeholderTextColor="#8A8E94"
                 secureTextEntry={secureText}
                 autoCapitalize="none"
@@ -468,7 +469,7 @@ export default function LoginForm({
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <Text style={styles.emailSubmitBtnText}>
-                {isSignUp ? 'create account' : 'continue'}
+                {isSignUp ? t('auth.login.createAccountTitle') : t('auth.login.continue')}
               </Text>
             )}
           </TouchableScale>
@@ -483,9 +484,9 @@ export default function LoginForm({
             }}
           >
             <Text style={styles.modeSwitchText}>
-              {isSignUp ? 'already have an account? ' : "don't have an account? "}
+              {isSignUp ? t('auth.login.alreadyHaveAccount') : t('auth.login.dontHaveAccount')}
               <Text style={styles.modeSwitchLink}>
-                {isSignUp ? 'log in' : 'sign up'}
+                {isSignUp ? t('auth.login.logIn') : t('auth.login.signUp')}
               </Text>
             </Text>
           </TouchableOpacity>
@@ -512,7 +513,6 @@ const getStyles = (Colors) => StyleSheet.create({
     color: '#2D3139',
     textAlign: 'center',
     marginBottom: Spacing[2],
-    textTransform: 'lowercase',
   },
   subtitle: {
     fontFamily: Typography.fontFamily.medium,
@@ -520,7 +520,6 @@ const getStyles = (Colors) => StyleSheet.create({
     color: '#60646D',
     textAlign: 'center',
     marginBottom: Spacing[5],
-    textTransform: 'lowercase',
   },
   checkboxRow: {
     flexDirection: 'row',
@@ -576,7 +575,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 15,
     color: '#FFFFFF',
-    textTransform: 'lowercase',
   },
   loginBtn: {
     backgroundColor: '#FAF2EE', // Creamy Headspace Pink/Beige
@@ -591,7 +589,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 15,
     color: '#2D3139',
-    textTransform: 'lowercase',
   },
   backBtn: {
     alignSelf: 'flex-start',
@@ -602,7 +599,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: 14,
     color: '#60646D',
-    textTransform: 'lowercase',
   },
   ssoTitle: {
     fontFamily: Typography.fontFamily.bold,
@@ -610,7 +606,6 @@ const getStyles = (Colors) => StyleSheet.create({
     color: '#2D3139',
     alignSelf: 'flex-start',
     marginBottom: Spacing[4],
-    textTransform: 'lowercase',
   },
   ssoButton: {
     backgroundColor: '#FFFFFF',
@@ -634,7 +629,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 15,
     color: '#2D3139',
-    textTransform: 'lowercase',
   },
   emailSignupLink: {
     marginTop: Spacing[6],
@@ -644,7 +638,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 14,
     color: '#0066FF',
-    textTransform: 'lowercase',
   },
   inputWrapper: {
     width: '100%',
@@ -692,7 +685,6 @@ const getStyles = (Colors) => StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 4,
     paddingLeft: Spacing[2],
-    textTransform: 'lowercase',
   },
   emailSubmitBtn: {
     backgroundColor: '#0066FF',
@@ -707,7 +699,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 15,
     color: '#FFFFFF',
-    textTransform: 'lowercase',
   },
   modeSwitchBtn: {
     marginTop: Spacing[4],
@@ -718,7 +709,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontSize: 13,
     color: '#60646D',
     textAlign: 'center',
-    textTransform: 'lowercase',
   },
   modeSwitchLink: {
     fontFamily: Typography.fontFamily.bold,

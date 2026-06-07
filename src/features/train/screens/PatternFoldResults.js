@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Target, Award, Flame, ArrowRight, Brain, Clock, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { t } from '../../../constants/useStrings';
 
 // Components
 import SpatialEfficiencyBadge from '../components/SpatialEfficiencyBadge';
@@ -72,7 +73,7 @@ export default function PatternFoldResults({
     })).then(() => {
       setSuggestion(null);
       // Clean level update
-      alert(`Level successfully adjusted to Level ${suggestion.toLevel}!`);
+      alert(t('patternFold.results.alertSuccess', { level: suggestion.toLevel }));
     });
   };
 
@@ -107,10 +108,10 @@ export default function PatternFoldResults({
       <View style={styles.header}>
         <View style={[styles.domainChip, { backgroundColor: 'rgba(235, 68, 140, 0.15)' }]}>
           <Text style={[styles.domainChipText, { color: Colors.domain.spatial.main }]}>
-            SPATIAL COGNITION
+            {t('patternFold.results.domainTitle')}
           </Text>
         </View>
-        <Text style={styles.exerciseName}>Pattern Fold</Text>
+        <Text style={styles.exerciseName}>{t('patternFold.results.exerciseName')}</Text>
       </View>
 
       {/* Glassmorphic Double-Tab Toggle */}
@@ -121,7 +122,7 @@ export default function PatternFoldResults({
           activeOpacity={0.8}
         >
           <Text style={[styles.tabText, activeTab === 'summary' && { color: Colors.domain.spatial.main }]}>
-            Session Summary
+            {t('patternFold.results.tabSummary')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -130,7 +131,7 @@ export default function PatternFoldResults({
           activeOpacity={0.8}
         >
           <Text style={[styles.tabText, activeTab === 'history' && { color: Colors.domain.spatial.main }]}>
-            Progress & Trends
+            {t('patternFold.results.tabHistory')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -154,7 +155,7 @@ export default function PatternFoldResults({
             <View style={[styles.metricsList, Shadow.sm, { backgroundColor: Colors.surface }]}>
               <View style={styles.metricRow}>
                 <Target size={18} color={Colors.textSecondary} />
-                <Text style={styles.metricLabel}>rounds completed</Text>
+                <Text style={styles.metricLabel}>{t('train.results.roundsCompleted')}</Text>
                 <Text style={styles.metricValue}>{roundsCompleted}</Text>
               </View>
 
@@ -162,7 +163,7 @@ export default function PatternFoldResults({
 
               <View style={styles.metricRow}>
                 <Award size={18} color={Colors.textSecondary} />
-                <Text style={styles.metricLabel}>accuracy</Text>
+                <Text style={styles.metricLabel}>{t('train.results.accuracy')}</Text>
                 <Text style={styles.metricValue}>{accuracy}%</Text>
               </View>
 
@@ -170,8 +171,8 @@ export default function PatternFoldResults({
 
               <View style={styles.metricRow}>
                 <Flame size={18} color={Colors.textSecondary} />
-                <Text style={styles.metricLabel}>longest streak</Text>
-                <Text style={styles.metricValue}>{longestStreak} in a row</Text>
+                <Text style={styles.metricLabel}>{t('train.results.longestStreak')}</Text>
+                <Text style={styles.metricValue}>{t('train.results.streakInRow', { streak: longestStreak })}</Text>
               </View>
             </View>
 
@@ -210,7 +211,7 @@ export default function PatternFoldResults({
             >
               <Brain size={18} color={Colors.domain.spatial.main} />
               <Text style={[styles.progressCTAText, { color: Colors.domain.spatial.main }]}>
-                Analyze Longitudinal History & Trends
+                {t('patternFold.results.analyzeHistory')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -228,11 +229,11 @@ export default function PatternFoldResults({
 
             {/* Historical Sessions List */}
             <View style={styles.historySection}>
-              <Text style={[styles.historyTitle, { color: Colors.textSecondary }]}>session history</Text>
+              <Text style={[styles.historyTitle, { color: Colors.textSecondary }]}>{t('patternFold.results.sessionHistoryTitle')}</Text>
 
               {activeHistory.length === 0 ? (
                 <Text style={[styles.emptyHistory, { color: Colors.textMuted }]}>
-                  No spatial profiles logged yet. Complete more workouts to map your brain!
+                  {t('patternFold.results.emptyHistory')}
                 </Text>
               ) : (
                 <View style={styles.historyList}>
@@ -253,17 +254,17 @@ export default function PatternFoldResults({
                           <View style={styles.historyMeta}>
                             <Text style={styles.historyDate}>{date}</Text>
                             <Text style={[styles.historyLevel, { color: Colors.textMuted }]}>
-                              Level {s.level}
+                              {t('patternFold.results.levelPrefix', { level: s.level })}
                             </Text>
                           </View>
                           
                           <View style={styles.historyScores}>
                             <View style={styles.scorePill}>
-                              <Text style={styles.scorePillText}>{s.score} pts</Text>
+                              <Text style={styles.scorePillText}>{t('patternFold.results.scorePts', { score: s.score })}</Text>
                             </View>
                             <View style={[styles.efficiencyPill, { backgroundColor: 'rgba(235, 68, 140, 0.08)' }]}>
                               <Text style={[styles.efficiencyPillText, { color: Colors.domain.spatial.main }]}>
-                                {s.spatialEfficiency}% SE
+                                {t('patternFold.results.efficiencyPill', { efficiency: s.spatialEfficiency })}
                               </Text>
                             </View>
                             {isExpanded ? (
@@ -280,36 +281,36 @@ export default function PatternFoldResults({
                             <View style={styles.panelDivider} />
                             
                             <View style={styles.panelRow}>
-                              <Text style={styles.panelLabel}>Average Speed:</Text>
-                              <Text style={styles.panelVal}>{s.avgReactionTimeMs}ms</Text>
+                              <Text style={styles.panelLabel}>{t('patternFold.results.avgSpeed')}</Text>
+                              <Text style={styles.panelVal}>{t('patternFold.results.avgSpeedVal', { speed: s.avgReactionTimeMs })}</Text>
                             </View>
                             <View style={styles.panelRow}>
-                              <Text style={styles.panelLabel}>Elite Speeds:</Text>
-                              <Text style={styles.panelVal}>{s.eliteSpeedCount || 0} rounds</Text>
+                              <Text style={styles.panelLabel}>{t('patternFold.results.eliteSpeeds')}</Text>
+                              <Text style={styles.panelVal}>{t('patternFold.results.eliteSpeedsVal', { rounds: s.eliteSpeedCount || 0 })}</Text>
                             </View>
 
                             <View style={styles.panelDivider} />
                             
                             {/* Inner mini foil rates */}
-                            <Text style={styles.panelSection}>Error Attribution:</Text>
+                            <Text style={styles.panelSection}>{t('patternFold.results.errorAttribution')}</Text>
                             <View style={styles.panelGrid}>
                               <View style={styles.panelGridCard}>
                                 <Text style={[styles.panelGridVal, { color: Colors.domain.spatial.main }]}>
                                   {Math.round((s.foilBreakdown?.mirror || 0) * 100)}%
                                 </Text>
-                                <Text style={styles.panelGridLabel}>Mirror</Text>
+                                <Text style={styles.panelGridLabel}>{t('patternFold.results.errorMirror')}</Text>
                               </View>
                               <View style={styles.panelGridCard}>
                                 <Text style={[styles.panelGridVal, { color: '#0073E6' }]}>
                                   {Math.round((s.foilBreakdown?.angle || 0) * 100)}%
                                 </Text>
-                                <Text style={styles.panelGridLabel}>Angle</Text>
+                                <Text style={styles.panelGridLabel}>{t('patternFold.results.errorAngle')}</Text>
                               </View>
                               <View style={styles.panelGridCard}>
                                 <Text style={[styles.panelGridVal, { color: '#F4A041' }]}>
                                   {Math.round((s.foilBreakdown?.chirality || 0) * 100)}%
                                 </Text>
-                                <Text style={styles.panelGridLabel}>Chiral</Text>
+                                <Text style={styles.panelGridLabel}>{t('patternFold.results.errorChiral')}</Text>
                               </View>
                             </View>
 
@@ -319,7 +320,7 @@ export default function PatternFoldResults({
                                 <View style={styles.patternBox}>
                                   <Brain size={14} color={Colors.domain.spatial.main} />
                                   <Text style={styles.patternBoxText}>
-                                    Detected: {s.patternIds[0].replace(/_/g, ' ')}
+                                    {t('patternFold.results.patternDetected', { pattern: s.patternIds[0].replace(/_/g, ' ') })}
                                   </Text>
                                 </View>
                               </>
@@ -344,7 +345,7 @@ export default function PatternFoldResults({
           activeOpacity={0.85}
         >
           <Text style={styles.primaryButtonText}>
-            {remainingExercises && remainingExercises.length > 0 ? 'next exercise' : 'done'}
+            {remainingExercises && remainingExercises.length > 0 ? t('train.results.nextExercise') : t('train.results.done')}
           </Text>
           {remainingExercises && remainingExercises.length > 0 && (
             <ArrowRight size={20} color="#FFFFFF" style={{ marginLeft: Spacing[2] }} />
@@ -357,7 +358,7 @@ export default function PatternFoldResults({
           activeOpacity={0.8}
         >
           <Text style={[styles.secondaryButtonText, { color: Colors.textSecondary }]}>
-            play again
+            {t('train.results.playAgain')}
           </Text>
         </TouchableOpacity>
       </View>

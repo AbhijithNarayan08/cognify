@@ -7,6 +7,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Spacing, Radius, Typography } from '../../theme';
 import { TouchableScale } from '../../components/Motion';
 import LoginForm from './LoginForm';
+import { t } from '../../constants/useStrings';
 import { useApp } from '../../context/AppContext';
 
 // Import existing high-fidelity animated mascots including the DynamicFlame streak mascot
@@ -577,12 +578,12 @@ export default function LoginScreen({ navigation }) {
       <View style={styles.headerControls}>
         {showSkip && isFirstLaunch && (
           <TouchableScale onPress={handleSkipCTA} style={styles.skipBtn}>
-            <Text style={styles.skipText}>skip intro</Text>
+            <Text style={styles.skipText}>{t('auth.intro.skip')}</Text>
           </TouchableScale>
         )}
         {animationPhase === 'ready' && (
           <TouchableScale onPress={handleReplay} style={styles.replayBtn}>
-            <Text style={styles.replayText}>↺ replay intro</Text>
+            <Text style={styles.replayText}>{t('auth.intro.replay')}</Text>
           </TouchableScale>
         )}
       </View>

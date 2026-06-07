@@ -2,15 +2,16 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Typography, Spacing } from '../../../../theme';
+import { t } from '../../../../constants/useStrings';
 
 export default function RoundIndicator({ roundNumber, sequenceLength, Colors }) {
   return (
     <View style={styles.container}>
       <Text style={[styles.roundText, { color: Colors.textSecondary }]}>
-        round {roundNumber}
+        {t('train.signalChain.round', { count: roundNumber })}
       </Text>
       <Text style={[styles.nodesText, { color: Colors.textTertiary }]}>
-        {sequenceLength} nodes
+        {t('train.signalChain.nodes', { count: sequenceLength })}
       </Text>
     </View>
   );
@@ -25,13 +26,11 @@ const styles = StyleSheet.create({
   roundText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
     textAlign: 'center',
   },
   nodesText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
     textAlign: 'center',
     marginTop: 2,
   },

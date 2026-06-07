@@ -63,10 +63,10 @@ export function WordMatchGame({ trialIdx, feedback, onAnswer, Colors }) {
 const getStyles = (Colors) => StyleSheet.create({
   container: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', gap: Spacing[6], paddingHorizontal: Spacing[6] },
   wordBox: { width: '100%', paddingVertical: Spacing[6], paddingHorizontal: Spacing[4], borderRadius: Radius.xl, alignItems: 'center', justifyContent: 'center', ...Shadow.md, minHeight: 140 },
-  wordText: { fontFamily: Typography.fontFamily.extraBold, fontSize: 32, color: Colors.textPrimary, textTransform: 'lowercase', marginBottom: Spacing[2] },
-  promptText: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.caption, color: Colors.textSecondary, textTransform: 'lowercase' },
+  wordText: { fontFamily: Typography.fontFamily.extraBold, fontSize: 32, color: Colors.textPrimary, marginBottom: Spacing[2] },
+  promptText: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.caption, color: Colors.textSecondary },
   optionsGrid: { width: '100%', gap: Spacing[3] },
   optionBtn: { width: '100%', borderRadius: Radius.full, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
-  optionBtnText: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.body, color: Colors.textPrimary, textTransform: 'lowercase' },
+  optionBtnText: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.body, color: Colors.textPrimary },
   trialCounter: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.caption, color: Colors.textMuted },
 });

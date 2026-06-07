@@ -1,1 +1,28 @@
-{"extends": ["plugin:react/recommended"], "parser":"@babel/eslint-parser", "env":{"browser":true, "node":true, "es6":true}}
+{
+  "extends": ["plugin:react/recommended"],
+  "parser": "@babel/eslint-parser",
+  "parserOptions": {
+    "requireConfigFile": false,
+    "babelOptions": {
+      "configFile": false,
+      "babelrc": false,
+      "presets": ["babel-preset-expo"]
+    }
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es6": true
+  },
+  "rules": {
+    "react/prop-types": "off",
+    "react/react-in-jsx-scope": "off",
+    "react/no-unescaped-entities": "off",
+    "no-unused-vars": "warn"
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  }
+}

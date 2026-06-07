@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Text, Animated } from 'react-native';
 import FlashSortShape from './FlashSortShape';
 import { Typography, Spacing } from '../../../../theme';
+import { t } from '../../../../constants/useStrings';
 
 export default function FlashSortFeedback({
   status,
@@ -43,10 +44,10 @@ export default function FlashSortFeedback({
     feedbackColor = '#E24B4A';
   } else if (status === 'too_slow') {
     feedbackColor = Colors.textTertiary || '#8E8A86';
-    labelText = 'too slow';
+    labelText = t('train.flashSort.feedback.tooSlow');
   } else if (status === 'false_start') {
     feedbackColor = Colors.textTertiary || '#8E8A86';
-    labelText = 'too fast';
+    labelText = t('train.flashSort.feedback.tooFast');
   }
 
   const animatedStyle = {
@@ -83,7 +84,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
     textAlign: 'center',
-    textTransform: 'lowercase',
     marginTop: Spacing[4],
   },
 });

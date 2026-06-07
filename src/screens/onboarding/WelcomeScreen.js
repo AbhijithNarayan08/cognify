@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions, StatusBar, Image, ScrollView } from 'react-native';
 import { useThemeColors, Typography, Spacing, Radius } from '../../theme';
+import { t } from '../../constants/useStrings';
 import { TouchableScale, FadeInUp } from '../../components/Motion';
 import { useApp } from '../../context/AppContext';
 import { DynamicStar } from '../../shared/components/MascotCharacters';
@@ -75,9 +76,9 @@ export default function WelcomeScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={styles.bottomContent} showsVerticalScrollIndicator={false}>
         <FadeInUp delay={400} distance={20} style={{ alignItems: 'center', width: '100%' }}>
-          <Text style={styles.title}>play your way to a sharper brain.</Text>
+          <Text style={styles.title}>{t('onboarding.welcome.newHeadline')}</Text>
           <Text style={styles.subtitle}>
-            bite-sized, game-backed exercises designed by cognitive coaches.
+            {t('onboarding.welcome.newSubtitle')}
           </Text>
         </FadeInUp>
 
@@ -86,14 +87,14 @@ export default function WelcomeScreen({ navigation }) {
             style={styles.primaryButton}
             onPress={handleStart}
           >
-            <Text style={styles.primaryButtonText}>get started</Text>
+            <Text style={styles.primaryButtonText}>{t('onboarding.welcome.getStarted')}</Text>
           </TouchableScale>
 
           <TouchableScale
             style={styles.debugButton}
             onPress={handleDebugSkip}
           >
-            <Text style={styles.debugButtonText}>skip onboarding (dev)</Text>
+            <Text style={styles.debugButtonText}>{t('onboarding.welcome.skipOnboardingDev')}</Text>
           </TouchableScale>
         </FadeInUp>
       </ScrollView>
@@ -144,7 +145,6 @@ const getStyles = (Colors) => StyleSheet.create({
     textAlign: 'center',
     lineHeight: 42,
     marginBottom: Spacing[3],
-    textTransform: 'lowercase',
   },
   subtitle: {
     fontFamily: Typography.fontFamily.medium,
@@ -153,7 +153,6 @@ const getStyles = (Colors) => StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     paddingHorizontal: Spacing[2],
-    textTransform: 'lowercase',
   },
   actions: {
     width: '100%',
@@ -171,7 +170,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.body,
     color: '#FFFFFF',
-    textTransform: 'lowercase',
   },
   debugButton: {
     marginTop: Spacing[2],
@@ -186,6 +184,5 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.caption,
     color: '#FF5E5B',
-    textTransform: 'lowercase',
   },
 });

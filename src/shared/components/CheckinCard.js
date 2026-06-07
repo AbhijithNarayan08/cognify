@@ -47,7 +47,7 @@ export function CheckinCard({ type, onComplete }) {
         {/* Center Informational Zone */}
         <View style={styles.textZone}>
           <Text style={styles.title}>{t(config.titleKey)}</Text>
-          <Text style={styles.subtitle}>tap to log and track your wellness</Text>
+          <Text style={styles.subtitle}>{t('home.checkin.cardSubtitle')}</Text>
         </View>
 
         {/* Right Arrow CTA */}

@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import { ArrowLeft, RotateCcw, HelpCircle, Heart, Award } from 'lucide-react-native';
 import { useThemeColors, Typography, Spacing, Radius, Shadow } from '../../theme';
+import { t } from '../../constants/useStrings';
 import { GameHaptics } from '../../utils/haptics';
 
 // ── Screen and Canvas Dimensions ─────────────────────────────────────────────
@@ -495,7 +496,7 @@ export default function ArrowEscapeScreen({ navigation }) {
         </View>
         
         <View style={styles.headerTitleContainer}>
-          <Text style={[styles.headerTitle, { color: '#4A90E2' }]}>level {currentLevel}</Text>
+          <Text style={[styles.headerTitle, { color: '#4A90E2' }]}>{t('games.arrowEscape.levelTitle', { level: currentLevel })}</Text>
           <View style={styles.heartsRow}>
             {[...Array(5)].map((_, i) => (
               <Heart
@@ -517,7 +518,7 @@ export default function ArrowEscapeScreen({ navigation }) {
               navigation.navigate('ArrowEscapeDesigner');
             }}
           >
-            <Text style={[styles.designerBtnText, { color: Colors.textSecondary }]}>design</Text>
+            <Text style={[styles.designerBtnText, { color: Colors.textSecondary }]}>{t('games.arrowEscape.designBtn')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -581,11 +582,11 @@ export default function ArrowEscapeScreen({ navigation }) {
           {gameState === 'won' && (
             <View style={styles.overlay}>
               <Award size={48} color="#4A90E2" style={{ marginBottom: 12 }} />
-              <Text style={styles.overlayTitle}>level cleared!</Text>
-              <Text style={styles.overlaySub}>you escaped the gridlocks successfully.</Text>
+              <Text style={styles.overlayTitle}>{t('games.arrowEscape.clearedTitle')}</Text>
+              <Text style={styles.overlaySub}>{t('games.arrowEscape.clearedSub')}</Text>
               <TouchableOpacity style={styles.overlayBtn} onPress={nextLevel}>
                 <Text style={styles.overlayBtnText}>
-                  {currentLevel === LEVELS.length ? 'play again' : 'next level'}
+                  {currentLevel === LEVELS.length ? t('games.arrowEscape.designer.playAgain') : t('games.arrowEscape.nextLevel')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -594,10 +595,10 @@ export default function ArrowEscapeScreen({ navigation }) {
           {gameState === 'failed' && (
             <View style={styles.overlay}>
               <Heart size={48} color="#FF5E5B" fill="#FF5E5B" style={{ marginBottom: 12 }} />
-              <Text style={styles.overlayTitle}>no hearts left!</Text>
-              <Text style={styles.overlaySub}>you hit too many blocks. reset to try again!</Text>
+              <Text style={styles.overlayTitle}>{t('games.arrowEscape.gameOverTitle')}</Text>
+              <Text style={styles.overlaySub}>{t('games.arrowEscape.gameOverSub')}</Text>
               <TouchableOpacity style={[styles.overlayBtn, { backgroundColor: '#FF5E5B' }]} onPress={resetLevel}>
-                <Text style={styles.overlayBtnText}>try again</Text>
+                <Text style={styles.overlayBtnText}>{t('games.arrowEscape.tryAgain')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -607,7 +608,7 @@ export default function ArrowEscapeScreen({ navigation }) {
         <View style={styles.captionContainer}>
           <HelpCircle size={16} color="#8F857D" style={{ marginRight: 8 }} />
           <Text style={styles.captionText}>
-            {LEVELS[currentLevel - 1]?.description || 'tap a line to slide it off the board.'}
+            {t(`games.arrowEscape.level.${currentLevel}.description`) || t('games.arrowEscape.instructions')}
           </Text>
         </View>
       </View>
@@ -645,7 +646,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: Typography.fontFamily.extraBold,
     fontSize: 18,
-    textTransform: 'lowercase',
   },
   heartsRow: {
     flexDirection: 'row',
@@ -662,7 +662,6 @@ const styles = StyleSheet.create({
   designerBtnText: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: 10,
-    textTransform: 'lowercase',
   },
   content: {
     flex: 1,
@@ -691,7 +690,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.extraBold,
     fontSize: 22,
     color: '#3C3530',
-    textTransform: 'lowercase',
     marginBottom: 4,
   },
   overlaySub: {
@@ -714,7 +712,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 12,
     color: '#FFFFFF',
-    textTransform: 'lowercase',
   },
   captionContainer: {
     flexDirection: 'row',

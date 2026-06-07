@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Lock } from 'lucide-react-native';
 import { useThemeColors, Typography, Spacing, Radius, Shadow, getDomains } from '../../theme';
 import { TouchableScale } from '../motion/Motion';
+import { t } from '../../constants/useStrings';
 
 /**
  * ExerciseCard — displays exercise details in the train tab grid.
@@ -34,7 +35,7 @@ export function ExerciseCard({ exercise, onPress, locked = false, style, showToo
           onPress={onDismissTooltip}
           activeOpacity={0.9}
         >
-          <Text style={styles.tooltipText}>difficulty</Text>
+          <Text style={styles.tooltipText}>{t('train.exerciseCard.difficulty')}</Text>
           <View style={styles.tooltipArrow} />
         </TouchableOpacity>
       )}
@@ -142,7 +143,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 10,
     color: Colors.textInverse,
-    textTransform: 'lowercase',
   },
   tooltipArrow: {
     position: 'absolute',

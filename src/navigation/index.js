@@ -103,7 +103,6 @@ function MainApp() {
         tabBarLabelStyle: {
           fontFamily: Typography.fontFamily.medium,
           fontSize: Typography.size.caption,
-          textTransform: 'lowercase',
         },
         tabBarIcon: ({ focused }) => (
           <TabIcon name={route.name} focused={focused} />

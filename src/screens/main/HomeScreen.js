@@ -500,7 +500,7 @@ export default function HomeScreen({ navigation }) {
 
         {/* Games Section */}
         <FadeInUp delay={450} style={styles.section}>
-          <SectionHeader title="games" />
+          <SectionHeader title={t('home.gamesTitle')} />
           
           <View style={styles.gamesGrid}>
             {/* Fruit Merge Card */}
@@ -536,16 +536,16 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.gameCardMeta}>
                 <View style={styles.workshopTag}>
                   <Sparkles size={10} color="#8F857D" style={{ marginRight: 4 }} />
-                  <Text style={styles.workshopTagText}>cozy puzzle</Text>
+                  <Text style={styles.workshopTagText}>{t('games.fruitMerge.tag')}</Text>
                 </View>
-                <Text style={styles.gameCardTitle}>fruit merge</Text>
+                <Text style={styles.gameCardTitle}>{t('games.fruitMerge.title')}</Text>
                 <Text style={styles.gameCardSub} numberOfLines={3}>
-                  drop and merge cute mascot fruits in this cozy physics puzzle sandbox!
+                  {t('home.fruitMerge.description')}
                 </Text>
               </View>
 
               <View style={styles.gameCardCtaRow}>
-                <Text style={styles.workshopCta}>play now</Text>
+                <Text style={styles.workshopCta}>{t('home.playNow')}</Text>
                 <ArrowRight size={12} color="#F4A041" style={{ marginLeft: 4 }} />
               </View>
             </TouchableScale>
@@ -576,16 +576,16 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.gameCardMeta}>
                 <View style={styles.workshopTag}>
                   <Sparkles size={10} color="#8F857D" style={{ marginRight: 4 }} />
-                  <Text style={styles.workshopTagText}>logic puzzle</Text>
+                  <Text style={styles.workshopTagText}>{t('games.arrowEscape.tag')}</Text>
                 </View>
-                <Text style={styles.gameCardTitle}>arrow escape</Text>
+                <Text style={styles.gameCardTitle}>{t('games.arrowEscape.title')}</Text>
                 <Text style={styles.gameCardSub} numberOfLines={3}>
-                  slide hooks and twisted lines out of the grid without collisions!
+                  {t('home.arrowEscape.description')}
                 </Text>
               </View>
 
               <View style={styles.gameCardCtaRow}>
-                <Text style={styles.workshopCta}>play now</Text>
+                <Text style={styles.workshopCta}>{t('home.playNow')}</Text>
                 <ArrowRight size={12} color="#F4A041" style={{ marginLeft: 4 }} />
               </View>
             </TouchableScale>
@@ -677,14 +677,14 @@ export default function HomeScreen({ navigation }) {
 
             {/* Title / Day Counter */}
             <Text style={styles.modalTitle}>
-              {streakDays}-{t(streakDays === 1 ? 'home.streak.day' : 'home.streak.days')} Streak!
+              {t('home.streak.modalTitle', { count: streakDays })}
             </Text>
 
             {/* Motivational message based on training state */}
             <Text style={styles.modalSubtitle}>
               {workoutComplete
-                ? "Awesome work! You've completed today's session and locked in your streak. Keep the fire burning tomorrow!"
-                : "You haven't trained yet today! Complete today's workout to keep your streak alive."}
+                ? t('home.streak.modalSubtitle.complete')
+                : t('home.streak.modalSubtitle.incomplete')}
             </Text>
 
             {/* Divider */}
@@ -755,8 +755,8 @@ export default function HomeScreen({ navigation }) {
                 <Shield size={18} color="#1E88E5" />
               </View>
               <View style={styles.freezeTextWrapper}>
-                <Text style={styles.freezeTitle}>Streak Freeze Equipped</Text>
-                <Text style={styles.freezeSub}>Your streak is protected if you miss tomorrow.</Text>
+                <Text style={styles.freezeTitle}>{t('home.streak.freeze.title')}</Text>
+                <Text style={styles.freezeSub}>{t('home.streak.freeze.subtitle')}</Text>
               </View>
               <View style={styles.freezeCountBadge}>
                 <Text style={styles.freezeCountText}>1/1</Text>
@@ -776,7 +776,7 @@ export default function HomeScreen({ navigation }) {
               }}
             >
               <Text style={styles.modalCtaText}>
-                {workoutComplete ? 'Awesome, Keep It Up!' : "Start Today's Workout"}
+                {workoutComplete ? t('home.streak.cta.complete') : t('home.streak.cta.incomplete')}
               </Text>
             </TouchableOpacity>
             </Animated.View>
@@ -850,21 +850,18 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 9,
     color: '#8F857D',
-    textTransform: 'lowercase',
   },
   gameCardTitle: {
     fontFamily: Typography.fontFamily.extraBold,
     fontSize: 16,
     color: '#3C3530',
     marginBottom: 4,
-    textTransform: 'lowercase',
   },
   gameCardSub: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: 10,
     color: '#8F857D',
     lineHeight: 14,
-    textTransform: 'lowercase',
   },
   gameCardCtaRow: {
     flexDirection: 'row',
@@ -875,7 +872,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 12,
     color: '#F4A041',
-    textTransform: 'lowercase',
   },
   container: { flex: 1, backgroundColor: Colors.appBg },
   stickyHeader: {

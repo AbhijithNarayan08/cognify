@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Typography, Spacing, Radius, Shadow } from '../../../theme';
+import { t } from '../../../constants/useStrings';
 
 export default function SpatialEfficiencyBadge({ score, prevScore, isNewBest, Colors }) {
   const animatedValue = useRef(new Animated.Value(0)).current;
@@ -20,16 +21,16 @@ export default function SpatialEfficiencyBadge({ score, prevScore, isNewBest, Co
   if (prevScore !== null && prevScore !== undefined) {
     const diff = score - prevScore;
     if (diff > 0) {
-      deltaText = `+${diff}% vs last session`;
+      deltaText = t('patternFold.efficiencyBadge.vsLastPositive', { diff });
       deltaColor = '#3DC27A'; // green
     } else if (diff < 0) {
-      deltaText = `${diff}% vs last session`;
+      deltaText = t('patternFold.efficiencyBadge.vsLastNegative', { diff });
       deltaColor = '#E24B4A'; // red
     } else {
-      deltaText = 'equal to last session';
+      deltaText = t('patternFold.efficiencyBadge.vsLastEqual');
     }
   } else {
-    deltaText = 'first spatial profile';
+    deltaText = t('patternFold.efficiencyBadge.vsLastFirst');
   }
 
   return (
@@ -43,7 +44,7 @@ export default function SpatialEfficiencyBadge({ score, prevScore, isNewBest, Co
             extrapolate: 'clamp',
           })}
         </Animated.Text>
-        <Text style={[styles.label, { color: Colors.textSecondary }]}>spatial efficiency</Text>
+        <Text style={[styles.label, { color: Colors.textSecondary }]}>{t('patternFold.efficiencyBadge.title')}</Text>
       </View>
 
       {/* Delta Indicator */}
@@ -54,7 +55,7 @@ export default function SpatialEfficiencyBadge({ score, prevScore, isNewBest, Co
       {/* New Best Indicator */}
       {isNewBest && (
         <View style={[styles.bestBadge, { backgroundColor: Colors.domain.spatial.main }]}>
-          <Text style={styles.bestBadgeText}>new personal best</Text>
+          <Text style={styles.bestBadgeText}>{t('patternFold.efficiencyBadge.newBest')}</Text>
         </View>
       )}
     </View>

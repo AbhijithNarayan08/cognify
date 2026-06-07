@@ -157,7 +157,7 @@ export function TrainScreen({ navigation, route }) {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.filterChipText, { color: textCol, fontFamily: textWeight }]}>
-                  {f === 'all' ? t('train.filter.all') : f}
+                  {f === 'all' ? t('train.filter.all') : (domain?.label ? domain.label.charAt(0).toUpperCase() + domain.label.slice(1) : f)}
                 </Text>
               </TouchableOpacity>
             );
@@ -200,15 +200,16 @@ export function TrainScreen({ navigation, route }) {
                     <View style={styles.bannerChips}>
                       {dailyWorkout.map(e => {
                         const d = DOMAINS.find(dom => dom.id === e.domain);
+                        const labelText = d?.label ? d.label.charAt(0).toUpperCase() + d.label.slice(1) : '';
                         return (
                           <View key={e.id} style={[styles.bannerChip, { backgroundColor: d?.color.light }]}>
-                            <Text style={[styles.bannerChipText, { color: d?.color.main }]}>{d?.label}</Text>
+                            <Text style={[styles.bannerChipText, { color: d?.color.main }]}>{labelText}</Text>
                           </View>
                         );
                       })}
                     </View>
                     <View style={styles.bannerButton}>
-                      <Text style={styles.bannerButtonText}>start session</Text>
+                      <Text style={styles.bannerButtonText}>{t('train.activeSession.start')}</Text>
                       <ArrowRight size={16} color={Colors.textInverse} style={{ marginLeft: 6 }} />
                     </View>
                   </View>
@@ -221,20 +222,23 @@ export function TrainScreen({ navigation, route }) {
               </FadeInUp>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeaderTitle}>
-                  {t('train.allExercises') || 'all exercises'}
+                  {t('train.allExercises') || 'All Exercises'}
                 </Text>
                 <Text style={styles.sectionHeaderCount}>
-                  {filteredExercises.length} games
+                  {t('train.exerciseCount', { count: filteredExercises.length })}
                 </Text>
               </View>
             </>
           ) : (
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionHeaderTitle}>
-                {t('train.domainExercises', { domain: activeFilter })}
+                {t('train.domainExercises', { domain: (() => {
+                  const activeDomain = DOMAINS.find(dom => dom.id === activeFilter);
+                  return activeDomain?.label ? activeDomain.label.charAt(0).toUpperCase() + activeDomain.label.slice(1) : activeFilter;
+                })() })}
               </Text>
               <Text style={styles.sectionHeaderCount}>
-                {filteredExercises.length} games
+                {t('train.exerciseCount', { count: filteredExercises.length })}
               </Text>
             </View>
           )
@@ -275,7 +279,6 @@ const getStyles = (Colors) => StyleSheet.create({
   },
   filterChipText: {
     fontSize: Typography.size.caption,
-    textTransform: 'lowercase',
   },
   rightFadeGradient: {
     position: 'absolute',
@@ -320,7 +323,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.caption,
     color: 'rgba(255,255,255,0.7)',
-    textTransform: 'lowercase',
     marginBottom: 2,
   },
   bannerTitle: {
@@ -342,7 +344,6 @@ const getStyles = (Colors) => StyleSheet.create({
   bannerChipText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: 10,
-    textTransform: 'lowercase',
   },
   bannerButton: {
     flexDirection: 'row',
@@ -359,7 +360,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.body,
     color: Colors.textInverse,
-    textTransform: 'lowercase',
   },
 
   // Section Headers
@@ -379,6 +379,5 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
     color: Colors.textSecondary,
-    textTransform: 'lowercase',
   },
 });

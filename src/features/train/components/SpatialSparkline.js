@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../../theme';
+import { t } from '../../../constants/useStrings';
 
 export default function SpatialSparkline({ history = [], Colors }) {
   // Take last 7 sessions in chronological order (oldest to newest)
@@ -55,7 +56,7 @@ export default function SpatialSparkline({ history = [], Colors }) {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: Colors.textSecondary }]}>spatial efficiency trend</Text>
+      <Text style={[styles.title, { color: Colors.textSecondary }]}>{t('patternFold.sparkline.title')}</Text>
       
       <View style={styles.chartWrapper}>
         <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
@@ -119,7 +120,7 @@ export default function SpatialSparkline({ history = [], Colors }) {
         {!hasData && (
           <View style={styles.overlay}>
             <Text style={[styles.overlayText, { color: Colors.textSecondary }]}>
-              Play 2 sessions to unlock trends
+              {t('patternFold.sparkline.overlay')}
             </Text>
           </View>
         )}

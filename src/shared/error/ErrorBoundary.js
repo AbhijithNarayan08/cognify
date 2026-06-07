@@ -9,6 +9,7 @@
  */
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { t } from '../../constants/useStrings';
 
 export class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -35,12 +36,12 @@ export class ErrorBoundary extends React.Component {
       return (
         <View style={styles.container}>
           <Text style={styles.emoji}>🧠</Text>
-          <Text style={styles.title}>something went wrong</Text>
+          <Text style={styles.title}>{t('error.boundary.title')}</Text>
           <Text style={styles.message}>
-            {this.state.error?.message || 'an unexpected error occurred.'}
+            {this.state.error?.message || t('error.boundary.message')}
           </Text>
           <TouchableOpacity style={styles.btn} onPress={this.handleRetry}>
-            <Text style={styles.btnText}>try again</Text>
+            <Text style={styles.btnText}>{t('error.boundary.retry')}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -63,7 +64,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1A2A3A',
     marginBottom: 8,
-    textTransform: 'lowercase',
   },
   message: {
     fontSize: 14,

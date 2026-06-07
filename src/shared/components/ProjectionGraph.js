@@ -6,6 +6,7 @@ import Svg, {
   Path, Circle, Line, Text as SvgText, G, Defs, LinearGradient as SvgLinearGradient, Stop
 } from 'react-native-svg';
 import { useThemeColors, Typography, Spacing, Radius } from '../../theme';
+import { t } from '../../constants/useStrings';
 
 const { width } = Dimensions.get('window');
 
@@ -138,14 +139,14 @@ export default function ProjectionGraph({ cognitiveScore = 680, containerWidth }
       {/* Live Score Counter Badge */}
       <View style={styles.scoreRow}>
         <View style={styles.scoreMetric}>
-          <Text style={styles.scoreLabel}>current score</Text>
+          <Text style={styles.scoreLabel}>{t('insights.currentScore')}</Text>
           <Text style={styles.scoreNumber}>{cognitiveScore}</Text>
         </View>
 
         <Text style={styles.arrowIcon}>→</Text>
 
         <View style={styles.scoreMetric}>
-          <Text style={[styles.scoreLabel, { color: Colors.brandPrimary }]}>projected score</Text>
+          <Text style={[styles.scoreLabel, { color: Colors.brandPrimary }]}>{t('onboarding.projection.projectedScore')}</Text>
           <Text style={[styles.scoreNumber, { color: Colors.brandPrimary }]}>{displayScore}</Text>
         </View>
 
@@ -178,7 +179,7 @@ export default function ProjectionGraph({ cognitiveScore = 680, containerWidth }
           fontSize={11}
           fontFamily={Typography.fontFamily.medium}
         >
-          focus perception
+          {t('onboarding.projection.yAxisLabel')}
         </SvgText>
 
         {/* X Axis */}
@@ -191,7 +192,7 @@ export default function ProjectionGraph({ cognitiveScore = 680, containerWidth }
           fontSize={11}
           fontFamily={Typography.fontFamily.medium}
         >
-          timeline
+          {t('onboarding.projection.xAxisLabel')}
         </SvgText>
 
         {/* Path B: WITHOUT Cognify (Grey decline curve) */}
@@ -251,7 +252,7 @@ export default function ProjectionGraph({ cognitiveScore = 680, containerWidth }
             fontSize={11}
             fontFamily={Typography.fontFamily.bold}
           >
-            7 days
+            {t('onboarding.projection.7days')}
           </SvgText>
           <SvgText
             x={day7X}
@@ -276,7 +277,7 @@ export default function ProjectionGraph({ cognitiveScore = 680, containerWidth }
             fontSize={11}
             fontFamily={Typography.fontFamily.bold}
           >
-            14 days
+            {t('onboarding.projection.14days')}
           </SvgText>
           <SvgText
             x={day14X}
@@ -301,7 +302,7 @@ export default function ProjectionGraph({ cognitiveScore = 680, containerWidth }
             fontSize={11}
             fontFamily={Typography.fontFamily.bold}
           >
-            30 days
+            {t('onboarding.projection.30days')}
           </SvgText>
           <SvgText
             x={day30X}
@@ -320,11 +321,11 @@ export default function ProjectionGraph({ cognitiveScore = 680, containerWidth }
       <View style={styles.legendRow}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: Colors.positive }]} />
-          <Text style={styles.legendText}>with cognify ({cognitiveScore + 155})</Text>
+          <Text style={styles.legendText}>{t('onboarding.projection.withApp', { score: cognitiveScore + 155 })}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: Colors.textMuted }]} />
-          <Text style={styles.legendText}>without app ({cognitiveScore - 25})</Text>
+          <Text style={styles.legendText}>{t('onboarding.projection.withoutApp', { score: cognitiveScore - 25 })}</Text>
         </View>
       </View>
     </View>
@@ -351,7 +352,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
     color: Colors.textMuted,
-    textTransform: 'lowercase',
   },
   scoreNumber: {
     fontFamily: Typography.fontFamily.extraBold,
@@ -398,6 +398,5 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
     color: Colors.textSecondary,
-    textTransform: 'lowercase',
   },
 });

@@ -2,11 +2,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Typography, Spacing, Radius } from '../../../theme';
+import { t } from '../../../constants/useStrings';
 
 export default function AngleAccuracyStrip({ angleAccuracy, Colors }) {
   const getPillTheme = (ratio) => {
     if (ratio === null || ratio === undefined) {
-      return { bg: '#F0F0F0', text: '#888', label: '—' };
+      return { bg: '#F0F0F0', text: '#888', label: t('patternFold.accuracyStrip.empty') };
     }
     const pct = Math.round(ratio * 100);
     if (pct >= 80) {
@@ -22,7 +23,7 @@ export default function AngleAccuracyStrip({ angleAccuracy, Colors }) {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.sectionTitle, { color: Colors.textSecondary }]}>rotation angles</Text>
+      <Text style={[styles.sectionTitle, { color: Colors.textSecondary }]}>{t('patternFold.accuracyStrip.rotationAngles')}</Text>
       <View style={styles.strip}>
         {angles.map((angle) => {
           const ratio = angleAccuracy ? angleAccuracy[angle] : null;

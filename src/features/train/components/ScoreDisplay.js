@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
 import { Typography } from '../../../theme';
+import { t } from '../../../constants/useStrings';
 
 export default function ScoreDisplay({ score }) {
   const [deltas, setDeltas] = useState([]);
@@ -47,7 +48,7 @@ export default function ScoreDisplay({ score }) {
   return (
     <View style={styles.container}>
       <Text style={styles.scoreText}>{score}</Text>
-      <Text style={styles.ptsLabel}>pts</Text>
+      <Text style={styles.ptsLabel}>{t('train.activeSession.ptsLabel')}</Text>
       
       {/* Floating Deltas Container */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -84,7 +85,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.micro,
     color: '#8E8A86', // Muted text
-    textTransform: 'lowercase',
     textAlign: 'right',
     marginTop: 1,
   },

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react-native';
 import { useThemeColors, Typography, Spacing, Radius, Shadow } from '../../theme';
 import { GameHaptics } from '../../utils/haptics';
+import { t } from '../../constants/useStrings';
 
 // ── Screen Constants ────────────────────────────────────────────────────────
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -52,7 +53,20 @@ const getFruitPhysicsRadius = (tier) => {
 };
 
 const getFruitName = (tier) => {
-  return FRUIT_TIERS[tier - 1]?.name || 'fruit';
+  const tierName = FRUIT_TIERS[tier - 1]?.name;
+  if (!tierName) return '';
+  const keyMap = {
+    'cherry': 'cherry',
+    'strawberry': 'strawberry',
+    'grape': 'grape',
+    'clementine': 'clementine',
+    'peach': 'peach',
+    'melon': 'melon',
+    'peach melon': 'peachMelon',
+    'watermelon': 'watermelon'
+  };
+  const key = keyMap[tierName] || tierName;
+  return t(`games.fruitMerge.fruit.${key}`);
 };
 
 // ── Reworked Mascot SVG Renderer ─────────────────────────────────────────────
@@ -1098,11 +1112,11 @@ export default function AIFruitWorkshopScreen({ navigation }) {
   const handleResetPress = () => {
     if (score > 0) {
       Alert.alert(
-        'restart?',
-        "you'll lose your current progress.",
+        t('games.fruitMerge.restartTitle'),
+        t('games.fruitMerge.restartDesc'),
         [
-          { text: 'cancel', style: 'cancel' },
-          { text: 'restart', style: 'destructive', onPress: resetSandbox },
+          { text: t('games.fruitMerge.cancel'), style: 'cancel' },
+          { text: t('games.fruitMerge.restart'), style: 'destructive', onPress: resetSandbox },
         ],
         { cancelable: true }
       );
@@ -1114,7 +1128,7 @@ export default function AIFruitWorkshopScreen({ navigation }) {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `i scored ${score} points and reached the ${getFruitName(maxTierAchieved)} tier in fruit merge! can you beat my score? 🍊✨`,
+        message: t('games.fruitMerge.shareMessage', { score, tier: getFruitName(maxTierAchieved) }),
       });
     } catch (error) {
       console.log(error);
@@ -1140,7 +1154,7 @@ export default function AIFruitWorkshopScreen({ navigation }) {
         >
           <ArrowLeft size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: Colors.textPrimary }]}>Fruit Merge</Text>
+        <Text style={[styles.headerTitle, { color: Colors.textPrimary }]}>{t('games.fruitMerge.title')}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {typeof __DEV__ !== 'undefined' && __DEV__ ? (
             <TouchableOpacity
@@ -1150,7 +1164,7 @@ export default function AIFruitWorkshopScreen({ navigation }) {
                 setGameOver(true);
               }}
             >
-              <Text style={styles.debugLoseText}>debug: lose</Text>
+              <Text style={styles.debugLoseText}>{t('games.fruitMerge.debugLose')}</Text>
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity
@@ -1180,7 +1194,7 @@ export default function AIFruitWorkshopScreen({ navigation }) {
         {/* Score & High Score & Next preview row */}
         <View style={styles.statsBar}>
           <View style={styles.statBox}>
-            <Text style={styles.statsLabel}>score</Text>
+            <Text style={styles.statsLabel}>{t('games.fruitMerge.score')}</Text>
             <Animated.Text style={[styles.statsValue, { color: Colors.textPrimary, transform: [{ scale: scoreScale }] }]}>
               {score}
             </Animated.Text>
@@ -1188,7 +1202,7 @@ export default function AIFruitWorkshopScreen({ navigation }) {
 
           {/* Calm "Next" Preview Bubble */}
           <View style={styles.nextPreviewContainer}>
-            <Text style={styles.statsLabel}>next</Text>
+            <Text style={styles.statsLabel}>{t('games.fruitMerge.next')}</Text>
             <View style={styles.nextPreviewBubble}>
               <FruitSvg tier={nextFruitTier} r={14} />
             </View>
@@ -1197,7 +1211,7 @@ export default function AIFruitWorkshopScreen({ navigation }) {
           <View style={[styles.statBox, { alignItems: 'flex-end' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Award size={12} color="#F4A041" style={{ marginRight: 4 }} />
-              <Text style={styles.statsLabel}>high score</Text>
+              <Text style={styles.statsLabel}>{t('games.fruitMerge.highScore')}</Text>
             </View>
             <Text style={[styles.statsValue, { color: Colors.textPrimary }]}>{highScore}</Text>
           </View>
@@ -1208,7 +1222,7 @@ export default function AIFruitWorkshopScreen({ navigation }) {
           {/* Overfill Limit Line with dynamic tension colors and pulsing alert line */}
           <View style={[styles.gameOverLine, { backgroundColor: alertColor, height: alertStrokeWidth, opacity: alertOpacity }]} />
           <Text style={[styles.gameOverLineText, { color: alertColor, opacity: dangerRatio > 0.1 ? Math.max(0.4, alertOpacity) : 0.45 }]}>
-            alert line
+            {t('games.fruitMerge.alertLine')}
           </Text>
 
           <View
@@ -1323,7 +1337,7 @@ export default function AIFruitWorkshopScreen({ navigation }) {
 
         {/* ── Compact Fruit Evolution Progression Chain Strip (Visible in 1 Shot) ── */}
         <View style={styles.progressionContainer}>
-          <Text style={styles.progressionTitle}>Fruit Evolution Chain</Text>
+          <Text style={styles.progressionTitle}>{t('games.fruitMerge.evolutionTitle')}</Text>
           <View style={styles.progressionRow}>
             {FRUIT_TIERS.map((tierData, idx) => (
               <React.Fragment key={tierData.tier}>
@@ -1344,7 +1358,7 @@ export default function AIFruitWorkshopScreen({ navigation }) {
           <View style={[styles.instructionsCard, Shadow.sm]}>
             <HelpCircle size={15} color="#5A524C" style={{ marginRight: 8 }} />
             <Text style={styles.instructionsText}>
-              tap or drag at the top to drop fruits. merge identical fruits to pop them into larger sizes!
+              {t('games.fruitMerge.instructions')}
             </Text>
             <TouchableOpacity
               style={styles.closeTutorialBtn}
@@ -1369,16 +1383,16 @@ export default function AIFruitWorkshopScreen({ navigation }) {
             <View style={styles.gameOverHeader}>
               <Sparkle size={24} color={score > 0 && score >= startingHighScore.current ? '#F4A041' : '#D04030'} />
               <Text style={[styles.gameOverTitle, score > 0 && score >= startingHighScore.current ? { color: '#F4A041' } : null]}>
-                {score > 0 && score >= startingHighScore.current ? 'New Best!' : 'Game Over'}
+                {score > 0 && score >= startingHighScore.current ? t('games.fruitMerge.newBest') : t('games.fruitMerge.gameOver')}
               </Text>
             </View>
             <Text style={styles.gameOverSubtitle}>
-              {score > 0 && score >= startingHighScore.current ? 'You set a new sandbox record!' : 'Your fruits overflowed the alert line!'}
+              {score > 0 && score >= startingHighScore.current ? t('games.fruitMerge.sandboxRecord') : t('games.fruitMerge.overflowDesc')}
             </Text>
 
             {/* Giant Hero Score Display */}
             <View style={styles.heroScoreContainer}>
-              <Text style={styles.heroScoreLabel}>Score</Text>
+              <Text style={styles.heroScoreLabel}>{t('games.fruitMerge.stat.score')}</Text>
               <Text style={styles.heroScoreValue}>{score}</Text>
             </View>
 
@@ -1388,7 +1402,7 @@ export default function AIFruitWorkshopScreen({ navigation }) {
                 <FruitSvg tier={maxTierAchieved} r={24} />
               </View>
               <View style={styles.bestFruitMeta}>
-                <Text style={styles.bestFruitLabel}>Best Merged</Text>
+                <Text style={styles.bestFruitLabel}>{t('games.fruitMerge.stat.bestMerged')}</Text>
                 <Text style={styles.bestFruitValue}>{getFruitName(maxTierAchieved)}</Text>
               </View>
             </View>
@@ -1396,19 +1410,19 @@ export default function AIFruitWorkshopScreen({ navigation }) {
             {/* 2x2 Grid of Secondary Stats */}
             <View style={styles.statsGrid}>
               <View style={styles.statsGridCell}>
-                <Text style={styles.gridStatLabel}>Discovered</Text>
+                <Text style={styles.gridStatLabel}>{t('games.fruitMerge.stat.discovered')}</Text>
                 <Text style={styles.gridStatValue}>{discoveredTiers.length}/8</Text>
               </View>
               <View style={styles.statsGridCell}>
-                <Text style={styles.gridStatLabel}>Total Merges</Text>
+                <Text style={styles.gridStatLabel}>{t('games.fruitMerge.stat.totalMerges')}</Text>
                 <Text style={styles.gridStatValue}>{totalMerges}</Text>
               </View>
               <View style={styles.statsGridCell}>
-                <Text style={styles.gridStatLabel}>Max Combo</Text>
-                <Text style={styles.gridStatValue}>{maxCombo > 1 ? `x${maxCombo}` : 'None'}</Text>
+                <Text style={styles.gridStatLabel}>{t('games.fruitMerge.stat.maxCombo')}</Text>
+                <Text style={styles.gridStatValue}>{maxCombo > 1 ? `x${maxCombo}` : t('games.fruitMerge.none', { defaultValue: 'None' })}</Text>
               </View>
               <View style={styles.statsGridCell}>
-                <Text style={styles.gridStatLabel}>Time Played</Text>
+                <Text style={styles.gridStatLabel}>{t('games.fruitMerge.stat.timePlayed')}</Text>
                 <Text style={styles.gridStatValue}>{formatTime(timePlayed)}</Text>
               </View>
             </View>
@@ -1416,13 +1430,13 @@ export default function AIFruitWorkshopScreen({ navigation }) {
             {/* Primary CTA: Play Again */}
             <TouchableOpacity style={styles.restartBtn} onPress={resetSandbox}>
               <RotateCcw size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <Text style={styles.restartBtnText}>Play Again</Text>
+              <Text style={styles.restartBtnText}>{t('games.fruitMerge.playAgain')}</Text>
             </TouchableOpacity>
 
             {/* Secondary CTAs: Share and Home */}
             <View style={styles.gameOverSecondaryRow}>
               <TouchableOpacity style={styles.secondaryBtn} onPress={handleShare}>
-                <Text style={styles.secondaryBtnText}>Share Score</Text>
+                <Text style={styles.secondaryBtnText}>{t('games.fruitMerge.shareScore')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.secondaryBtn}
@@ -1431,7 +1445,7 @@ export default function AIFruitWorkshopScreen({ navigation }) {
                   navigation.goBack();
                 }}
               >
-                <Text style={styles.secondaryBtnText}>Home</Text>
+                <Text style={styles.secondaryBtnText}>{t('games.fruitMerge.home')}</Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -1470,7 +1484,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: Typography.fontFamily.extraBold,
     fontSize: 18,
-    textTransform: 'lowercase',
   },
   scrollContent: {
     alignItems: 'center',
@@ -1490,7 +1503,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 9,
     color: '#5A524C',
-    textTransform: 'lowercase',
   },
   statsValue: {
     fontFamily: Typography.fontFamily.extraBold,
@@ -1549,7 +1561,6 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: '#D04030',
     opacity: 0.6,
-    textTransform: 'lowercase',
   },
   previewFruitWrapper: {
     position: 'absolute',
@@ -1590,7 +1601,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 10,
     color: '#FFFFFF',
-    textTransform: 'lowercase',
   },
   gameOverOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -1612,7 +1622,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.extraBold,
     fontSize: 24,
     color: '#FF5E5B',
-    textTransform: 'lowercase',
     marginBottom: 4,
   },
   gameOverSubtitle: {
@@ -1641,7 +1650,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 9,
     color: '#5A524C',
-    textTransform: 'lowercase',
     letterSpacing: 0.5,
   },
   heroScoreValue: {
@@ -1677,13 +1685,11 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 9,
     color: '#8F857D',
-    textTransform: 'lowercase',
   },
   bestFruitValue: {
     fontFamily: Typography.fontFamily.extraBold,
     fontSize: 16,
     color: '#3C3530',
-    textTransform: 'lowercase',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -1704,7 +1710,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 8,
     color: '#8F857D',
-    textTransform: 'lowercase',
     textAlign: 'center',
   },
   gridStatValue: {
@@ -1728,7 +1733,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 12,
     color: '#FFFFFF',
-    textTransform: 'lowercase',
   },
   gameOverSecondaryRow: {
     flexDirection: 'row',
@@ -1750,7 +1754,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 11,
     color: '#5A524C',
-    textTransform: 'lowercase',
   },
   progressionContainer: {
     width: 350,
@@ -1766,7 +1769,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 9,
     color: '#5A524C',
-    textTransform: 'lowercase',
     marginBottom: Spacing[2],
   },
   progressionRow: {

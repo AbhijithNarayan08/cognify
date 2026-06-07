@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../../theme';
+import { t } from '../../../constants/useStrings';
 
 export default function MirrorTrapTrendLine({ history = [], Colors }) {
   // Take last 7 sessions in chronological order
@@ -63,10 +64,10 @@ export default function MirrorTrapTrendLine({ history = [], Colors }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: Colors.textSecondary }]}>mirror trap rate</Text>
+        <Text style={[styles.title, { color: Colors.textSecondary }]}>{t('patternFold.mirrorTrend.title')}</Text>
         {hasData && (
           <Text style={[styles.trendLabel, { color: strokeColor }]}>
-            {isDownward ? 'trending down (good!)' : 'stable'}
+            {isDownward ? t('patternFold.mirrorTrend.down') : t('patternFold.mirrorTrend.stable')}
           </Text>
         )}
       </View>
@@ -133,7 +134,7 @@ export default function MirrorTrapTrendLine({ history = [], Colors }) {
         {!hasData && (
           <View style={styles.overlay}>
             <Text style={[styles.overlayText, { color: Colors.textSecondary }]}>
-              Play 2 sessions to unlock suppression trends
+              {t('patternFold.mirrorTrend.overlay')}
             </Text>
           </View>
         )}

@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Zap } from 'lucide-react-native';
 import { Typography, Spacing, Radius } from '../../../theme';
+import { t } from '../../../constants/useStrings';
 
 export default function SpeedBonusCounter({ count, Colors }) {
   if (count === 0) return null;
@@ -11,7 +12,7 @@ export default function SpeedBonusCounter({ count, Colors }) {
     <View style={[styles.container, { backgroundColor: '#FFF9E6', borderColor: '#F4A041' }]}>
       <Zap size={18} color="#F4A041" fill="#F4A041" />
       <Text style={[styles.text, { color: '#B36B00' }]}>
-        {count} Elite Speed {count === 1 ? 'Bonus' : 'Bonuses'} Earned!
+        {count === 1 ? t('patternFold.speedBonus.singular', { count }) : t('patternFold.speedBonus.plural', { count })}
       </Text>
     </View>
   );

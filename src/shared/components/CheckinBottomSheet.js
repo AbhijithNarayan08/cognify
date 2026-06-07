@@ -259,10 +259,10 @@ export function CheckinBottomSheet({
   
   // Custom localized title prefixes matching the screenshots
   const getHeaderTitle = () => {
-    if (type === 'mood') return "👉 How are you feeling now?";
-    if (type === 'sleep') return "How did you sleep?";
-    if (type === 'activity') return "How did you move today?";
-    return t(`home.checkin.${type}.title`) || 'How are you feeling?';
+    if (type === 'mood') return t('home.checkin.mood.prompt');
+    if (type === 'sleep') return t('home.checkin.sleep.prompt');
+    if (type === 'activity') return t('home.checkin.activity.prompt');
+    return t(`home.checkin.${type}.title`) || t('home.checkin.mood.prompt');
   };
 
   const bubbleLeft = (sliderVal / 4) * TRACK_WIDTH;
@@ -583,8 +583,8 @@ export function CheckinBottomSheet({
 
               {/* Track Left/Right Bound Labels */}
               <View style={styles.boundLabelsRow}>
-                <Text style={styles.boundLabel}>Bad</Text>
-                <Text style={styles.boundLabel}>Great</Text>
+                <Text style={styles.boundLabel}>{t('home.checkin.bottomSheet.bad')}</Text>
+                <Text style={styles.boundLabel}>{t('home.checkin.bottomSheet.great')}</Text>
               </View>
             </View>
 
@@ -596,7 +596,7 @@ export function CheckinBottomSheet({
               onPress={handleSubmit}
               activeOpacity={0.9}
             >
-              <Text style={styles.nextBtnText}>Next</Text>
+              <Text style={styles.nextBtnText}>{t('home.checkin.bottomSheet.next')}</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>

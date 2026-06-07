@@ -29,7 +29,7 @@ export function DomainTile({ domain, score, trend = 0, onPress }) {
       onPress={onPress}
     >
       <View style={[styles.dot, { backgroundColor: color.main }]} />
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label}>{label ? label.charAt(0).toUpperCase() + label.slice(1) : ''}</Text>
       <Text style={styles.score}>{score || '—'}</Text>
       {/* Empty slot when no change — cleaner than '—' text indicator */}
       {hasTrend ? (
@@ -55,7 +55,6 @@ const getStyles = (Colors) => StyleSheet.create({
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.caption,
     color: Colors.textSecondary,
-    textTransform: 'lowercase',
   },
   score: {
     fontFamily: Typography.fontFamily.extraBold,
