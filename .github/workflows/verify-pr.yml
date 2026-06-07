@@ -67,7 +67,7 @@ jobs:
         run: npm ci
 
       - name: Validate Expo Configuration
-        run: npx expo doctor
+        run: npx expo-doctor
 
       - name: Compile Translation Catalogs
         run: npm run strings
