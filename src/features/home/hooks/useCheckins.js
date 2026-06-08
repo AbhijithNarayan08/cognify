@@ -28,9 +28,6 @@ export function useCheckins() {
     return true;
   });
 
-  // Show only 1 check-in card at a time (sleep > activity > mood) to avoid cognitive overload
-  const activeCheckins = pendingCheckins.slice(0, 1);
-
   const handleComplete = useCallback((type, value) => {
     dispatch(setCheckin(type, value));
   }, [dispatch]);
@@ -40,5 +37,5 @@ export function useCheckins() {
     dispatch({ type: 'DISMISS_CHECKIN', key: type });
   }, [dispatch]);
 
-  return { pendingCheckins: activeCheckins, handleComplete, handleDismiss };
+  return { pendingCheckins, handleComplete, handleDismiss };
 }

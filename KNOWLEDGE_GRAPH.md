@@ -2,6 +2,9 @@
 > **For any LLM or developer joining this project.** Read this top to bottom once and you will have full context to make changes anywhere in the codebase.
 > Last updated: 2026-06-07
 
+> [!IMPORTANT]
+> **CRITICAL GIT RULE:** Do not commit anything or push to remote repositories until explicitly instructed by the user.
+
 ---
 
 ## 1. What This App Is
@@ -963,6 +966,7 @@ An authoritative, feature-agnostic library containing 9 dynamic, multi-layered S
 13. **Native Thread Value Snapping Rule.** Calling `.setValue()` on an `Animated.Value` that is registered or driven on the Native Thread (`useNativeDriver: true`) throws a fatal assertion. To safely snap or reset native-driven values, dispatch a zero-duration timing animation:
     `Animated.timing(node, { toValue: val, duration: 0, useNativeDriver: true }).start()`
 14. **Stagger Display Gating.** When building multi-phase progressive layouts (such as `LoginForm.js`), ensure all hidden options use `display: formPhase === active ? 'flex' : 'none'` rather than just hiding via opacity or scale. This prevents hidden/staggered elements from intercepting touch gestures on the screen layout stack.
+15. **Git Commit/Push Restrictions.** Never commit or push to remote repositories until explicitly instructed by the user.
 
 ---
 

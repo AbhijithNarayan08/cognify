@@ -14,6 +14,7 @@ export const sessionInitialState = {
   },
   streakDays: 0,
   lastWorkoutDate: null,
+  lastCheckinDate: null,
   customFruits: [],
 };
 
@@ -28,8 +29,14 @@ export function sessionReducer(state, action) {
         workoutComplete: true,
       };
     }
-    case 'SET_CHECKIN':
-      return { ...state, checkins: { ...state.checkins, [action.key]: action.value } };
+    case 'SET_CHECKIN': {
+      const todayStr = new Date().toISOString().split('T')[0];
+      return {
+        ...state,
+        lastCheckinDate: todayStr,
+        checkins: { ...state.checkins, [action.key]: action.value }
+      };
+    }
     case 'SAVE_CUSTOM_FRUIT':
       return {
         ...state,
@@ -91,14 +98,26 @@ export function sessionReducer(state, action) {
         streak = 0;
         workoutComplete = false;
       }
+
+      // Check if check-ins need to be reset for a new day
+      const lastCheckin = persisted.lastCheckinDate;
+      let checkins = persisted.checkins || sessionInitialState.checkins;
+      let checkinDismissedAt = persisted.checkinDismissedAt || sessionInitialState.checkinDismissedAt;
+
+      if (lastCheckin !== todayStr) {
+        // New day! Clear previous check-ins and dismissal timestamps
+        checkins = sessionInitialState.checkins;
+        checkinDismissedAt = sessionInitialState.checkinDismissedAt;
+      }
       
       return {
         ...state,
         ...persisted,
         streakDays: streak,
         workoutComplete,
-        checkins: persisted.checkins || sessionInitialState.checkins,
-        checkinDismissedAt: persisted.checkinDismissedAt || sessionInitialState.checkinDismissedAt,
+        lastCheckinDate: lastCheckin || null,
+        checkins,
+        checkinDismissedAt,
         customFruits: persisted.customFruits || sessionInitialState.customFruits,
       };
     }

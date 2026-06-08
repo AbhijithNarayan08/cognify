@@ -1,11 +1,19 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import * as Localization from 'expo-localization';
 import en from './constants/translations/en.json';
 
-// Detect user system locale languageCode
-const locales = Localization.getLocales();
-const languageTag = locales[0]?.languageCode ?? 'en';
+// Safely detect user system locale languageCode
+let languageTag = 'en';
+try {
+  const Localization = require('expo-localization');
+  const locales = Localization.getLocales();
+  if (locales && locales.length > 0 && locales[0].languageCode) {
+    languageTag = locales[0].languageCode;
+  }
+} catch (error) {
+  // Gracefully fallback to English if the native ExpoLocalization module is not available in the runtime client
+  console.warn('[i18n] Failed to load expo-localization or detect system locale, falling back to "en":', error.message);
+}
 
 i18n
   .use(initReactI18next)

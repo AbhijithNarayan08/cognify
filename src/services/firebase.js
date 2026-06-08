@@ -1,6 +1,15 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import * as FirebaseAuth from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+
+// Complete auth session if redirected back to this handler context
+if (Platform.OS !== 'web') {
+  WebBrowser.maybeCompleteAuthSession();
+}
 
 const fbSignIn = FirebaseAuth.signInWithEmailAndPassword;
 const fbCreateUser = FirebaseAuth.createUserWithEmailAndPassword;
@@ -47,7 +56,21 @@ if (isConfigPlaceholder) {
 } else {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    realAuth = getAuth(app);
+    
+    // Initialize Auth with AsyncStorage persistence to prevent memory-only persistence warnings
+    if (typeof FirebaseAuth.initializeAuth === 'function' && typeof FirebaseAuth.getReactNativePersistence === 'function') {
+      try {
+        realAuth = FirebaseAuth.initializeAuth(app, {
+          persistence: FirebaseAuth.getReactNativePersistence(ReactNativeAsyncStorage)
+        });
+      } catch (persistenceError) {
+        console.warn("⚠️ [Firebase] Failed to initialize Auth with AsyncStorage persistence, falling back to standard initialization:", persistenceError.message);
+        realAuth = getAuth(app);
+      }
+    } else {
+      realAuth = getAuth(app);
+    }
+
     db = getFirestore(app);
   } catch (error) {
     console.error("❌ [Firebase] Initialization failed. Falling back to Mock Mode.", error);
@@ -197,6 +220,50 @@ export const auth = {
       mockAuthInstance.currentUser = mockUser;
       mockAuthInstance._triggerListeners();
       return { user: mockUser };
+    } else if (Platform.OS !== 'web') {
+      try {
+        const redirectUrl = Linking.createURL('redirect');
+        const authUrl = `https://${firebaseConfig.authDomain}/__/auth/handler?` +
+          `apiKey=${firebaseConfig.apiKey}` +
+          `&appName=[DEFAULT]` +
+          `&authType=signInWithRedirect` +
+          `&providerId=google.com` +
+          `&scopes=${encodeURIComponent('profile,email')}` +
+          `&redirectUrl=${encodeURIComponent(redirectUrl)}`;
+
+        const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+
+        if (result.type === 'success' && result.url) {
+          const url = result.url;
+          const getParam = (name) => {
+            const reg = new RegExp('[?&#]' + name + '=([^&#]*)');
+            const match = url.match(reg);
+            return match ? decodeURIComponent(match[1]) : null;
+          };
+
+          const idToken = getParam('id_token') || getParam('idToken');
+          const accessToken = getParam('access_token') || getParam('accessToken');
+
+          if (!idToken) {
+            throw new Error("No ID Token returned from Google Sign-In redirect");
+          }
+
+          if (typeof fbSignInWithCredential !== 'function') {
+            throw new Error("signInWithCredential is not defined in this React Native environment bundle");
+          }
+
+          const credential = GoogleAuthProvider.credential(idToken, accessToken);
+          const userCredential = await fbSignInWithCredential(realAuth, credential);
+          return userCredential;
+        } else if (result.type === 'cancel' || result.type === 'dismiss') {
+          throw new Error("User cancelled Google Sign-In");
+        } else {
+          throw new Error(`Google Sign-In failed with browser session type: ${result.type}`);
+        }
+      } catch (error) {
+        console.error("❌ [Firebase Auth] Google Sign-In redirect flow failed on mobile:", error);
+        throw error;
+      }
     } else {
       try {
         if (typeof fbSignInWithPopup !== 'function') {
@@ -206,7 +273,7 @@ export const auth = {
         const result = await fbSignInWithPopup(realAuth, provider);
         return result;
       } catch (error) {
-        console.warn("⚠️ [Firebase Auth] Google Auth popup is unsupported on this platform. Falling back to Demo User.", error);
+        console.log("ℹ️ [Firebase Auth] Google Sign-In popup is unsupported on mobile. Falling back to Demo Google User.");
         // On mobile native, return a mock user so local flow works beautifully
         const mockUser = {
           uid: "google-user-" + Math.random().toString(36).substr(2, 9),
@@ -231,6 +298,54 @@ export const auth = {
       mockAuthInstance.currentUser = mockUser;
       mockAuthInstance._triggerListeners();
       return { user: mockUser };
+    } else if (Platform.OS !== 'web') {
+      try {
+        const redirectUrl = Linking.createURL('redirect');
+        const authUrl = `https://${firebaseConfig.authDomain}/__/auth/handler?` +
+          `apiKey=${firebaseConfig.apiKey}` +
+          `&appName=[DEFAULT]` +
+          `&authType=signInWithRedirect` +
+          `&providerId=apple.com` +
+          `&scopes=${encodeURIComponent('name,email')}` +
+          `&redirectUrl=${encodeURIComponent(redirectUrl)}`;
+
+        const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+
+        if (result.type === 'success' && result.url) {
+          const url = result.url;
+          const getParam = (name) => {
+            const reg = new RegExp('[?&#]' + name + '=([^&#]*)');
+            const match = url.match(reg);
+            return match ? decodeURIComponent(match[1]) : null;
+          };
+
+          const idToken = getParam('id_token') || getParam('idToken');
+          const accessToken = getParam('access_token') || getParam('accessToken');
+
+          if (!idToken) {
+            throw new Error("No ID Token returned from Apple Sign-In");
+          }
+
+          if (typeof fbSignInWithCredential !== 'function') {
+            throw new Error("signInWithCredential is not defined in this React Native environment bundle");
+          }
+
+          const provider = new OAuthProvider('apple.com');
+          const credential = provider.credential({
+            idToken: idToken,
+            accessToken: accessToken,
+          });
+          const userCredential = await fbSignInWithCredential(realAuth, credential);
+          return userCredential;
+        } else if (result.type === 'cancel' || result.type === 'dismiss') {
+          throw new Error("User cancelled Apple Sign-In");
+        } else {
+          throw new Error(`Apple Sign-In failed with browser session type: ${result.type}`);
+        }
+      } catch (error) {
+        console.error("❌ [Firebase Auth] Apple Sign-In redirect flow failed on mobile:", error);
+        throw error;
+      }
     } else {
       try {
         if (typeof fbSignInWithPopup !== 'function') {
@@ -240,7 +355,7 @@ export const auth = {
         const result = await fbSignInWithPopup(realAuth, provider);
         return result;
       } catch (error) {
-        console.warn("⚠️ [Firebase Auth] Apple Auth popup is unsupported on this platform. Falling back to Demo User.", error);
+        console.log("ℹ️ [Firebase Auth] Apple Sign-In popup is unsupported on mobile. Falling back to Demo Apple User.");
         const mockUser = {
           uid: "apple-user-" + Math.random().toString(36).substr(2, 9),
           email: "apple-user@example.com",
