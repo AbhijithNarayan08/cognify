@@ -15,6 +15,7 @@ import {
 import { AppProvider, useApp } from './src/context/AppContext';
 import RootNavigator from './src/navigation';
 import { useThemeColors } from './src/theme';
+import './src/i18n';
 
 SplashScreen.preventAutoHideAsync();
 

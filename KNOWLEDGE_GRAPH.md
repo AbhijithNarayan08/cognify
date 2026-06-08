@@ -54,7 +54,6 @@ cognify/
 ├── README.md                          # Developer setup guide
 ├── instructions.md                    # LLM build instructions archive
 ├── scripts/
-│   ├── buildStrings.js            # Compiles strings.csv → stringsData.js (npm run strings)
 │   └── verifyInsights.js          # Validates dummyData.json → Weekly Brief insights pipeline
 ├── assets/
 │   ├── characters/
@@ -65,8 +64,8 @@ cognify/
 │   └── splash.png
 └── src/
     ├── constants/
-    │   ├── strings.csv            # Source-of-truth text database (~404 keys)
-    │   ├── stringsData.js         # Compiled output of buildStrings.js — DO NOT EDIT DIRECTLY
+    │   ├── translations/
+    │   │   └── en.json            # Flat translation dictionary for i18n
     │   ├── useStrings.js          # Runtime t(key, vars) lookup module
     │   └── gameConfig.js          # All game tuning constants (SESSION_DURATION_MS, ADAPTIVE_LADDER,
     │                              #   STREAK_MULTIPLIERS, DOMAIN_SCORE_WEIGHTS, SIGNAL_CHAIN,
@@ -684,16 +683,19 @@ Pattern Fold utilizes a bespoke double-tabbed high-fidelity diagnostics dashboar
 
 ## 12. String Constants System
 
-**Source of truth:** `src/constants/strings.csv` (~404 keys)
-
-**Compile command:** `npm run strings` → writes `src/constants/stringsData.js`
+**Source of truth:** `src/constants/translations/en.json` (~730+ keys)
 
 **Usage:**
 ```js
-import { t } from '../../constants/useStrings';
+import { t, useStrings } from '../../constants/useStrings';
+
+// Static translation (non-reactive to dynamic language switch)
 t('train.activeSession.start');                           // "begin"
 t('train.activesession.pauseCount', { used: 1, max: 2 }); // "1 of 2 pauses used"
-t('games.flashSort.instructions.1');                      // "a shape will flash on screen"
+
+// Hook-based translation (reactive to language switch)
+const { t: hookT } = useStrings();
+hookT('games.flashSort.instructions.1');                  // "a shape will flash on screen"
 ```
 
 **Naming conventions:**
@@ -706,10 +708,10 @@ t('games.flashSort.instructions.1');                      // "a shape will flash
 - `insights.*` — insights screen
 
 **Rules:**
-- All visible UI text must be in `strings.csv`. Never hardcode in JSX.
+- All visible UI text must be in `en.json`. Never hardcode in JSX.
 - All values lowercase (sentence case for prose).
 - No exclamation marks.
-- After adding keys, always run `npm run strings`.
+- No compilation/build steps are required. Changes are loaded dynamically.
 
 ---
 
@@ -948,7 +950,7 @@ An authoritative, feature-agnostic library containing 9 dynamic, multi-layered S
 
 1. **Data never imports UI.** `src/data/*.js` must have zero imports from `theme.js` or any component.
 2. **Use action creators.** Never `dispatch({ type: 'RAW' })` — import from `store/actions/index.js`.
-3. **Use strings.** Never hardcode visible text in JSX — add to `strings.csv`, run `npm run strings`, use `t()`.
+3. **Use strings.** Never hardcode visible text in JSX — add to `src/constants/translations/en.json`, use `t()` or `useStrings()`.
 4. **Root reducer chains, never spreads in parallel.** See Section 4.
 5. **Screens are thin.** Logic goes in engine hooks or game hooks. Screens just render.
 6. **Services are the API boundary.** Data fetching logic stays in `services/` only.
@@ -991,9 +993,6 @@ An authoritative, feature-agnostic library containing 9 dynamic, multi-layered S
 ```bash
 # Install dependencies
 npm install
-
-# Compile string translations (always run after editing strings.csv)
-npm run strings
 
 # Start dev server (Expo Go compatible)
 npm start
@@ -1146,7 +1145,7 @@ Fires silently on startup once a real Firebase email login is established:
 *   **Execution Strategy**: Restructured into three parallel, isolated jobs to optimize validation speed and clean log feedback:
     1.  `lint`: Scans files using ESLint (`npm run lint`) to maintain code styling rules and catch typos.
     2.  `test`: Runs Jest unit tests (`npm run test`) to verify translation lookups and score calculation helper logic.
-    3.  `validate-build`: Executes integration checks: npx expo-doctor validation, translation compilation (`npm run strings`), staging sync checks, web exports (`npx expo export -p web`), and insights validations (`node scripts/verifyInsights.js`).
+    3.  `validate-build`: Executes integration checks: npx expo-doctor validation, web exports (`npx expo export -p web`), and insights validations (`node scripts/verifyInsights.js`).
 *   **Caching Optimization**: Enabled global npm package caching (`cache: 'npm'`) under `actions/setup-node` in all parallel jobs, reducing dependencies installation overhead.
 *   **Concurrency Controls**: Added concurrency groups to automatically abort outdated workflow runs when new commits are pushed to the same pull request or branch.
 

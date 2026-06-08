@@ -18,7 +18,7 @@ Cognify is designed to look and feel extremely premium, featuring warm aesthetic
 > * **Button labels**: Must be Title Case (e.g. `"Start Session"`, `"Read Now"`, `"Skip"`, `"Collapse"`, `"Play Again"`, `"Done"`).
 > * **Navigation tab labels**: Must be Title Case (e.g. `"Home"`, `"Train"`, `"Insights"`, `"Profile"`).
 > 
-> Always store strings in the localized CSV catalog rather than hardcoding them in component files.
+> Always store strings in the localization JSON bundle (`src/constants/translations/en.json`) rather than hardcoding them in component files.
 
 ---
 
@@ -35,12 +35,7 @@ Ensure you have **Node.js (v18 or v20)** and **npm** installed.
    ```bash
    npm install
    ```
-3. **Configure Translation Strings**:
-   Before launching the app, you *must* compile the translation catalog from the master CSV:
-   ```bash
-   npm run strings
-   ```
-4. **Run the Development Server**:
+3. **Run the Development Server**:
    Start the Expo packager:
    ```bash
    npm run start
@@ -51,23 +46,17 @@ Ensure you have **Node.js (v18 or v20)** and **npm** installed.
 
 ---
 
-## 3. Localization Workflow (`strings.csv`)
+## 3. Localization Workflow (`en.json`)
 
-We use a central localization file to manage all user-facing text.
+We use a central JSON file to manage all user-facing text.
 
-* **Source File**: `src/constants/strings.csv`
-* **Generated Catalog**: `src/constants/stringsData.js`
+* **Translation File**: `src/constants/translations/en.json`
 
 **Rules for Editing Strings**:
-1. Open [strings.csv](file:///Users/abhijith.narayan/Downloads/cognify/src/constants/strings.csv) and add or modify keys.
-2. **Handle Commas Safely**: If your text contains a comma (`,`), you **must** wrap the entire value in double quotes to prevent the CSV parser from splitting the row incorrectly.
-   * *Correct*: `profile.logoutConfirm.confirm,"Yes, Log Out",profile`
-   * *Incorrect*: `profile.logoutConfirm.confirm,Yes, Log Out,profile`
-3. Always run the compiler script after making changes to the CSV:
-   ```bash
-   npm run strings
-   ```
-4. Never edit `stringsData.js` directly, as it will be overwritten.
+1. Open [en.json](file:///Users/abhijith.narayan/Downloads/cognify/src/constants/translations/en.json) and add or modify translation keys using flat key names.
+2. Ensure you use proper JSON escaping (e.g. quote double-quotes like `\"`).
+3. Make sure all interpolation variables are enclosed in double curly braces, e.g. `{{count}}`.
+4. No compilation step is required; the translation engine automatically loads changes on startup/reload.
 
 ---
 
@@ -90,7 +79,6 @@ We use a structured branch naming convention and follow [Conventional Commits](h
 
 1. Make sure your local copy builds perfectly:
    ```bash
-   npm run strings
    npx expo export -p web
    ```
 2. Create a pull request to `main`.

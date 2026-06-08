@@ -28,7 +28,8 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps.1007104068828-ios-client-id-here"
         }
-      ]
+      ],
+      "expo-localization"
     ]
   }
 }

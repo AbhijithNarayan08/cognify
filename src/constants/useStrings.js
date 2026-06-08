@@ -1,18 +1,13 @@
-import { useMemo } from 'react';
-import { STRINGS_MAP } from './stringsData';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 export function t(key, vars = {}) {
-  let value = STRINGS_MAP[key];
-  if (value === undefined) {
-    console.warn(`[strings] missing key: ${key}`);
-    return key;
-  }
-  Object.entries(vars).forEach(([k, v]) => {
-    value = value.replace(new RegExp(`{{${k}}}`, 'g'), String(v));
-  });
-  return value;
+  return i18n.t(key, vars);
 }
 
 export function useStrings() {
-  return useMemo(() => ({ t }), []);
+  const { t: i18nt } = useTranslation();
+  return {
+    t: (key, vars = {}) => i18nt(key, vars),
+  };
 }

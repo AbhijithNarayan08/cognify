@@ -69,17 +69,6 @@ jobs:
       - name: Validate Expo Configuration
         run: npx expo-doctor
 
-      - name: Compile Translation Catalogs
-        run: npm run strings
-
-      - name: Verify String Translation Sync
-        run: |
-          if [ -n "$(git status --porcelain src/constants/stringsData.js)" ]; then
-            echo "::error::stringsData.js is out of sync with strings.csv! Please run 'npm run strings' locally and commit the compiled changes."
-            git diff src/constants/stringsData.js
-            exit 1
-          fi
-
       - name: Verify Metro Web Bundling Export
         run: npx expo export -p web
 

@@ -48,7 +48,6 @@ cognify/
 ├── package.json
 ├── babel.config.js
 ├── scripts/
-│   └── buildStrings.js         # Auto-generation build script to compile strings.csv -> stringsData.js
 ├── assets/
 │   ├── characters/
 │   │   ├── cat_half_page.png       # Used in TrainScreen banner & Insights weekly brief
@@ -58,9 +57,10 @@ cognify/
 │   └── splash.png
 └── src/
       ├── constants/
-      │   ├── strings.csv             # Source of truth master database mapping keys to values
-      │   ├── stringsData.js          # Compiled static map output of scripts/buildStrings.js
+      │   ├── translations/
+      │   │   └── en.json             # Flat translation dictionary for i18n
       │   └── useStrings.js           # Runtime translation lookup module exposing t() and useStrings()
+      ├── i18n.js                     # Global i18n translation system configuration
     ├── context/
     │   └── AppContext.js           # Root context: composes 3 slices, exports useApp()
     ├── store/
@@ -414,28 +414,32 @@ services/insightService.js    → getTemplates(Colors), getWeeklyBrief()
 
 ## 12. String Constants (Localization)
 
-All UI text lives in `src/constants/strings.csv` (CSV master database) and is compiled at build-time to `src/constants/stringsData.js` via the `npm run strings` command.
+All UI text lives in `src/constants/translations/en.json` as a flat JSON dictionary.
 
-At runtime, strings are resolved synchronously using the `t(key, vars)` utility from `src/constants/useStrings.js`:
+At runtime, strings are resolved dynamically using `i18next` and `react-i18next`. To maintain full backward compatibility, the `t(key, vars)` utility and `useStrings()` hook from `src/constants/useStrings.js` are used:
 
 ```js
-import { t } from '../../constants/useStrings';
+import { t, useStrings } from '../../constants/useStrings';
 
+// Static translation (non-reactive to language switch at runtime)
 t('onboarding.welcome.title');                              // "welcome to cognify"
-t('onboarding.welcome.createAccount');                      // "create an account"
 t('home.cohortText', { percentile: 68 });                  // "stronger than 68% of people your age"
+
+// Hook-based translation (reactive to language switch)
+const { t } = useStrings();
 t('train.domainExercises', { domain: 'attention' });       // "attention exercises"
 ```
 
-**Auto-Compilation**:
-- When adding/modifying user-facing text, edit `src/constants/strings.csv` and run `npm run strings`.
-- The compilation script `scripts/buildStrings.js` handles double-quoted fields, dynamic variables interpolation `{{var}}`, literal `\n` characters, and splits correctly.
+**Editing Translations**:
+- When adding or modifying user-facing text, edit `src/constants/translations/en.json` directly.
+- Ensure interpolation variables are in double curly braces `{{var}}`.
+- No build or compilation step is required. The translations are loaded dynamically.
 
 **Text UX Rules**:
 - Every visible UI text string must be written in **lowercase** for UI chrome (tab labels, headers, button labels).
 - Sentence case should be used for prose.
 - Exclamation marks are completely banned.
-- Never hardcode visible user-facing text inside JSX components. Always add it to `strings.csv` first.
+- Never hardcode visible user-facing text inside JSX components. Always add it to `en.json` first.
 
 ---
 
@@ -519,7 +523,7 @@ Hexagonal SVG radar chart. Accepts `scores` (domain score object) and `size`.
 
 1. **Data never imports UI.** `src/data/*.js` must have zero imports from `theme.js` or any component.
 2. **Use action creators.** Never call `dispatch({ type: 'RAW' })` — import from `store/actions/index.js`.
-3. **Use STRINGS.** Never hardcode visible text in JSX — add to `src/constants/strings.csv` and run `npm run strings` to compile. Always use `t()` utility for UI labels.
+3. **Use STRINGS.** Never hardcode visible text in JSX — add to `src/constants/translations/en.json`. Always use `t()` utility or the `useStrings()` hook for UI labels.
 4. **Screens are thin.** Logic goes in hooks (`features/*/hooks/`). Screens just render.
 5. **Services are the API boundary.** Data fetching logic goes in `services/` — not in hooks or screens.
 6. **Theme is reactive.** Always `useThemeColors()` inside components — never import `LightColors` directly in UI.
