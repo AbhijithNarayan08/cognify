@@ -1,8 +1,8 @@
-// src/features/train/games/PatternFold.js
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Dimensions } from 'react-native';
 import { PATTERN_FOLD } from '../../../constants/gameConfig';
 import { Typography, Spacing, Radius, Shadow } from '../../../theme';
+import { t } from '../../../constants/useStrings';
 
 const { width } = Dimensions.get('window');
 
@@ -229,6 +229,7 @@ export default function PatternFold({ level, isActive, onRoundComplete, Colors }
   const [roundPhase, setRoundPhase] = useState('stimulus'); // 'stimulus' | 'feedback'
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(-1);
   const [feedbackStatus, setFeedbackStatus] = useState(null); // 'correct' | 'incorrect' | 'timeout'
+  const [correctAngle, setCorrectAngle] = useState(0);
   
   // Animation ref
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -287,6 +288,7 @@ export default function PatternFold({ level, isActive, onRoundComplete, Colors }
     // 4. Update variants list and correct variant index
     setVariantsList(roundData.candidates);
     setCorrectVariantIndex(roundData.correctIndex);
+    setCorrectAngle(roundData.correctAngle);
 
     roundStartTimeRef.current = Date.now();
 
@@ -422,7 +424,9 @@ export default function PatternFold({ level, isActive, onRoundComplete, Colors }
         {/* Left Side: Target Pattern Card */}
         {targetShape && (
           <View style={styles.leftColumn}>
-            <Text style={[styles.columnTitle, { color: Colors.textSecondary }]}>target</Text>
+            <Text style={[styles.columnTitle, { color: Colors.textSecondary }]}>
+              {t('games.patternFold.targetLabel')}
+            </Text>
             <Animated.View style={[
               styles.targetCard, 
               Shadow.md,
@@ -430,12 +434,19 @@ export default function PatternFold({ level, isActive, onRoundComplete, Colors }
             ]}>
               {renderShapeGrid(targetShape, 120)}
             </Animated.View>
+            <View style={[styles.angleBadge, { backgroundColor: Colors.surface, borderColor: Colors.border }]}>
+              <Text style={[styles.angleText, { color: Colors.textSecondary }]}>
+                {t('games.patternFold.rotationAngle', { angle: correctAngle })}
+              </Text>
+            </View>
           </View>
         )}
 
         {/* Right Side: Rotated Variant Options Card list */}
         <View style={styles.rightColumn}>
-          <Text style={[styles.columnTitle, { color: Colors.textSecondary }]}>select match</Text>
+          <Text style={[styles.columnTitle, { color: Colors.textSecondary }]}>
+            {t('games.patternFold.selectMatchLabel')}
+          </Text>
           <View style={styles.variantsGrid}>
             {variantsList.map((variant, idx) => {
               const isSelected = selectedVariantIndex === idx;
@@ -534,5 +545,18 @@ const styles = StyleSheet.create({
   },
   block: {
     ...Shadow.sm,
+  },
+  angleBadge: {
+    marginTop: Spacing[3],
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[1],
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  angleText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.caption,
   },
 });
