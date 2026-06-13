@@ -21,6 +21,7 @@ import { analytics } from '../../services/analyticsService';
 import { GameHaptics } from '../../utils/haptics';
 import { CheckinBottomSheet } from '../../shared/components/CheckinBottomSheet';
 import { useLegacyMigration } from '../../hooks/useLegacyMigration';
+import ScenicBackground from '../../shared/components/ScenicBackground';
 
 // ─────────────────────────────────────────────────────────────
 // Dynamic Pulse & Sway SVG Flame Mascot Character
@@ -376,6 +377,7 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScenicBackground preset="home" />
       {/* Sticky header */}
       <Animated.View style={[styles.stickyHeader, { opacity: headerOpacity }]}>
         <Text style={styles.stickyTitle}>{t('home.appTitle')}</Text>
@@ -393,7 +395,7 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.greeting}>{greetingText}</Text>
             <Text style={styles.date}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
           </View>
-          {streakDays > 0 && (
+          {streakDays >= 0 && (
             <TouchableScale
               style={styles.streakBadge}
               onPress={() => {
@@ -873,7 +875,7 @@ const getStyles = (Colors) => StyleSheet.create({
     fontSize: 12,
     color: '#F4A041',
   },
-  container: { flex: 1, backgroundColor: Colors.appBg },
+  container: { flex: 1, backgroundColor: 'transparent' },
   stickyHeader: {
     position: 'absolute',
     top: 0, left: 0, right: 0,
@@ -922,14 +924,14 @@ const getStyles = (Colors) => StyleSheet.create({
   streakText: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.label,
-    color: Colors.brandPrimary,
+    color: Colors.textPrimary,
   },
   scoreSection: { alignItems: 'center', marginBottom: Spacing[8] },
   // Problem 2: personal context replaces cohort comparison
   personalContextText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
-    color: Colors.textMuted,
+    color: Colors.textSecondary,
     marginTop: Spacing[4],
     textAlign: 'center',
   },
@@ -944,7 +946,7 @@ const getStyles = (Colors) => StyleSheet.create({
   checkinSkipText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.caption,
-    color: Colors.textMuted,
+    color: Colors.textSecondary,
   },
   domainGrid: {
     flexDirection: 'row',

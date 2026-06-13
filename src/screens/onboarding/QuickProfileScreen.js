@@ -6,6 +6,7 @@ import { useApp } from '../../context/AppContext';
 import { useThemeColors, Typography, Spacing, Radius, Shadow } from '../../theme';
 import { t } from '../../constants/useStrings';
 import { TouchableScale, FadeInUp } from '../../components/Motion';
+import ScenicBackground from '../../shared/components/ScenicBackground';
 
 const { width, height } = Dimensions.get('window');
 
@@ -48,6 +49,7 @@ export default function QuickProfileScreen({ navigation, route }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.container}>
+        <ScenicBackground preset="onboarding" />
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <FadeInUp delay={100} distance={20}>
             <Text style={styles.headline}>{t('onboarding.quickProfile.headline')}</Text>
@@ -143,7 +145,7 @@ export default function QuickProfileScreen({ navigation, route }) {
 const getStyles = (Colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.appBg,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingHorizontal: Spacing[6],
@@ -170,7 +172,7 @@ const getStyles = (Colors) => StyleSheet.create({
   sectionLabel: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.caption,
-    color: Colors.textMuted,
+    color: Colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
@@ -209,7 +211,7 @@ const getStyles = (Colors) => StyleSheet.create({
   goalDesc: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: 11,
-    color: Colors.textMuted,
+    color: Colors.textSecondary,
     lineHeight: 15,
   },
   checkboxRow: {

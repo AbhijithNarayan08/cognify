@@ -2,9 +2,10 @@ import React, { useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions, StatusBar, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { ArrowRight } from 'lucide-react-native';
-import { useThemeColors, Typography, Spacing, Radius, Shadow } from '../../theme';
+import { useThemeColors, Typography, Spacing, Radius, Shadow, getContrastSafeDomainColor } from '../../theme';
 import { t } from '../../constants/useStrings';
 import { TouchableScale, FadeInUp } from '../../components/Motion';
+import ScenicBackground from '../../shared/components/ScenicBackground';
 import {
   DynamicLighthouse,
   DynamicChainLink,
@@ -36,6 +37,7 @@ export default function IntentScreen({ route, navigation }) {
         return {
           title: t('exercise.lighthouse-watch.name'),
           subhead: t('onboarding.intent.subhead.attention'),
+          domainId: 'attention',
           color: Colors.domain?.attention?.main || '#3DAB7F',
           cardBg: '#1D2340',
           Mascot: DynamicLighthouse,
@@ -51,6 +53,7 @@ export default function IntentScreen({ route, navigation }) {
         return {
           title: t('exercise.signal-chain.name'),
           subhead: t('onboarding.intent.subhead.memory'),
+          domainId: 'memory',
           color: Colors.domain?.memory?.main || '#0073E6',
           cardBg: '#0F1A30',
           Mascot: DynamicChainLink,
@@ -66,6 +69,7 @@ export default function IntentScreen({ route, navigation }) {
         return {
           title: t('exercise.flash-sort.name'),
           subhead: t('onboarding.intent.subhead.speed'),
+          domainId: 'speed',
           color: Colors.domain?.speed?.main || '#FFC000',
           cardBg: '#2A2005',
           Mascot: DynamicFlash,
@@ -81,6 +85,7 @@ export default function IntentScreen({ route, navigation }) {
         return {
           title: t('exercise.context-switch.name'),
           subhead: t('onboarding.intent.subhead.executive'),
+          domainId: 'executive',
           color: Colors.domain?.executive?.main || '#A662C6',
           cardBg: '#21102B',
           Mascot: DynamicBrain,
@@ -96,6 +101,7 @@ export default function IntentScreen({ route, navigation }) {
         return {
           title: t('exercise.word-weave.name'),
           subhead: t('onboarding.intent.subhead.verbal'),
+          domainId: 'verbal',
           color: Colors.domain?.verbal?.main || '#FF7A00',
           cardBg: '#2E1300',
           Mascot: DynamicWordWeave,
@@ -111,6 +117,7 @@ export default function IntentScreen({ route, navigation }) {
         return {
           title: t('exercise.pattern-fold.name'),
           subhead: t('onboarding.intent.subhead.spatial'),
+          domainId: 'spatial',
           color: Colors.domain?.spatial?.main || '#FF7DB4',
           cardBg: '#2E0F1E',
           Mascot: DynamicSun,
@@ -141,12 +148,13 @@ export default function IntentScreen({ route, navigation }) {
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      <ScenicBackground preset="onboarding" />
       <StatusBar barStyle="dark-content" />
 
       {/* Screen Title */}
       <View style={styles.header}>
         <Text style={styles.headline}>{taskDetails.title}</Text>
-        <Text style={[styles.subhead, { color: taskDetails.color }]}>{taskDetails.subhead}</Text>
+        <Text style={[styles.subhead, { color: getContrastSafeDomainColor(taskDetails.domainId, Colors) }]}>{taskDetails.subhead}</Text>
       </View>
 
       <ScrollViewContainer styles={styles}>
@@ -209,7 +217,7 @@ function ScrollViewContainer({ children, styles }) {
 const getStyles = (Colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.appBg,
+    backgroundColor: 'transparent',
     paddingTop: height > 800 ? 56 : 42,
   },
   header: {

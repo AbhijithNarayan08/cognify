@@ -15,6 +15,17 @@ export const LightColors = {
   coral:          '#F07060', // Headspace coral/illustration accent
   coralLight:     '#FDEAE7',
 
+  // ── Scenic / Ambient Backgrounds (Headspace style) ─────────
+  scenicYellow:   '#FFC500', // Bright warm yellow
+  scenicOrange:   '#FF8E3C', // Friendly soft orange
+  scenicPeach:    '#FFB7B2', // Calm pastel peach/pink
+  scenicCoral:    '#FF5E36', // Vibrant coral sun accent
+  scenicGreen:    '#2D6A4F', // Forest green grounding waves
+  scenicBlue:     '#3A6EEA', // Calming blue
+  scenicLightBlue:'#87CEEB', // Soothing sky blue
+  scenicPink:     '#FFD3E8', // Light background pink panel
+  scenicLinen:    '#FAF5F0', // Cream linen neutral
+
   // ── Headspace extended palette ──────────────────────────────
   navy:           '#1D2340', // Headspace Navy — primary text colour
   navyMid:        '#2D3561', // Mid navy — dark surface / card
@@ -48,7 +59,7 @@ export const LightColors = {
   // ── Text ────────────────────────────────────────────────────
   textPrimary:   '#1D2340', // Headspace navy (was #141313 warm black)
   textSecondary: '#4A5568', // Headspace mid-grey (was #44423F)
-  textMuted:     '#8899AA', // Headspace muted (was #A8A5AD)
+  textMuted:     '#5F7085', // Headspace muted (was #A8A5AD)
   textInverse:   '#FFFFFF',
 
   // ── Borders ─────────────────────────────────────────────────
@@ -67,6 +78,17 @@ export const DarkColors = {
   brandLight:     '#3D2810',
   coral:          '#F07060',
   coralLight:     '#2A1410',
+
+  // ── Scenic / Ambient Backgrounds (Headspace style - Dark Mode) ─
+  scenicYellow:   '#FFC500',
+  scenicOrange:   '#FF8E3C',
+  scenicPeach:    '#FFB7B2',
+  scenicCoral:    '#FF5E36',
+  scenicGreen:    '#1B4332', // Deeper forest green
+  scenicBlue:     '#2D3561', // Dark navy-tinted blue
+  scenicLightBlue:'#5B8CF7', // Muted glowing blue
+  scenicPink:     '#331623', // Dark pink
+  scenicLinen:    '#252C4A', // Dark cream neutral
 
   // ── Headspace extended palette ──────────────────────────────
   navy:           '#1D2340',
@@ -101,7 +123,7 @@ export const DarkColors = {
   // ── Text ────────────────────────────────────────────────────
   textPrimary:   '#FFFFFF',
   textSecondary: 'rgba(255,255,255,0.70)', // Headspace dark mode (was #D0CDD3)
-  textMuted:     '#8899AA',               // Headspace muted (was #8F8D91)
+  textMuted:     '#A0B0C0',               // Headspace muted (was #8F8D91)
   textInverse:   '#FFFFFF',
 
   // ── Borders ─────────────────────────────────────────────────
@@ -119,6 +141,22 @@ export const Colors = LightColors;
 export function useThemeColors() {
   const scheme = useColorScheme();
   return scheme === 'dark' ? DarkColors : LightColors;
+}
+
+export function getContrastSafeDomainColor(domainId, Colors) {
+  const isDark = Colors.appBg === '#1A1F3A';
+  if (isDark) {
+    return Colors.domain[domainId]?.main || '#FFFFFF';
+  }
+  switch (domainId) {
+    case 'memory':    return '#0059B3';
+    case 'speed':     return '#B37D00';
+    case 'attention': return '#1E6B4A';
+    case 'executive': return '#723494';
+    case 'verbal':    return '#CC5200';
+    case 'spatial':   return '#C43B72';
+    default:          return Colors.textSecondary;
+  }
 }
 
 export const Typography = {

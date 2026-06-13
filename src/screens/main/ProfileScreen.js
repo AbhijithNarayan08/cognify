@@ -135,7 +135,7 @@ export default function ProfileScreen({ navigation }) {
         {/* Stats card */}
         <View style={[styles.statsCard, Shadow.md]}>
           <View style={styles.statsRow}>
-            {streakDays > 0 && (
+            {streakDays >= 0 && (
               <>
                 <View style={styles.statItem}>
                   <Text style={styles.statNum}>{streakDays}</Text>

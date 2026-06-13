@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions, StatusBar, Image, ScrollView } from 'react-native';
 import { useThemeColors, Typography, Spacing, Radius } from '../../theme';
 import { t } from '../../constants/useStrings';
+import ScenicBackground from '../../shared/components/ScenicBackground';
 import { TouchableScale, FadeInUp } from '../../components/Motion';
 import { useApp } from '../../context/AppContext';
 import { DynamicStar } from '../../shared/components/MascotCharacters';
@@ -62,11 +63,11 @@ export default function WelcomeScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <ScenicBackground preset="welcome" />
       <StatusBar barStyle="dark-content" />
 
       {/* Top curved graphic area */}
       <View style={styles.topGraphic}>
-        <View style={styles.curvedBackground} />
         
         {/* Mascot */}
         <FadeInUp delay={200} style={styles.mascotWrapper} distance={40}>
@@ -105,7 +106,7 @@ export default function WelcomeScreen({ navigation }) {
 const getStyles = (Colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
   topGraphic: {
     height: height * 0.46,
@@ -174,7 +175,7 @@ const getStyles = (Colors) => StyleSheet.create({
   debugButton: {
     marginTop: Spacing[2],
     borderWidth: 1.5,
-    borderColor: '#FF5E5B',
+    borderColor: '#D93A36',
     borderRadius: Radius.full,
     paddingVertical: 14,
     alignItems: 'center',
@@ -183,6 +184,6 @@ const getStyles = (Colors) => StyleSheet.create({
   debugButtonText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.caption,
-    color: '#FF5E5B',
+    color: '#D93A36',
   },
 });

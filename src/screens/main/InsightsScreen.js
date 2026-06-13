@@ -5,7 +5,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Polyline, Line, Text as SvgText, Circle, G, Rect } from 'react-native-svg';
 import { TrendingUp, TrendingDown, ArrowRight } from 'lucide-react-native';
-import { useThemeColors, Typography, Spacing, Radius, Shadow, getDomains } from '../../theme';
+import { useThemeColors, Typography, Spacing, Radius, Shadow, getDomains, getContrastSafeDomainColor } from '../../theme';
 import { t } from '../../constants/useStrings';
 import { INSIGHT_TEMPLATES } from '../../data/exercises';
 import { get14DaysDummyData } from '../../data/dummyData';
@@ -20,6 +20,7 @@ import { DynamicBrain } from '../../shared/components/MascotCharacters';
 import { InsightCard } from '../../shared/components/InsightCard';
 import { useInsights } from '../../features/insights/hooks/useInsights';
 import { calculateRegressionSlope, calculatePearson, getLifestyleRating } from '../../shared/utils/analytics';
+import ScenicBackground from '../../shared/components/ScenicBackground';
 
 const { width } = Dimensions.get('window');
 const CHART_W = width - Spacing[6] * 4;
@@ -291,14 +292,14 @@ function DomainTrendsCard({ history, Colors, DOMAINS, styles }) {
             key={d.id}
             style={[
               styles.paramTab,
-              selectedParam === d.id && { backgroundColor: d.color.main }
+              selectedParam === d.id && { backgroundColor: d.color.light, borderColor: d.color.main, borderWidth: 1 }
             ]}
             onPress={() => setSelectedParam(d.id)}
           >
             <Text
               style={[
                 styles.paramTabText,
-                selectedParam === d.id && { color: Colors.textInverse }
+                selectedParam === d.id && { color: getContrastSafeDomainColor(d.id, Colors), fontFamily: Typography.fontFamily.bold }
               ]}
             >
               {d.label}
@@ -853,14 +854,14 @@ function CorrelationPlayground({ history, correlations, calibrationComplete, Col
               key={h.id}
               style={[
                 styles.paramTab,
-                selectedHabit === h.id && { backgroundColor: '#FFD56B' }
+                selectedHabit === h.id && { backgroundColor: Colors.appBg === '#1A1F3A' ? '#D4832A' : '#FFECA1', borderColor: Colors.appBg === '#1A1F3A' ? '#D4832A' : '#F4A041', borderWidth: 1 }
               ]}
               onPress={() => setSelectedHabit(h.id)}
             >
               <Text
                 style={[
                   styles.paramTabText,
-                  selectedHabit === h.id && { color: '#E65100', fontFamily: Typography.fontFamily.bold }
+                  selectedHabit === h.id && { color: Colors.appBg === '#1A1F3A' ? '#FFFFFF' : '#8A4200', fontFamily: Typography.fontFamily.bold }
                 ]}
               >
                 {t(h.labelKey)}
@@ -881,14 +882,14 @@ function CorrelationPlayground({ history, correlations, calibrationComplete, Col
               key={d.id}
               style={[
                 styles.paramTab,
-                selectedDomain === d.id && { backgroundColor: d.color.main }
+                selectedDomain === d.id && { backgroundColor: d.color.light, borderColor: d.color.main, borderWidth: 1 }
               ]}
               onPress={() => setSelectedDomain(d.id)}
             >
               <Text
                 style={[
                   styles.paramTabText,
-                  selectedDomain === d.id && { color: Colors.textInverse }
+                  selectedDomain === d.id && { color: getContrastSafeDomainColor(d.id, Colors), fontFamily: Typography.fontFamily.bold }
                 ]}
               >
                 {d.label}
@@ -1182,6 +1183,7 @@ export default function InsightsScreen({ navigation, route }) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScenicBackground preset="insights" />
       <View style={styles.header}>
         <Text style={styles.title}>{t('insights.title')}</Text>
         <View style={styles.tabRow}>
@@ -1526,7 +1528,7 @@ export default function InsightsScreen({ navigation, route }) {
 }
 
 const getStyles = (Colors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.appBg },
+  container: { flex: 1, backgroundColor: 'transparent' },
   header: { paddingHorizontal: Spacing[6], paddingBottom: Spacing[3] },
   title: {
     fontFamily: Typography.fontFamily.extraBold, fontSize: Typography.size.h1,
@@ -1896,24 +1898,24 @@ const getStyles = (Colors) => StyleSheet.create({
     color: Colors.textSecondary,
   },
   coachCard: {
-    backgroundColor: '#FAF7F0',
+    backgroundColor: Colors.appBg === '#1A1F3A' ? Colors.surface : '#FAF7F0',
     borderRadius: Radius.xl,
     padding: Spacing[6],
     marginBottom: Spacing[6],
     borderWidth: 1,
-    borderColor: '#EFECE6',
+    borderColor: Colors.appBg === '#1A1F3A' ? Colors.border : '#EFECE6',
     gap: Spacing[2],
     ...Shadow.sm,
   },
   coachCardTitle: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: 16,
-    color: '#7C786E',
+    color: Colors.textPrimary,
   },
   coachCardBody: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: 13,
-    color: '#4C4942',
+    color: Colors.textSecondary,
     lineHeight: 20,
   },
 });

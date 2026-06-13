@@ -112,7 +112,7 @@ const getStyles = (Colors) => StyleSheet.create({
   body: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.body,
-    color: '#8899AA', // Soft light gray
+    color: '#A0B0C0', // Soft light gray (high contrast)
     textAlign: 'center',
     lineHeight: 24,
     paddingHorizontal: Spacing[4],
@@ -143,6 +143,6 @@ const getStyles = (Colors) => StyleSheet.create({
   secondaryText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.body,
-    color: '#8899AA',
+    color: '#A0B0C0',
   },
 });

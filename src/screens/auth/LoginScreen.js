@@ -9,6 +9,7 @@ import { TouchableScale } from '../../components/Motion';
 import LoginForm from './LoginForm';
 import { t } from '../../constants/useStrings';
 import { useApp } from '../../context/AppContext';
+import ScenicBackground from '../../shared/components/ScenicBackground';
 
 // Import existing high-fidelity animated mascots including the DynamicFlame streak mascot
 import {
@@ -508,6 +509,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <ScenicBackground preset="auth" />
       
       {/* ======================================================== */}
       {/* DUAL-ZONE BACKGROUND LAYOUT                              */}
@@ -613,13 +615,12 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: Spacing[10],
   },
   topSection: {
-    backgroundColor: '#FFC500', // Solid Headspace Yellow
     position: 'absolute',
     top: 0,
     left: 0,

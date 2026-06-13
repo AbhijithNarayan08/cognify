@@ -8,7 +8,7 @@ import { ArrowRight } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { useThemeColors, Typography, Spacing, Radius, Shadow } from '../../../theme';
+import { useThemeColors, Typography, Spacing, Radius, Shadow, getContrastSafeDomainColor } from '../../../theme';
 import { ExerciseCard } from '../../../shared/components/ExerciseCard';
 import { FadeInUp, TouchableScale } from '../../../shared/motion/Motion';
 import { useExerciseFilter } from '../hooks/useExerciseFilter';
@@ -18,6 +18,7 @@ import { exerciseService } from '../../../services/exerciseService';
 import { analytics } from '../../../services/analyticsService';
 import { GameHaptics } from '../../../utils/haptics';
 import { DynamicStar } from '../../../shared/components/MascotCharacters';
+import ScenicBackground from '../../../shared/components/ScenicBackground';
 
 const { width } = Dimensions.get('window');
 
@@ -108,6 +109,7 @@ export function TrainScreen({ navigation, route }) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScenicBackground preset="train" />
       <View style={styles.header}>
         <Text style={styles.title}>{t('train.title')}</Text>
       </View>
@@ -137,7 +139,7 @@ export function TrainScreen({ navigation, route }) {
               } else {
                 pillBg = domain?.color.light || Colors.brandLight;
                 pillBorder = domain?.color.main || Colors.brandPrimary;
-                textCol = domain?.color.main || Colors.brandPrimary;
+                textCol = getContrastSafeDomainColor(f, Colors);
                 textWeight = Typography.fontFamily.bold;
               }
             }
@@ -164,7 +166,7 @@ export function TrainScreen({ navigation, route }) {
           })}
         </ScrollView>
         <LinearGradient
-          colors={['rgba(249, 244, 242, 0)', Colors.appBg]}
+          colors={['rgba(255, 255, 255, 0)', 'rgba(255, 183, 178, 0.6)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.rightFadeGradient}
@@ -249,7 +251,7 @@ export function TrainScreen({ navigation, route }) {
 }
 
 const getStyles = (Colors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.appBg },
+  container: { flex: 1, backgroundColor: 'transparent' },
   header: { paddingHorizontal: Spacing[6], paddingBottom: Spacing[3] },
   title: {
     fontFamily: Typography.fontFamily.extraBold,

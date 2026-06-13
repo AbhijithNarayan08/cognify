@@ -7,6 +7,7 @@ import { useApp } from '../../context/AppContext';
 import { useThemeColors, Typography, Spacing, Radius, Shadow } from '../../theme';
 import { t } from '../../constants/useStrings';
 import { TouchableScale, FadeInUp } from '../../components/Motion';
+import ScenicBackground from '../../shared/components/ScenicBackground';
 import { ProjectionGraph } from '../../components/UIComponents';
 import * as Haptics from 'expo-haptics';
 
@@ -29,6 +30,7 @@ export default function ProjectionScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
+      <ScenicBackground preset="onboarding" />
       {/* Top Bar with Back Button & Progress Track */}
       <View style={styles.topBar}>
         <TouchableOpacity
@@ -81,7 +83,7 @@ export default function ProjectionScreen({ navigation, route }) {
 const getStyles = (Colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.appBg,
+    backgroundColor: 'transparent',
   },
   topBar: {
     flexDirection: 'row',

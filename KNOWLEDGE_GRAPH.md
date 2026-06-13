@@ -1,6 +1,6 @@
 # Cognify — Complete Project Knowledge Graph
 > **For any LLM or developer joining this project.** Read this top to bottom once and you will have full context to make changes anywhere in the codebase.
-> Last updated: 2026-06-07
+> Last updated: 2026-06-13
 
 > [!IMPORTANT]
 > **CRITICAL GIT RULE:** Do not commit anything or push to remote repositories until explicitly instructed by the user.
@@ -24,11 +24,13 @@
 
 | Layer | Technology | Version |
 |---|---|---|
-| Framework | React Native + Expo | Expo ~54.0 / RN 0.81.5 |
+| Framework | React Native + Expo | Expo ~54.0.35 / RN 0.81.5 |
 | Navigation | React Navigation (Stack + Bottom Tabs) | v6 |
 | State | React Context + useReducer (sliced) | — |
 | Persistence | AsyncStorage | 2.2.0 |
-| Animations | React Native Animated API + Reanimated | Reanimated ~3.16.1 |
+| Animations | React Native Animated API + Reanimated | Reanimated ~4.1.1 |
+| Translation | i18next + react-i18next | i18next ^26.3.1 / react-i18next ^17.0.8 |
+| Localization | expo-localization | ~17.0.9 |
 | UI Icons | lucide-react-native | ^1.16.0 |
 | SVG | react-native-svg | 15.12.1 |
 | Blur | expo-blur (BlurView) | ~15.0.8 |
@@ -38,9 +40,10 @@
 | Safe Area | react-native-safe-area-context | ~5.6.0 |
 | Gestures | react-native-gesture-handler | ~2.28.0 |
 | Web | react-native-web | ^0.21.0 |
+| Cloud Services | Firebase SDK (Auth / Firestore) | ^12.14.0 |
 | Linting | ESLint (config in .eslintrc.json) | — |
 
-**No TypeScript** — all files are `.js`. No Zustand, Redux, or React Query — state is pure Context+useReducer with AsyncStorage persistence.
+**No TypeScript** — all files are `.js`. No Zustand, Redux, or React Query — state is pure Context+useReducer with AsyncStorage persistence, integrated with Firebase synchronization services in active sessions.
 
 ---
 
@@ -66,6 +69,7 @@ cognify/
 │   ├── icon.png
 │   └── splash.png
 └── src/
+    ├── i18n.js                    # Translation engine initialization (i18next)
     ├── constants/
     │   ├── translations/
     │   │   └── en.json            # Flat translation dictionary for i18n
@@ -114,18 +118,15 @@ cognify/
     │   │   ├── DomainTile.js          # Domain score + trend tile (HomeScreen grid)
     │   │   ├── InsightCard.js         # Insight card (resolves domain colours internally)
     │   │   ├── WorkoutCard.js         # Today's workout summary card
-    │   │   ├── ConfirmModal.js
-    │   │   ├── DomainTile.js
-    │   │   ├── InsightCard.js
-    │   │   ├── WorkoutCard.js
-    │   │   ├── CheckinCard.js
-    │   │   ├── ExerciseCard.js
-    │   │   ├── SectionHeader.js
-    │   │   ├── PillButton.js
-    │   │   ├── ProjectionGraph.js
-    │   │   ├── ScoreRing.js
-    │   │   ├── DomainRadar.js
-    │   │   └── MoodShapes.js
+    │   │   ├── CheckinCard.js         # Daily check-in summary card
+    │   │   ├── ExerciseCard.js        # Exercise details display card
+    │   │   ├── SectionHeader.js       # Header with toggle support
+    │   │   ├── PillButton.js          # Custom pill CTA button
+    │   │   ├── ProjectionGraph.js     # Post-results brain score projection graph
+    │   │   ├── ScoreRing.js           # Concentric cognitive score indicator
+    │   │   ├── DomainRadar.js         # Cognitive domain radar chart
+    │   │   ├── MoodShapes.js          # Procedural mood vector face/wave shapes
+    │   │   └── ScenicBackground.js    # Ambient/scenic dynamic backgrounds (Headspace-style presets)
     │   ├── motion/
     │   │   └── Motion.js              # TouchableScale + FadeInUp animation primitives
     │   └── error/
@@ -290,11 +291,20 @@ RootNavigator (context-driven)
 | `appBg` | `#F9F4F2` (warm cream) | `#141313` | Screen backgrounds |
 | `surface` | `#FFFFFF` | `#222120` | Cards |
 | `surfaceAlt` | `#F5EBE6` | `#2D2C2B` | Chips, snapshot cards |
-| `textPrimary` | `#141313` | `#FFFFFF` | Main text |
-| `textSecondary` | ~`#5C5855` | ~`#B0ABA7` | Secondary labels |
-| `textTertiary` | ~`#8E8A86` | ~`#6E6A66` | Muted/hint text |
+| `textPrimary` | `#1D2340` (navy) | `#FFFFFF` | Main text (optimized for readability) |
+| `textSecondary` | `#4A5568` | `rgba(255,255,255,0.70)` | Secondary labels |
+| `textMuted` | `#5F7085` | `#A0B0C0` | Muted text (enhanced for WCAG AA contrast) |
 | `border` | ~`#E2DED9` | ~`#3A3836` | Dividers, tracks |
 | `positive` | `#3DAB7F` | same | Success, correct |
+
+### Scenic Color Tokens (Ambient Backgrounds)
+Added to support organic sky/wave presets:
+- `scenicYellow` (`#FFC500`) / `scenicOrange` (`#FF8E3C`) / `scenicPeach` (`#FFB7B2`) / `scenicCoral` (`#FF5E36`)
+- `scenicGreen` (`#2D6A4F` light / `#1B4332` dark)
+- `scenicBlue` (`#3A6EEA` light / `#2D3561` dark)
+- `scenicLightBlue` (`#87CEEB` light / `#5B8CF7` dark)
+- `scenicPink` (`#FFD3E8` light / `#331623` dark)
+- `scenicLinen` (`#FAF5F0` light / `#252C4A` dark)
 
 ### Domain Colours
 | Domain ID | Main | Light Tint | Label | Icon |
@@ -305,6 +315,9 @@ RootNavigator (context-driven)
 | `executive` | `#A662C6` | `#F3E8FB` | thinking | Activity |
 | `verbal` | `#FF7A00` | `#FFF0E6` | language | MessageSquare |
 | `spatial` | `#FF7DB4` | `#FFF0F6` | spatial | Box |
+
+### Domain Contrast Helper
+`getContrastSafeDomainColor(domainId, Colors)`: A helper in `src/theme.js` returning high-contrast text colors for domains rendered on light background tints (e.g., verbal `#CC5200`, memory `#0059B3`, speed `#B37D00`, attention `#1E6B4A`, executive `#723494`, spatial `#C43B72`). On dark mode, it defaults to the standard domain `main` color.
 
 ### Typography (Plus Jakarta Sans)
 ```js
@@ -619,7 +632,7 @@ When `isComplete` fires: fades play area → navigates to `SessionResult` with:
 ### Game 6 — Pattern Fold (Spatial Cognition, `#FF7DB4`)
 **File:** `src/features/train/games/PatternFold.js` (monolithic)
 
-**Mechanic:** Match a 3×3 block pattern to its correct rotated variant (ignore mirror distractors). Tracks mirror, angle, and chirality errors separately.
+**Mechanic:** Match a 3×3 block pattern to its correct rotated variant (ignore mirror distractors). Tracks mirror, angle, and chirality errors separately. Displays a rotation degree badge (e.g., `90° rotation`, `180° rotation`, `270° rotation`) under the target shape.
 
 **Animation:** 300ms cubic-out rotation alignment animation on response.
 
@@ -686,13 +699,16 @@ Pattern Fold utilizes a bespoke double-tabbed high-fidelity diagnostics dashboar
 
 ## 12. String Constants System
 
-**Source of truth:** `src/constants/translations/en.json` (~730+ keys)
+**Engine Back-end:** Configured in `src/i18n.js` using `i18next` and `react-i18next`. Dynamically detects system locale on boot using `expo-localization` within a runtime `try-catch` safety block (defaulting to English `en` if localization module is absent). Uses `compatibilityJSON: 'v3'` for standard plural support and `keySeparator: false` to allow flat dotted key access.
+
+**Source of truth:** `src/constants/translations/en.json` (~730+ keys flat key-value pairs)
 
 **Usage:**
 ```js
-import { t, useStrings } from '../../constants/useStrings';
+import { t } from '../../constants/useStrings';
+import { useStrings } from '../../constants/useStrings';
 
-// Static translation (non-reactive to dynamic language switch)
+// Static translation (non-reactive)
 t('train.activeSession.start');                           // "begin"
 t('train.activesession.pauseCount', { used: 1, max: 2 }); // "1 of 2 pauses used"
 
@@ -755,7 +771,7 @@ Analogy pairs for WordWeave verbal game. Used by `WordWeave.js`.
 
 ### LoginScreen
 The primary authentication gateway inspired by the premium Headspace visual language:
-- **Canvas Design**: Wrapped inside a solid yellow canvas (`#FFC500`) with a curved vector bottom divider that merges organically into the onboarding flow.
+- **Canvas Design**: Rendered over a dynamic yellow-to-orange gradient sky background from the `auth` preset of `ScenicBackground` (which contains concentric rings, a sleeping sun mascot, and floating clouds) that merges organically into the onboarding flow.
 - **Smartphone Device Mockup**: Features a centered white smartphone mockup container that acts as the focal viewport.
 - **Dynamic Scattered Mascots**: A winking `DynamicFlame` mascot floats, breathes, and scales inside the mockup screen, while 7 other high-fidelity mascots are scattered in the yellow sky.
 - **Interactive Leaps**: Mascots perform organic choreographed leaps on mount. The cursive Cognify handwriting signature was removed to achieve instant loading.
@@ -777,13 +793,13 @@ Staggered, highly tactile input workflow positioned inside the smartphone mockup
   - Strict touch isolation: uses `display` gating (`display: formPhase === 'active' ? 'flex' : 'none'`) to prevent hidden forms from intercepting screen gestures.
 
 ### WelcomeScreen
-Mascot splash. Single subtle cloud. Taglines: "stay sharp. think clearly. age well." Dev bypass button (red-accented) to skip onboarding. Navigates to Intent screen.
+Mascot splash rendered over a warm yellow sky with a giant mascot sun backdrop and bottom waves (`welcome` preset of `ScenicBackground`). Taglines: "stay sharp. think clearly. age well." Darker red border/text debug bypass button (`#D93A36`) skips onboarding. Navigates to Intent screen.
 
 ### IntentScreen
-4-intent 2×2 card grid. Border-only selection. Auto-navigates after 500ms delay (premium pacing). Haptic on select.
+4-intent 2×2 card grid. Border-only selection. Auto-navigates after 500ms delay (premium pacing). Haptic on select. Uses `onboarding` preset of `ScenicBackground` (concentric radiating rings behind card centers). Active intent descriptions utilize `getContrastSafeDomainColor` to maintain readability.
 
 ### QuickProfileScreen
-Multi-step: age range → sleep → activity level.
+Multi-step: age range → sleep → activity level. Uses `onboarding` preset of `ScenicBackground`.
 
 ### AssessmentScreens (4 screens in one file)
 - `AssessmentIntroScreen` — FAQ accordion with clinical advisory text
@@ -792,20 +808,23 @@ Multi-step: age range → sleep → activity level.
 - `ResultsScreen` — animated baseline score reveal
 
 ### ProjectionScreen
-Post-results projection / brain age screen. Navigates to NotificationOptInScreen.
+Post-results projection / brain age screen. Navigates to NotificationOptInScreen. Uses `onboarding` preset of `ScenicBackground`.
 
 ### NotificationOptInScreen
 A dark, peaceful Headspace Navy (`#1D2340`) page designed to maximize user prompt conversions:
 - **Top Graphic Zone**: Displays a floating, breathing Crescent Moon mascot (`DynamicMoon`) centered in a dark night-sky gradient.
 - **Value Proposition**: Clear lowercase headline ("protect your training streak") prompting users to allow daily notifications to build robust training habits.
 - **Expo Haptics & Alerts**: Integrates tactile medium impact haptics, triggering an native iOS/Android Alert confirm dialogue, and dispatches `COMPLETE_ONBOARDING` on success.
+- **Contrast Optimization**: Text elements use high-contrast `#A0B0C0` to meet WCAG AA requirements on the dark navy backdrop.
 
 ### HomeScreen
+- **Ambient Canvas**: Mounts `ScenicBackground` (preset `'home'`) displaying a soft cream sky with rolling peach and forest green hills. Old sun backdrop has been removed.
+- **Contrast-Safe Text**: Text labels like personal context and check-in skips use `Colors.textSecondary` instead of `Colors.textMuted` to guarantee clear readability.
 - Sticky header: snaps from 60→80px at scroll offset.
 - Greeting hook: contextual milestone strings (streaks, post-workout, time-of-day).
 - `ScoreRing` + cohort percentile.
 - **Interactive Duolingo-style Streak system**:
-  - Streak badge pill wrapped inside `TouchableScale` triggering correct haptics on press.
+  - Streak badge pill is permanently visible (`streakDays >= 0` visibility rule) and wrapped inside `TouchableScale` triggering correct haptics on press.
   - Transparent overlay `<Modal>` with an organic spring bounce animation (`Animated.spring` friction 7, tension 50).
   - **Dynamic Multi-Layered SVG Flame Mascot**: Centered dynamic cartoon character layered with three animated vector shapes: Outer Coral flame (`#FF5E5B`), Middle Amber flame (`#FFC000`), and Inner Cream core (`#FFF9E6`) with closed smiling eyes (`∪ ∪`), pink cheeks, and an open gasping mouth. Animated with dual-axis breathing and out-of-phase organic swaying loops.
   - Horizontal timezone-safe weekly activity calendar mapping days to score history logs (vibrant filled flames, dashed today, empty grey outlines).
@@ -833,6 +852,8 @@ Presents a premium full-width card entry point (`CheckinCard.js`) that slides up
   - Looping sequential animation driving drifting sleeping letters (`Z`, `z`, `z`) floating upward and right of the Zzz sleeping face using staggered translate and opacity interpolations on native driver.
 
 ### TrainScreen
+- **Ambient Canvas**: Mounts `ScenicBackground` (preset `'train'`) displaying a soothing peach-to-pink gradient with floating white ambient circles and clouds.
+- **Merged Visuals**: The right fade mask gradient is updated to `'rgba(255, 183, 178, 0.6)'` to merge cleanly with the scenic theme.
 - Domain filter pills (horizontal scroll, 44pt touch targets, right fade mask via LinearGradient)
 - Workout banner: dynamic 4-domain exercise selection
 - 2-column card grid with consistent 4-row layout (pill+dots / name / desc / duration)
@@ -840,6 +861,8 @@ Presents a premium full-width card entry point (`CheckinCard.js`) that slides up
 - `paddingBottom: 100` to clear tab bar
 
 ### InsightsScreen
+- **Ambient Canvas**: Mounts `ScenicBackground` (preset `'insights'`) displaying a focus-promoting blue-to-purple gradient with a smiling blue moon outline and flowing waves.
+- **Contrast-Optimized Elements**: Parameter selection tabs and correlation playground tabs now render with light tint backgrounds (`d.color.light`), primary borders (`d.color.main`), and dark text using `getContrastSafeDomainColor` (or contrast-optimized text) to guarantee readability. The `coachCard` background and text use theme variables (`Colors.surface`, `Colors.border`, `Colors.textPrimary`, `Colors.textSecondary`) for dark mode contrast.
 - **Overview tab:** 30-day ScoreGraph, domain trend selector, parameter timeline, 30-day projection, DomainRadar, lifestyle correlations
 - **Weekly Brief tab:** 4 zones — score summary + week-over-week delta, domain bar chart, sleep-score correlation, actionable focus recommendation
 - `initialTab` param for deep-linking from HomeScreen teasers
@@ -847,7 +870,7 @@ Presents a premium full-width card entry point (`CheckinCard.js`) that slides up
 - Optional-chaining on all `h.domains?.[parameter]` accesses (crash-proofed)
 
 ### ProfileScreen
-- Stats card: streak, sessions, avg score
+- Stats card: streak, sessions, avg score. The streak stats block is permanently visible (running `streakDays >= 0` check).
 - Focus Areas grid (weakest domains first, links to Train filter)
 - Restart onboarding: `ConfirmModal` → `dispatch(resetApp())`
 
@@ -989,6 +1012,9 @@ An authoritative, feature-agnostic library containing 9 dynamic, multi-layered S
 - **`exerciseService.getDailyWorkout()`** uses LCG deterministic daily seed — same 4 exercises every time the same calendar date is queried.
 - **Web support.** App compiles for web via `npx expo export -p web`. Not all features identical but builds cleanly.
 - **Dummy data verification.** Run `node scripts/verifyInsights.js` to validate dummyData produces meaningful insights across all 4 Weekly Brief zones.
+- **Expo-Localization Safe Imports**: System locale detection runs under a dynamic `try-catch` block when importing `expo-localization` to safeguard against native missing module crashes in sandbox or web client runtimes.
+- **ScenicBackground Non-Interception**: ScenicBackground uses `pointerEvents="none"` and `zIndex: -10` to sit entirely behind screen scrollable views, avoiding gesture or touch blocking.
+- **Permanent Streak Indicator visibility**: Streak indicators are rendered permanently utilizing `streakDays >= 0` check (instead of `streakDays > 0`) to encourage user interaction even with zero-day streaks.
 
 ---
 
